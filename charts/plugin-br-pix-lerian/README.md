@@ -497,6 +497,18 @@ Two things this precedence does **not** mean:
 
 The chart reserves the pod annotation carrying the ConfigMap/Secret checksum, which is what rolls the pods when configuration changes. Overriding it would stop configuration updates from restarting pods, so the chart refuses it.
 
+## Plaintext OTEL to the node-local collector (`ALLOW_INSECURE_OTEL`)
+
+When telemetry is on and no endpoint is set (see **OTLP endpoint** above), each Deployment ships telemetry to the collector on its own node at `$(HOST_IP):4317`, in plaintext. lib-observability refuses a plaintext exporter in production unless `ALLOW_INSECURE_OTEL` carries a reason, so wherever the chart injects that node-local endpoint it also sets `ALLOW_INSECURE_OTEL` on the container. This applies to all 14 workloads. The value resolves in this order:
+
+1. `<component>.configmap.ALLOW_INSECURE_OTEL`
+2. `global.observability.allowInsecureOtel`, one value for the whole environment
+3. the default reason, `node-local collector on the pod's own node`
+
+`null` counts as unset. An empty string or `"false"` is an explicit refusal, and the app then refuses the plaintext exporter in production. When you set your own endpoint (`<component>.configmap.OTEL_EXPORTER_OTLP_ENDPOINT`, `global.observability.otlpEndpoint`, or `OTEL_EXPORTER_OTLP_ENDPOINT` in `extraEnvVars`), the chart adds no entry. If that endpoint is plaintext, set `ALLOW_INSECURE_OTEL` yourself: `<component>.configmap.ALLOW_INSECURE_OTEL` reaches the app through the ConfigMap, which forwards un-enumerated `configmap` keys.
+
+A key in `<component>.extraEnvVars` or a non-empty `<component>.secrets.ALLOW_INSECURE_OTEL` in the chart's own Secret is the legacy route, and the chart then adds no entry of its own. The Secret counts only while nothing in the order above is set: a configmap or global value, a refusal included, keeps the chart's entry, which wins over the Secret. With `useExistingSecret: true` the chart cannot see the Secret, so the container entry overrides any `ALLOW_INSECURE_OTEL` held there; set `<component>.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
+
 ## Authentication
 
 `PLUGIN_AUTH_ENABLED=true` with a resolvable `PLUGIN_AUTH_HOST` mounts per-route authorization on the business and machine-to-machine routes of the workloads that carry it. In single-tenant mode a domain application takes the toggle from the store its Systemplane workload seeds, so set both keys on that Systemplane workload too ([Single-tenant configuration](#single-tenant-configuration)). It does not cover probes, OpenAPI routes, or the provider mock — those need network-level controls from your platform.

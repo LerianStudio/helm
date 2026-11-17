@@ -75,6 +75,10 @@ spec:
           only emitted when the configmap does NOT set a non-empty
           OTEL_EXPORTER_OTLP_ENDPOINT (values ship the key as "") —
           otherwise it would silently clobber the operator's endpoint.
+          Next to each "$(HOST_IP):4317" entry the chart also emits
+          ALLOW_INSECURE_OTEL (plugin-br-pix-lerian.otelAllowInsecure.env): the
+          node-local hop is plaintext, which lib-observability refuses in
+          production without a reason. An operator endpoint gets none.
           */}}
           {{- /* default dict: `configmap: null` in values yields nil, and a field
                access on nil panics rather than falling through to the default. */}}
@@ -137,6 +141,9 @@ spec:
             {{- if and $emitOtelEndpoint (not $operatorHostIP) }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "$(HOST_IP):4317"
+            {{- with (include "plugin-br-pix-lerian.otelAllowInsecure.env" (dict "context" $ "values" $values "configmap" $cm)) }}
+            {{- . | nindent 12 }}
+            {{- end }}
             {{- end }}
             {{- if $hasExtras }}
             {{- range $k, $v := $extraEnvVars }}
@@ -147,6 +154,9 @@ spec:
             {{- if and $emitOtelEndpoint $operatorHostIP }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "$(HOST_IP):4317"
+            {{- with (include "plugin-br-pix-lerian.otelAllowInsecure.env" (dict "context" $ "values" $values "configmap" $cm)) }}
+            {{- . | nindent 12 }}
+            {{- end }}
             {{- end }}
           resources:
             {{- toYaml $values.resources | nindent 12 }}

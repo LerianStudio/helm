@@ -1,0 +1,2471 @@
+suite: node-local OTEL hop in production (ALLOW_INSECURE_OTEL)
+release: {name: test, namespace: test}
+templates:
+  - templates/spi/deployment.yaml
+  - templates/spi/configmap.yaml
+  - templates/spi/secrets.yaml
+  - templates/spi-systemplane/deployment.yaml
+  - templates/spi-systemplane/configmap.yaml
+  - templates/spi-systemplane/secrets.yaml
+  - templates/dict-hub/deployment.yaml
+  - templates/dict-hub/configmap.yaml
+  - templates/dict-hub/secrets.yaml
+  - templates/dict-hub-vsync/deployment.yaml
+  - templates/dict-hub-vsync/configmap.yaml
+  - templates/dict-hub-vsync/secrets.yaml
+  - templates/dict-proxy/deployment.yaml
+  - templates/dict-proxy/configmap.yaml
+  - templates/dict-proxy/secrets.yaml
+  - templates/dict-systemplane/deployment.yaml
+  - templates/dict-systemplane/configmap.yaml
+  - templates/dict-systemplane/secrets.yaml
+  - templates/cob-hub/deployment.yaml
+  - templates/cob-hub/configmap.yaml
+  - templates/cob-hub/secrets.yaml
+  - templates/cob-proxy/deployment.yaml
+  - templates/cob-proxy/configmap.yaml
+  - templates/cob-proxy/secrets.yaml
+  - templates/cob-systemplane/deployment.yaml
+  - templates/cob-systemplane/configmap.yaml
+  - templates/cob-systemplane/secrets.yaml
+  - templates/pixauto/deployment.yaml
+  - templates/pixauto/configmap.yaml
+  - templates/pixauto/secrets.yaml
+  - templates/pixauto-systemplane/deployment.yaml
+  - templates/pixauto-systemplane/configmap.yaml
+  - templates/pixauto-systemplane/secrets.yaml
+  - templates/adapter-lerian/deployment.yaml
+  - templates/adapter-lerian/configmap.yaml
+  - templates/adapter-lerian/secrets.yaml
+  - templates/adapter-lerian-systemplane/deployment.yaml
+  - templates/adapter-lerian-systemplane/configmap.yaml
+  - templates/adapter-lerian-systemplane/secrets.yaml
+  - templates/adapter-provider-mock/deployment.yaml
+  - templates/adapter-provider-mock/configmap.yaml
+  - templates/adapter-provider-mock/secrets.yaml
+set:
+  global.observability.enabled: true
+  spi.enabled: true
+  spiSystemplane.enabled: true
+  dictHub.enabled: true
+  dictHubVsync.enabled: true
+  dictProxy.enabled: true
+  dictSystemplane.enabled: true
+  cobHub.enabled: true
+  cobProxy.enabled: true
+  cobSystemplane.enabled: true
+  pixauto.enabled: true
+  pixautoSystemplane.enabled: true
+  adapterLerian.enabled: true
+  adapterLerianSystemplane.enabled: true
+  adapterProviderMock.enabled: true
+  dictHubVsync.secrets.RABBITMQ_URI: amqp://guest:fixture@rabbitmq.example.invalid:5672/
+tests:
+  - it: 'spi: the plaintext node-local endpoint carries the default reason'
+    template: templates/spi/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'spi: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/spi/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'spi: the component configmap wins over the global'
+    template: templates/spi/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      spi.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'component reason'}
+          count: 1
+  - it: 'spi: an explicit refusal stands as the one entry'
+    template: templates/spi/deployment.yaml
+    set:
+      spi.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+  - it: 'spi: a false global is a refusal too'
+    template: templates/spi/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'false'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'false'}
+          count: 1
+  - it: 'spi: a null component value falls through to the global'
+    template: templates/spi/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      spi.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'spi: a null global leaves the node-local reason'
+    template: templates/spi/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'spi: an operator value in extraEnvVars stands as the only entry'
+    template: templates/spi/deployment.yaml
+    set:
+      spi.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'operator reason'}
+          count: 1
+  - it: 'spi: an operator HOST_IP keeps the chart endpoint and the variable'
+    template: templates/spi/deployment.yaml
+    set:
+      spi.extraEnvVars.HOST_IP: '10.0.0.1'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'spi: an explicit endpoint in the component configmap emits nothing'
+    template: templates/spi/deployment.yaml
+    set:
+      spi.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'spi: an explicit global endpoint emits nothing'
+    template: templates/spi/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: 'https://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'spi: an operator endpoint in extraEnvVars emits nothing'
+    template: templates/spi/deployment.yaml
+    set:
+      spi.extraEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'spi: telemetry off emits nothing'
+    template: templates/spi/deployment.yaml
+    set:
+      global.observability.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'spi: a non-empty Secret value stands while the model is unset'
+    template: templates/spi/deployment.yaml
+    set:
+      spi.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'spi: the model wins over the Secret, a refusal included'
+    template: templates/spi/deployment.yaml
+    set:
+      spi.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      spi.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+  - it: 'spi: a global value wins over the Secret'
+    template: templates/spi/deployment.yaml
+    set:
+      spi.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'spi: an empty Secret value is no legacy route'
+    template: templates/spi/deployment.yaml
+    set:
+      spi.secrets.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'spi: an existing Secret is invisible to the chart, so the entry is emitted'
+    template: templates/spi/deployment.yaml
+    set:
+      spi.useExistingSecret: true
+      spi.existingSecretName: 'pix-existing'
+      spi.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'spi-systemplane: the plaintext node-local endpoint carries the default reason'
+    template: templates/spi-systemplane/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'spi-systemplane: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'spi-systemplane: the component configmap wins over the global'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      spiSystemplane.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'component reason'}
+          count: 1
+  - it: 'spi-systemplane: an explicit refusal stands as the one entry'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      spiSystemplane.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+  - it: 'spi-systemplane: a false global is a refusal too'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'false'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'false'}
+          count: 1
+  - it: 'spi-systemplane: a null component value falls through to the global'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      spiSystemplane.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'spi-systemplane: a null global leaves the node-local reason'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'spi-systemplane: an operator value in extraEnvVars stands as the only entry'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      spiSystemplane.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'operator reason'}
+          count: 1
+  - it: 'spi-systemplane: an operator HOST_IP keeps the chart endpoint and the variable'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      spiSystemplane.extraEnvVars.HOST_IP: '10.0.0.1'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'spi-systemplane: an explicit endpoint in the component configmap emits nothing'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      spiSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'spi-systemplane: an explicit global endpoint emits nothing'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: 'https://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'spi-systemplane: an operator endpoint in extraEnvVars emits nothing'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      spiSystemplane.extraEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'spi-systemplane: telemetry off emits nothing'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      global.observability.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'spi-systemplane: a non-empty Secret value stands while the model is unset'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      spiSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'spi-systemplane: the model wins over the Secret, a refusal included'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      spiSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      spiSystemplane.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+  - it: 'spi-systemplane: a global value wins over the Secret'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      spiSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'spi-systemplane: an empty Secret value is no legacy route'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      spiSystemplane.secrets.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'spi-systemplane: an existing Secret is invisible to the chart, so the entry is emitted'
+    template: templates/spi-systemplane/deployment.yaml
+    set:
+      spiSystemplane.useExistingSecret: true
+      spiSystemplane.existingSecretName: 'pix-existing'
+      spiSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-hub: the plaintext node-local endpoint carries the default reason'
+    template: templates/dict-hub/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-hub: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'dict-hub: the component configmap wins over the global'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictHub.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'component reason'}
+          count: 1
+  - it: 'dict-hub: an explicit refusal stands as the one entry'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      dictHub.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+  - it: 'dict-hub: a false global is a refusal too'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'false'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'false'}
+          count: 1
+  - it: 'dict-hub: a null component value falls through to the global'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictHub.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'dict-hub: a null global leaves the node-local reason'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-hub: an operator value in extraEnvVars stands as the only entry'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      dictHub.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'operator reason'}
+          count: 1
+  - it: 'dict-hub: an operator HOST_IP keeps the chart endpoint and the variable'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      dictHub.extraEnvVars.HOST_IP: '10.0.0.1'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-hub: an explicit endpoint in the component configmap emits nothing'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      dictHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-hub: an explicit global endpoint emits nothing'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: 'https://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-hub: an operator endpoint in extraEnvVars emits nothing'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      dictHub.extraEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-hub: telemetry off emits nothing'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      global.observability.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-hub: a non-empty Secret value stands while the model is unset'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      dictHub.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-hub: the model wins over the Secret, a refusal included'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      dictHub.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      dictHub.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+  - it: 'dict-hub: a global value wins over the Secret'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      dictHub.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'dict-hub: an empty Secret value is no legacy route'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      dictHub.secrets.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-hub: an existing Secret is invisible to the chart, so the entry is emitted'
+    template: templates/dict-hub/deployment.yaml
+    set:
+      dictHub.useExistingSecret: true
+      dictHub.existingSecretName: 'pix-existing'
+      dictHub.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-hub-vsync: the plaintext node-local endpoint carries the default reason'
+    template: templates/dict-hub-vsync/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-hub-vsync: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'dict-hub-vsync: the component configmap wins over the global'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictHubVsync.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'component reason'}
+          count: 1
+  - it: 'dict-hub-vsync: an explicit refusal stands as the one entry'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      dictHubVsync.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+  - it: 'dict-hub-vsync: a false global is a refusal too'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'false'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'false'}
+          count: 1
+  - it: 'dict-hub-vsync: a null component value falls through to the global'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictHubVsync.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'dict-hub-vsync: a null global leaves the node-local reason'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-hub-vsync: an operator value in extraEnvVars stands as the only entry'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      dictHubVsync.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'operator reason'}
+          count: 1
+  - it: 'dict-hub-vsync: an operator HOST_IP keeps the chart endpoint and the variable'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      dictHubVsync.extraEnvVars.HOST_IP: '10.0.0.1'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-hub-vsync: an explicit endpoint in the component configmap emits nothing'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      dictHubVsync.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-hub-vsync: an explicit global endpoint emits nothing'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: 'https://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-hub-vsync: an operator endpoint in extraEnvVars emits nothing'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      dictHubVsync.extraEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-hub-vsync: telemetry off emits nothing'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      global.observability.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-hub-vsync: a non-empty Secret value stands while the model is unset'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      dictHubVsync.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-hub-vsync: the model wins over the Secret, a refusal included'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      dictHubVsync.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      dictHubVsync.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+  - it: 'dict-hub-vsync: a global value wins over the Secret'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      dictHubVsync.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'dict-hub-vsync: an empty Secret value is no legacy route'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      dictHubVsync.secrets.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-hub-vsync: an existing Secret is invisible to the chart, so the entry is emitted'
+    template: templates/dict-hub-vsync/deployment.yaml
+    set:
+      dictHubVsync.useExistingSecret: true
+      dictHubVsync.existingSecretName: 'pix-existing'
+      dictHubVsync.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-proxy: the plaintext node-local endpoint carries the default reason'
+    template: templates/dict-proxy/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-proxy: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'dict-proxy: the component configmap wins over the global'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictProxy.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'component reason'}
+          count: 1
+  - it: 'dict-proxy: an explicit refusal stands as the one entry'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      dictProxy.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+  - it: 'dict-proxy: a false global is a refusal too'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'false'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'false'}
+          count: 1
+  - it: 'dict-proxy: a null component value falls through to the global'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictProxy.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'dict-proxy: a null global leaves the node-local reason'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-proxy: an operator value in extraEnvVars stands as the only entry'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      dictProxy.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'operator reason'}
+          count: 1
+  - it: 'dict-proxy: an operator HOST_IP keeps the chart endpoint and the variable'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      dictProxy.extraEnvVars.HOST_IP: '10.0.0.1'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-proxy: an explicit endpoint in the component configmap emits nothing'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      dictProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-proxy: an explicit global endpoint emits nothing'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: 'https://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-proxy: an operator endpoint in extraEnvVars emits nothing'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      dictProxy.extraEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-proxy: telemetry off emits nothing'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      global.observability.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-proxy: a non-empty Secret value stands while the model is unset'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      dictProxy.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-proxy: the model wins over the Secret, a refusal included'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      dictProxy.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      dictProxy.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+  - it: 'dict-proxy: a global value wins over the Secret'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      dictProxy.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'dict-proxy: an empty Secret value is no legacy route'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      dictProxy.secrets.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-proxy: an existing Secret is invisible to the chart, so the entry is emitted'
+    template: templates/dict-proxy/deployment.yaml
+    set:
+      dictProxy.useExistingSecret: true
+      dictProxy.existingSecretName: 'pix-existing'
+      dictProxy.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-systemplane: the plaintext node-local endpoint carries the default reason'
+    template: templates/dict-systemplane/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-systemplane: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'dict-systemplane: the component configmap wins over the global'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictSystemplane.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'component reason'}
+          count: 1
+  - it: 'dict-systemplane: an explicit refusal stands as the one entry'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      dictSystemplane.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+  - it: 'dict-systemplane: a false global is a refusal too'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'false'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'false'}
+          count: 1
+  - it: 'dict-systemplane: a null component value falls through to the global'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictSystemplane.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'dict-systemplane: a null global leaves the node-local reason'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-systemplane: an operator value in extraEnvVars stands as the only entry'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      dictSystemplane.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'operator reason'}
+          count: 1
+  - it: 'dict-systemplane: an operator HOST_IP keeps the chart endpoint and the variable'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      dictSystemplane.extraEnvVars.HOST_IP: '10.0.0.1'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-systemplane: an explicit endpoint in the component configmap emits nothing'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      dictSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-systemplane: an explicit global endpoint emits nothing'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: 'https://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-systemplane: an operator endpoint in extraEnvVars emits nothing'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      dictSystemplane.extraEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-systemplane: telemetry off emits nothing'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      global.observability.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-systemplane: a non-empty Secret value stands while the model is unset'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      dictSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'dict-systemplane: the model wins over the Secret, a refusal included'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      dictSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      dictSystemplane.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+  - it: 'dict-systemplane: a global value wins over the Secret'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      dictSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'dict-systemplane: an empty Secret value is no legacy route'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      dictSystemplane.secrets.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'dict-systemplane: an existing Secret is invisible to the chart, so the entry is emitted'
+    template: templates/dict-systemplane/deployment.yaml
+    set:
+      dictSystemplane.useExistingSecret: true
+      dictSystemplane.existingSecretName: 'pix-existing'
+      dictSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'cob-hub: the plaintext node-local endpoint carries the default reason'
+    template: templates/cob-hub/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'cob-hub: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'cob-hub: the component configmap wins over the global'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      cobHub.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'component reason'}
+          count: 1
+  - it: 'cob-hub: an explicit refusal stands as the one entry'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      cobHub.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+  - it: 'cob-hub: a false global is a refusal too'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'false'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'false'}
+          count: 1
+  - it: 'cob-hub: a null component value falls through to the global'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      cobHub.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'cob-hub: a null global leaves the node-local reason'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'cob-hub: an operator value in extraEnvVars stands as the only entry'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      cobHub.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'operator reason'}
+          count: 1
+  - it: 'cob-hub: an operator HOST_IP keeps the chart endpoint and the variable'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      cobHub.extraEnvVars.HOST_IP: '10.0.0.1'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'cob-hub: an explicit endpoint in the component configmap emits nothing'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      cobHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'cob-hub: an explicit global endpoint emits nothing'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: 'https://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'cob-hub: an operator endpoint in extraEnvVars emits nothing'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      cobHub.extraEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'cob-hub: telemetry off emits nothing'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      global.observability.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'cob-hub: a non-empty Secret value stands while the model is unset'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      cobHub.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'cob-hub: the model wins over the Secret, a refusal included'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      cobHub.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      cobHub.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+  - it: 'cob-hub: a global value wins over the Secret'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      cobHub.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'cob-hub: an empty Secret value is no legacy route'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      cobHub.secrets.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'cob-hub: an existing Secret is invisible to the chart, so the entry is emitted'
+    template: templates/cob-hub/deployment.yaml
+    set:
+      cobHub.useExistingSecret: true
+      cobHub.existingSecretName: 'pix-existing'
+      cobHub.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'cob-proxy: the plaintext node-local endpoint carries the default reason'
+    template: templates/cob-proxy/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'cob-proxy: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'cob-proxy: the component configmap wins over the global'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      cobProxy.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'component reason'}
+          count: 1
+  - it: 'cob-proxy: an explicit refusal stands as the one entry'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      cobProxy.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+  - it: 'cob-proxy: a false global is a refusal too'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'false'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'false'}
+          count: 1
+  - it: 'cob-proxy: a null component value falls through to the global'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      cobProxy.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'cob-proxy: a null global leaves the node-local reason'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'cob-proxy: an operator value in extraEnvVars stands as the only entry'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      cobProxy.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'operator reason'}
+          count: 1
+  - it: 'cob-proxy: an operator HOST_IP keeps the chart endpoint and the variable'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      cobProxy.extraEnvVars.HOST_IP: '10.0.0.1'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'cob-proxy: an explicit endpoint in the component configmap emits nothing'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      cobProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'cob-proxy: an explicit global endpoint emits nothing'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: 'https://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'cob-proxy: an operator endpoint in extraEnvVars emits nothing'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      cobProxy.extraEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'cob-proxy: telemetry off emits nothing'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      global.observability.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'cob-proxy: a non-empty Secret value stands while the model is unset'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      cobProxy.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'cob-proxy: the model wins over the Secret, a refusal included'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      cobProxy.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      cobProxy.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+  - it: 'cob-proxy: a global value wins over the Secret'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      cobProxy.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'cob-proxy: an empty Secret value is no legacy route'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      cobProxy.secrets.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'cob-proxy: an existing Secret is invisible to the chart, so the entry is emitted'
+    template: templates/cob-proxy/deployment.yaml
+    set:
+      cobProxy.useExistingSecret: true
+      cobProxy.existingSecretName: 'pix-existing'
+      cobProxy.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'cob-systemplane: the plaintext node-local endpoint carries the default reason'
+    template: templates/cob-systemplane/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'cob-systemplane: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'cob-systemplane: the component configmap wins over the global'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      cobSystemplane.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'component reason'}
+          count: 1
+  - it: 'cob-systemplane: an explicit refusal stands as the one entry'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      cobSystemplane.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+  - it: 'cob-systemplane: a false global is a refusal too'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'false'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'false'}
+          count: 1
+  - it: 'cob-systemplane: a null component value falls through to the global'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      cobSystemplane.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'cob-systemplane: a null global leaves the node-local reason'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'cob-systemplane: an operator value in extraEnvVars stands as the only entry'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      cobSystemplane.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'operator reason'}
+          count: 1
+  - it: 'cob-systemplane: an operator HOST_IP keeps the chart endpoint and the variable'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      cobSystemplane.extraEnvVars.HOST_IP: '10.0.0.1'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'cob-systemplane: an explicit endpoint in the component configmap emits nothing'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      cobSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'cob-systemplane: an explicit global endpoint emits nothing'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: 'https://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'cob-systemplane: an operator endpoint in extraEnvVars emits nothing'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      cobSystemplane.extraEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'cob-systemplane: telemetry off emits nothing'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      global.observability.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'cob-systemplane: a non-empty Secret value stands while the model is unset'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      cobSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'cob-systemplane: the model wins over the Secret, a refusal included'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      cobSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      cobSystemplane.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+  - it: 'cob-systemplane: a global value wins over the Secret'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      cobSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'cob-systemplane: an empty Secret value is no legacy route'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      cobSystemplane.secrets.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'cob-systemplane: an existing Secret is invisible to the chart, so the entry is emitted'
+    template: templates/cob-systemplane/deployment.yaml
+    set:
+      cobSystemplane.useExistingSecret: true
+      cobSystemplane.existingSecretName: 'pix-existing'
+      cobSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'pixauto: the plaintext node-local endpoint carries the default reason'
+    template: templates/pixauto/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'pixauto: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/pixauto/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'pixauto: the component configmap wins over the global'
+    template: templates/pixauto/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      pixauto.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'component reason'}
+          count: 1
+  - it: 'pixauto: an explicit refusal stands as the one entry'
+    template: templates/pixauto/deployment.yaml
+    set:
+      pixauto.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+  - it: 'pixauto: a false global is a refusal too'
+    template: templates/pixauto/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'false'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'false'}
+          count: 1
+  - it: 'pixauto: a null component value falls through to the global'
+    template: templates/pixauto/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      pixauto.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'pixauto: a null global leaves the node-local reason'
+    template: templates/pixauto/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'pixauto: an operator value in extraEnvVars stands as the only entry'
+    template: templates/pixauto/deployment.yaml
+    set:
+      pixauto.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'operator reason'}
+          count: 1
+  - it: 'pixauto: an operator HOST_IP keeps the chart endpoint and the variable'
+    template: templates/pixauto/deployment.yaml
+    set:
+      pixauto.extraEnvVars.HOST_IP: '10.0.0.1'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'pixauto: an explicit endpoint in the component configmap emits nothing'
+    template: templates/pixauto/deployment.yaml
+    set:
+      pixauto.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'pixauto: an explicit global endpoint emits nothing'
+    template: templates/pixauto/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: 'https://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'pixauto: an operator endpoint in extraEnvVars emits nothing'
+    template: templates/pixauto/deployment.yaml
+    set:
+      pixauto.extraEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'pixauto: telemetry off emits nothing'
+    template: templates/pixauto/deployment.yaml
+    set:
+      global.observability.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'pixauto: a non-empty Secret value stands while the model is unset'
+    template: templates/pixauto/deployment.yaml
+    set:
+      pixauto.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'pixauto: the model wins over the Secret, a refusal included'
+    template: templates/pixauto/deployment.yaml
+    set:
+      pixauto.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      pixauto.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+  - it: 'pixauto: a global value wins over the Secret'
+    template: templates/pixauto/deployment.yaml
+    set:
+      pixauto.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'pixauto: an empty Secret value is no legacy route'
+    template: templates/pixauto/deployment.yaml
+    set:
+      pixauto.secrets.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'pixauto: an existing Secret is invisible to the chart, so the entry is emitted'
+    template: templates/pixauto/deployment.yaml
+    set:
+      pixauto.useExistingSecret: true
+      pixauto.existingSecretName: 'pix-existing'
+      pixauto.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'pixauto-systemplane: the plaintext node-local endpoint carries the default reason'
+    template: templates/pixauto-systemplane/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'pixauto-systemplane: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'pixauto-systemplane: the component configmap wins over the global'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      pixautoSystemplane.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'component reason'}
+          count: 1
+  - it: 'pixauto-systemplane: an explicit refusal stands as the one entry'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      pixautoSystemplane.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+  - it: 'pixauto-systemplane: a false global is a refusal too'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'false'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'false'}
+          count: 1
+  - it: 'pixauto-systemplane: a null component value falls through to the global'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      pixautoSystemplane.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'pixauto-systemplane: a null global leaves the node-local reason'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'pixauto-systemplane: an operator value in extraEnvVars stands as the only entry'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      pixautoSystemplane.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'operator reason'}
+          count: 1
+  - it: 'pixauto-systemplane: an operator HOST_IP keeps the chart endpoint and the variable'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      pixautoSystemplane.extraEnvVars.HOST_IP: '10.0.0.1'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'pixauto-systemplane: an explicit endpoint in the component configmap emits nothing'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      pixautoSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'pixauto-systemplane: an explicit global endpoint emits nothing'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: 'https://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'pixauto-systemplane: an operator endpoint in extraEnvVars emits nothing'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      pixautoSystemplane.extraEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'pixauto-systemplane: telemetry off emits nothing'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      global.observability.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'pixauto-systemplane: a non-empty Secret value stands while the model is unset'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      pixautoSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'pixauto-systemplane: the model wins over the Secret, a refusal included'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      pixautoSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      pixautoSystemplane.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+  - it: 'pixauto-systemplane: a global value wins over the Secret'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      pixautoSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'pixauto-systemplane: an empty Secret value is no legacy route'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      pixautoSystemplane.secrets.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'pixauto-systemplane: an existing Secret is invisible to the chart, so the entry is emitted'
+    template: templates/pixauto-systemplane/deployment.yaml
+    set:
+      pixautoSystemplane.useExistingSecret: true
+      pixautoSystemplane.existingSecretName: 'pix-existing'
+      pixautoSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'adapter-lerian: the plaintext node-local endpoint carries the default reason'
+    template: templates/adapter-lerian/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'adapter-lerian: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'adapter-lerian: the component configmap wins over the global'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      adapterLerian.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'component reason'}
+          count: 1
+  - it: 'adapter-lerian: an explicit refusal stands as the one entry'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      adapterLerian.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+  - it: 'adapter-lerian: a false global is a refusal too'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'false'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'false'}
+          count: 1
+  - it: 'adapter-lerian: a null component value falls through to the global'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      adapterLerian.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'adapter-lerian: a null global leaves the node-local reason'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'adapter-lerian: an operator value in extraEnvVars stands as the only entry'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      adapterLerian.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'operator reason'}
+          count: 1
+  - it: 'adapter-lerian: an operator HOST_IP keeps the chart endpoint and the variable'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      adapterLerian.extraEnvVars.HOST_IP: '10.0.0.1'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'adapter-lerian: an explicit endpoint in the component configmap emits nothing'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      adapterLerian.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'adapter-lerian: an explicit global endpoint emits nothing'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: 'https://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'adapter-lerian: an operator endpoint in extraEnvVars emits nothing'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      adapterLerian.extraEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'adapter-lerian: telemetry off emits nothing'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      global.observability.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'adapter-lerian: a non-empty Secret value stands while the model is unset'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      adapterLerian.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'adapter-lerian: the model wins over the Secret, a refusal included'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      adapterLerian.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      adapterLerian.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+  - it: 'adapter-lerian: a global value wins over the Secret'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      adapterLerian.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'adapter-lerian: an empty Secret value is no legacy route'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      adapterLerian.secrets.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'adapter-lerian: an existing Secret is invisible to the chart, so the entry is emitted'
+    template: templates/adapter-lerian/deployment.yaml
+    set:
+      adapterLerian.useExistingSecret: true
+      adapterLerian.existingSecretName: 'pix-existing'
+      adapterLerian.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'adapter-lerian-systemplane: the plaintext node-local endpoint carries the default reason'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'adapter-lerian-systemplane: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'adapter-lerian-systemplane: the component configmap wins over the global'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      adapterLerianSystemplane.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'component reason'}
+          count: 1
+  - it: 'adapter-lerian-systemplane: an explicit refusal stands as the one entry'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      adapterLerianSystemplane.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+  - it: 'adapter-lerian-systemplane: a false global is a refusal too'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'false'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'false'}
+          count: 1
+  - it: 'adapter-lerian-systemplane: a null component value falls through to the global'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      adapterLerianSystemplane.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'adapter-lerian-systemplane: a null global leaves the node-local reason'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'adapter-lerian-systemplane: an operator value in extraEnvVars stands as the only entry'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      adapterLerianSystemplane.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'operator reason'}
+          count: 1
+  - it: 'adapter-lerian-systemplane: an operator HOST_IP keeps the chart endpoint and the variable'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      adapterLerianSystemplane.extraEnvVars.HOST_IP: '10.0.0.1'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'adapter-lerian-systemplane: an explicit endpoint in the component configmap emits nothing'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      adapterLerianSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'adapter-lerian-systemplane: an explicit global endpoint emits nothing'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: 'https://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'adapter-lerian-systemplane: an operator endpoint in extraEnvVars emits nothing'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      adapterLerianSystemplane.extraEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'adapter-lerian-systemplane: telemetry off emits nothing'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      global.observability.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'adapter-lerian-systemplane: a non-empty Secret value stands while the model is unset'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      adapterLerianSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'adapter-lerian-systemplane: the model wins over the Secret, a refusal included'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      adapterLerianSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      adapterLerianSystemplane.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+  - it: 'adapter-lerian-systemplane: a global value wins over the Secret'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      adapterLerianSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'adapter-lerian-systemplane: an empty Secret value is no legacy route'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      adapterLerianSystemplane.secrets.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'adapter-lerian-systemplane: an existing Secret is invisible to the chart, so the entry is emitted'
+    template: templates/adapter-lerian-systemplane/deployment.yaml
+    set:
+      adapterLerianSystemplane.useExistingSecret: true
+      adapterLerianSystemplane.existingSecretName: 'pix-existing'
+      adapterLerianSystemplane.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'adapter-provider-mock: the plaintext node-local endpoint carries the default reason'
+    template: templates/adapter-provider-mock/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'adapter-provider-mock: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'adapter-provider-mock: the component configmap wins over the global'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      adapterProviderMock.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'component reason'}
+          count: 1
+  - it: 'adapter-provider-mock: an explicit refusal stands as the one entry'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      adapterProviderMock.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+  - it: 'adapter-provider-mock: a false global is a refusal too'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'false'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'false'}
+          count: 1
+  - it: 'adapter-provider-mock: a null component value falls through to the global'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      adapterProviderMock.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'adapter-provider-mock: a null global leaves the node-local reason'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'adapter-provider-mock: an operator value in extraEnvVars stands as the only entry'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      adapterProviderMock.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'operator reason'}
+          count: 1
+  - it: 'adapter-provider-mock: an operator HOST_IP keeps the chart endpoint and the variable'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      adapterProviderMock.extraEnvVars.HOST_IP: '10.0.0.1'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'adapter-provider-mock: an explicit endpoint in the component configmap emits nothing'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      adapterProviderMock.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'adapter-provider-mock: an explicit global endpoint emits nothing'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: 'https://otel.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'adapter-provider-mock: an operator endpoint in extraEnvVars emits nothing'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      adapterProviderMock.extraEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'adapter-provider-mock: telemetry off emits nothing'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      global.observability.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'adapter-provider-mock: a non-empty Secret value stands while the model is unset'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      adapterProviderMock.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+  - it: 'adapter-provider-mock: the model wins over the Secret, a refusal included'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      adapterProviderMock.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      adapterProviderMock.configmap.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ''}
+          count: 1
+  - it: 'adapter-provider-mock: a global value wins over the Secret'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      adapterProviderMock.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'env-wide reason'}
+          count: 1
+  - it: 'adapter-provider-mock: an empty Secret value is no legacy route'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      adapterProviderMock.secrets.ALLOW_INSECURE_OTEL: ''
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1
+  - it: 'adapter-provider-mock: an existing Secret is invisible to the chart, so the entry is emitted'
+    template: templates/adapter-provider-mock/deployment.yaml
+    set:
+      adapterProviderMock.useExistingSecret: true
+      adapterProviderMock.existingSecretName: 'pix-existing'
+      adapterProviderMock.secrets.ALLOW_INSECURE_OTEL: 'secret reason'
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: 'node-local collector on the pod''s own node'}
+          count: 1

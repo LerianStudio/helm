@@ -662,3 +662,43 @@ global.serviceDiscovery (all optional): enabled, address, tls, tlsSkipVerify, wo
 {{- end -}}
 {{- join "\n" $lines -}}
 {{- end -}}
+
+{{/*
+plugin-br-pix-lerian.otelAllowInsecure.env — the ALLOW_INSECURE_OTEL container
+env entry for a component whose Deployment points the app at the node-local
+collector ("$(HOST_IP):4317", plaintext). lib-observability refuses a plaintext
+exporter in a strict deployment environment (production / prod) unless
+ALLOW_INSECURE_OTEL carries a reason, so the chart owns that variable wherever it
+ships the node-local endpoint itself. The caller includes this ONLY next to its
+own "$(HOST_IP):4317" entry; an operator endpoint (configmap, global or
+extraEnvVars) gets nothing.
+
+The value is a modeled setting (lerian-common.otel.allowInsecure):
+  <component>.configmap.ALLOW_INSECURE_OTEL
+  > global.observability.allowInsecureOtel
+  > "node-local collector on the pod's own node"
+null is unset; "" / "false" is a refusal and is emitted as is.
+
+Legacy routes still stand, and then no entry is emitted (a duplicate env name
+breaks the apply):
+  - ALLOW_INSECURE_OTEL in <component>.extraEnvVars;
+  - a non-empty ALLOW_INSECURE_OTEL in <component>.secrets, while the model is
+    unset (the model wins over the Secret, a refusal included) and the chart
+    renders the Secret. With useExistingSecret the chart cannot see the Secret,
+    so the entry is emitted and overrides a value there.
+
+Inputs (dict): context (root), values (the component block), configmap (its
+.configmap map, nil-safe).
+*/}}
+{{- define "plugin-br-pix-lerian.otelAllowInsecure.env" -}}
+{{- $values := .values | default dict -}}
+{{- $cm := .configmap | default dict -}}
+{{- $obs := (.context.Values.global | default dict).observability | default dict -}}
+{{- $modelSet := or (not (kindIs "invalid" (index $cm "ALLOW_INSECURE_OTEL"))) (not (kindIs "invalid" (index $obs "allowInsecureOtel"))) -}}
+{{- $secretAllow := and (not $modelSet) (not $values.useExistingSecret) (ne (toString (index ($values.secrets | default dict) "ALLOW_INSECURE_OTEL" | default "")) "") -}}
+{{- $legacy := or (hasKey ($values.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL") $secretAllow -}}
+{{- if not $legacy -}}
+- name: ALLOW_INSECURE_OTEL
+  value: {{ include "lerian-common.otel.allowInsecure" (dict "context" .context "configmap" $cm) | quote }}
+{{- end -}}
+{{- end -}}

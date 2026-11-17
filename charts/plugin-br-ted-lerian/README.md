@@ -102,6 +102,18 @@ global:
 - **`objectStorage` is not applicable to this chart** — plugin-br-ted-lerian has
   no S3/object-storage surface (no template calls `lerian-common.objectStorage.value`).
 
+## Plaintext OTEL to the node-local collector (`ALLOW_INSECURE_OTEL`)
+
+With `plugin-br-ted-lerian.otel.enabled` on, the pod ships telemetry to the collector on its own node at `http://$(HOST_IP):4317`, in plaintext. lib-observability refuses a plaintext exporter in production unless `ALLOW_INSECURE_OTEL` carries a reason, so the chart sets that variable on the container. The value resolves in this order:
+
+1. `plugin-br-ted-lerian.configmap.ALLOW_INSECURE_OTEL`
+2. `global.observability.allowInsecureOtel`, one value for the whole environment
+3. the default reason, `node-local collector on the pod's own node`
+
+`null` counts as unset. An empty string is an explicit refusal, and the app then refuses the plaintext exporter in production. The ConfigMap carries the configmap value, or else the global one, so the setting also reaches the app when the node-local collector is off and you point at an explicit plaintext endpoint.
+
+A key in `plugin-br-ted-lerian.extraEnvVars` or a non-empty `plugin-br-ted-lerian.secrets.ALLOW_INSECURE_OTEL` in the chart's own Secret is the legacy route, and the chart then adds no entry of its own. The Secret counts only while nothing in the order above is set: a configmap, knob or global value, a refusal included, keeps the chart's entry, which wins over the Secret. With `useExistingSecret: true` the chart cannot see the Secret, so the container entry overrides any `ALLOW_INSECURE_OTEL` held there; set `plugin-br-ted-lerian.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
+
 ## Optional capabilities
 
 Each is off by default, gated per-component; the connection/topology config

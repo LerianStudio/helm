@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `app.secrets.LICENSE_KEY` in every environment; `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `INTERNAL_API_KEY`, `CREDENTIAL_ENCRYPTION_KEY` and `BTG_WEBHOOK_HMAC_SECRET` (at least 32 characters) for the default production worker-enabled render; `CONSULT_AUDIT_HMAC_KEY` wherever the API is served (`SERVICE_TYPE` `both`, the default, or `api`); and `PLUGIN_AUTH_CLIENT_ID` / `PLUGIN_AUTH_CLIENT_SECRET` in single-tenant while `MIDAZ_AUTH_ENABLED` is `"true"` (the default). The `PROVIDER_CLIENT_*` pair is required in **single-tenant only**; in multi-tenant it is resolved per tenant and must be left empty. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
+- Required secrets: `app.secrets.LICENSE_KEY` in every environment (unless `app.licenseFile.existingSecret` mounts a signed licence file); `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `INTERNAL_API_KEY`, `CREDENTIAL_ENCRYPTION_KEY` and `BTG_WEBHOOK_HMAC_SECRET` (at least 32 characters) for the default production worker-enabled render; `CONSULT_AUDIT_HMAC_KEY` wherever the API is served (`SERVICE_TYPE` `both`, the default, or `api`); and `PLUGIN_AUTH_CLIENT_ID` / `PLUGIN_AUTH_CLIENT_SECRET` in single-tenant while `MIDAZ_AUTH_ENABLED` is `"true"` (the default). The `PROVIDER_CLIENT_*` pair is required in **single-tenant only**; in multi-tenant it is resolved per tenant and must be left empty. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
 - Dependency notes: Uses a local PostgreSQL dependency chart unless external PostgreSQL is configured.
 - Production overrides: Provide provider and database credentials through chart secrets or an existing Secret where supported; override BTG/Midaz URLs, image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
@@ -60,7 +60,8 @@ The chart **fails fast** on `helm install` if any of the following are missing:
 | `app.configmap.BTG_AUTH_URL` | BTG OAuth2 token URL. |
 | `app.configmap.MIDAZ_LEDGER_URL` | Midaz Ledger service URL: one URL serves onboarding and transaction. Must be `https://` under `ENV_NAME=production` (the default). The former `MIDAZ_ONBOARDING_URL` / `MIDAZ_TRANSACTION_URL` pair is refused at render with the rename named. |
 | `app.configmap.ORGANIZATION_IDS` | `"global"` or the comma-separated organization UUIDs the license covers. The app validates its license at startup in every environment. |
-| `app.secrets.LICENSE_KEY` | License key. Required in every environment. |
+| `app.secrets.LICENSE_KEY` | License key. Required in every environment unless `app.licenseFile.existingSecret` is set. The control-plane migrations Job receives it too. |
+| `app.licenseFile.existingSecret` | Optional Secret holding a signed licence file under the key `license`, mounted read-only as the directory `/etc/lerian/license` on the app and the control-plane migrations Job; sets `LICENSE_FILE_PATH`. Replaces `LICENSE_KEY`. The Secret must exist before the sync: the PreSync migrations Job mounts it. File mode needs an image on lib-license-go v5. |
 | `app.secrets.PLUGIN_AUTH_CLIENT_ID` / `PLUGIN_AUTH_CLIENT_SECRET` | Access Manager client credentials of the Midaz client. Single-tenant, while `MIDAZ_AUTH_ENABLED` is `"true"` (the default). |
 | `app.secrets.PROVIDER_CLIENT_ID` | Provider OAuth2 client ID. **Single-tenant only** — in multi-tenant it is resolved per tenant and must be left empty. Named for the role rather than the vendor; renamed from `BTG_CLIENT_ID`. |
 | `app.secrets.PROVIDER_CLIENT_SECRET` | Provider OAuth2 client secret. Same conditionality as above; renamed from `BTG_CLIENT_SECRET`. |
@@ -98,7 +99,7 @@ Before upgrading, in your overlay:
    `MULTI_TENANT_CACHE_TTL_SEC` in seconds, `MULTI_TENANT_CB_*`) to their canonical names.
 2. **Remove** keys the application no longer reads: `OUTBOX_ENABLED`, `OUTBOX_TABLE_NAME`,
    `CIRCUIT_BREAKER_ENABLED`, `RATE_LIMIT_READ`, `RATE_LIMIT_WRITE`,
-   `RECONCILIATION_LOOKBACK_HOURS`, `RECONCILIATION_MAX_PROVIDER_PAGES`, `TRUSTED_PROXIES`,
+   `RECONCILIATION_LOOKBACK_HOURS`, `RECONCILIATION_MAX_PROVIDER_PAGES`,
    `EXAMPLE_STATUS_PROVIDER_MODE`.
 3. **Drop the `null` workarounds** for `OUTBOX_PUBLISH_MAX_ATTEMPTS`,
    `OUTBOX_RETRY_WINDOW_SEC`, `OUTBOX_PROCESSING_TIMEOUT_SEC` and `RECONCILIATION_INTERVAL`:
@@ -110,6 +111,17 @@ Before upgrading, in your overlay:
    `openssl rand -hex 32`, from the platform secret manager) for `SERVICE_TYPE` `both` or
    `api`, or add it to the Secret named by `app.existingSecretName`. Without it the render
    fails, and the application would refuse to boot.
+6. **HTTP edge**: `TRUSTED_PROXIES` is read by the application again (it is no longer
+   refused at render). Set `app.configmap.TRUSTED_PROXIES` to the CIDRs of the proxies or
+   load balancers in front of the service, comma separated (for example
+   `"10.123.0.0/16,10.42.0.0/16"`). Only CIDR notation is accepted, and nothing broader
+   than `/8` (IPv4) or `/48` (IPv6). It is the platform-wide variable: the auth library
+   uses the same value for the client IP it sends to the Access Manager. Unset, the
+   application warns at boot and uses the socket peer. `HTTP_RECEIVE_TIMEOUT_SEC` and
+   `HTTP_IDLE_TIMEOUT_SEC` render only when set. The `HTTP_BODY_LIMIT_BYTES` chart
+   default drops from `"104857600"` to `"4194304"` (4 MiB), which is also the
+   application's ceiling: an overlay that sets a larger value is clamped to 4 MiB and
+   logs a `SECURITY:` warning on every boot, so remove it or set it at or below 4 MiB.
 
 Optionally move connection endpoints to the `global:` block (see `values-template.yaml`);
 native `app.configmap.<KEY>` values keep working and win over it. Pods now roll on a
@@ -144,11 +156,11 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | Key | Default |
 |-----|---------|
 | `SERVER_ADDRESS` | `"0.0.0.0:8080"` |
-| `HTTP_BODY_LIMIT_BYTES` | `"104857600"` |
+| `HTTP_BODY_LIMIT_BYTES` | `"4194304"` (4 MiB, also the application's ceiling: a larger value is clamped to 4 MiB and logs a `SECURITY:` warning on every boot) |
 | `HTTP_READ_BUFFER_SIZE` | unset (app default) |
-| `TLS_TERMINATED_UPSTREAM` | `"true"` |
-| `SERVER_TLS_CERT_FILE` | unset (app default) |
-| `SERVER_TLS_KEY_FILE` | unset (app default) |
+| `HTTP_RECEIVE_TIMEOUT_SEC` | unset (app default `30`) |
+| `HTTP_IDLE_TIMEOUT_SEC` | unset (app default `120`) |
+| `TRUSTED_PROXIES` | unset (app default: no proxy is trusted, `X-Forwarded-For` is ignored and the socket peer is used, with a warning at boot) |
 | `INTERNAL_WORKER_URL` | `""` |
 
 </details>
@@ -191,6 +203,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `MULTI_TENANT_URL` | `global.multiTenant.url`, else `""` |
 | `MULTI_TENANT_SERVICE_NAME` | `"plugin-br-payments"` |
 | `MULTI_TENANT_POSTGRES_MODULE` | `""` |
+| `MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE` | unset (no app default; read only by app versions from 1.5.0). Names the Tenant Manager module that carries each tenant's collections database and turns the collections module on in multi-tenant; it must differ from `MULTI_TENANT_POSTGRES_MODULE` or the app refuses to boot. Set `MULTI_TENANT_POSTGRES_MODULE` too wherever the collections run |
 | `MULTI_TENANT_ALLOW_INSECURE_HTTP` | `"false"` |
 | `MULTI_TENANT_TIMEOUT` | `"10"` |
 | `MULTI_TENANT_CACHE_TTL_SEC` | `"3600"` |
@@ -228,6 +241,34 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `MIGRATION_LOCK_TIMEOUT_MS` | `"10000"` |
 | `DB_METRICS_INTERVAL_SEC` | `"15"` |
 | `IDEMPOTENCY_RECORD_TTL_HOURS` | `"48"` |
+
+</details>
+
+<details><summary><b>COLLECTIONS (Gestão de Cobrança)</b></summary>
+
+Read only by app versions from 1.5.0. The module ships off: with neither `MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE` nor `COLLECTIONS_POSTGRES_HOST` set, the app reads none of these keys. With the module on, a value outside its bounds stops the boot. `COLLECTIONS_POSTGRES_PASSWORD`, `COLLECTIONS_PCR_CLIENT_ID`, `COLLECTIONS_PCR_CLIENT_SECRET` and `COLLECTIONS_CURSOR_HMAC_KEY` are `app.secrets` keys: the cursor HMAC key (standard base64 of exactly 32 bytes) is required once the module is on, and the PCR client credentials are single-tenant only, set both or neither.
+
+| Key | Default |
+|-----|---------|
+| `COLLECTIONS_POSTGRES_HOST` | unset (no app default). Turns the collections module on in single-tenant; the app then refuses to boot without `COLLECTIONS_POSTGRES_USER` and `COLLECTIONS_POSTGRES_DB`, or when host:port/database is the main `POSTGRES_*` database. In production it also needs `COLLECTIONS_POSTGRES_PASSWORD` and an sslmode of `require`, `verify-ca` or `verify-full` |
+| `COLLECTIONS_POSTGRES_PORT` | unset (app default `5432`) |
+| `COLLECTIONS_POSTGRES_USER` | unset (no app default; required with `COLLECTIONS_POSTGRES_HOST`) |
+| `COLLECTIONS_POSTGRES_DB` | unset (app default `plugin-br-payments-collections`) |
+| `COLLECTIONS_POSTGRES_SSLMODE` | unset (app default `disable`; production and `DEPLOYMENT_MODE=saas` require `require`, `verify-ca` or `verify-full`) |
+| `COLLECTIONS_POSTGRES_MAX_OPEN_CONNS` | unset (app default `10`; in multi-tenant, the pool limit of each tenant's collections database) |
+| `COLLECTIONS_POSTGRES_MAX_IDLE_CONNS` | unset (app default `5`; in multi-tenant, the pool limit of each tenant's collections database) |
+| `COLLECTIONS_COMMAND_RESEND_INTERVAL_SEC` | unset (app default `10`, bounds 1–3600) |
+| `COLLECTIONS_COMMAND_PROCESSING_TIMEOUT_SEC` | unset (app default `300`, bounds 180–3600) |
+| `COLLECTIONS_COMMAND_DISPATCH_CONCURRENCY` | unset (app default `4`, bounds 1–64) |
+| `COLLECTIONS_SUBSCRIPTION_CHECK_INTERVAL_SEC` | unset (app default `300`, bounds 60–3600) |
+| `COLLECTIONS_NOTICE_APPLY_INTERVAL_SEC` | unset (app default `5`, bounds 1–300) |
+| `COLLECTIONS_BENEFICIARY_POLL_INTERVAL_SEC` | unset (app default `30`, bounds 5–3600) |
+| `COLLECTIONS_AGREEMENT_BRANCH_SWEEP_INTERVAL_SEC` | unset (app default `3600`, bounds 60–86400) |
+| `COLLECTIONS_INVENTORY_INTERVAL_SEC` | unset (app default `900`, bounds 60–86400) |
+| `COLLECTIONS_ENABLEMENT_ITEM_INTERVAL_SEC` | unset (app default `5`, bounds 1–300) |
+| `COLLECTIONS_TITLE_FACT_DISPATCH_INTERVAL_SEC` | unset (app default `5`, bounds 1–300) |
+| `COLLECTIONS_TITLE_OUTCOME_POLL_INTERVAL_SEC` | unset (app default `30`, bounds 5–3600) |
+| `COLLECTIONS_DISABLED` | unset (app default `"false"`; single-tenant only: `"true"` refuses new issuances with 422 PBP-0833 while what was already issued keeps closing) |
 
 </details>
 
@@ -283,6 +324,9 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `BTG_MTLS_INBOUND_CERT_HEADER` | unset (app default) |
 | `BTG_WEBHOOK_CERTIFICATE_URL` | unset (app default) |
 | `BTG_BULK_MAX_BODY_BYTES` | read only by app versions after 1.0.2; unset (app default `7680` bytes; zero, negative or non-numeric stops the boot) |
+| `SANDBOX_SIMULATION_ENABLED` | unset (app default `"false"`; `"true"` enables `POST /v1/sandbox/boletos/{id}/simulate-payment` and `POST /v1/sandbox/payments/{id}/simulate-status`; with it on, the app refuses to boot when `ENV_NAME=production` and requires `BTG_API_BASE_URL`, `BTG_AUTH_URL`, `BTG_COMMON_BASE_URL` and `SANDBOX_FAKEBTG_ADMIN_URL` to share one origin, `scheme://host:port`) |
+| `SANDBOX_FAKEBTG_ADMIN_URL` | unset (no app default; required when `SANDBOX_SIMULATION_ENABLED` is `"true"`) |
+| `SANDBOX_FAKEBTG_ADMIN_KEY` | unset; an `app.secrets` key, rendered into the Secret (no app default; read only when `SANDBOX_SIMULATION_ENABLED` is `"true"`; sent as `X-Admin-Key` on the fakebtg `/admin/*` calls, for a keyed fakebtg such as the BYOC sandbox; empty means no header. With `MULTI_TENANT_ENABLED=true` it also derives each tenant's synthetic BTG secret, `hex(HMAC-SHA256(key, tenantId))`, instead of the shared constant. The API and the worker both read it; this chart's single Deployment gets it through `envFrom`. Rotating it changes every tenant's derived secret: follow the fakebtg rotation procedure) |
 
 </details>
 
@@ -349,6 +393,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | Key | Default |
 |-----|---------|
 | `WEBHOOK_PUBLIC_BASE_URL` | unset (app default) |
+| `WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP` | unset (app default `"false"`; development only: `"true"` acknowledges an `http://` `WEBHOOK_PUBLIC_BASE_URL`, and the app refuses it unless `ENV_NAME` is `local`, `development` or `test`) |
 | `WEBHOOK_SKIP_URL_VALIDATION` | unset (app default) |
 | `WEBHOOK_CONNECTION_GRACE_WINDOW_SEC` | unset (app default) |
 | `WEBHOOK_DISPATCHER_INTERVAL` | unset (app default) |
@@ -373,9 +418,11 @@ The chart injects `ALLOW_INSECURE_OTEL` only together with the node-local collec
 
 </details>
 
-**Secret keys** (`app.secrets`, each rendered only when set): `POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `BTG_WEBHOOK_HMAC_SECRET`, `INTERNAL_API_KEY`, `INTERNAL_API_KEY_PREVIOUS`, `CREDENTIAL_ENCRYPTION_KEY`, `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS`, `LICENSE_KEY`, `PLUGIN_AUTH_CLIENT_ID`, `PLUGIN_AUTH_CLIENT_SECRET`, `MULTI_TENANT_SERVICE_API_KEY`, `CONSULT_AUDIT_HMAC_KEY`, `IDP_M2M_CLIENT_ID`, `IDP_M2M_CLIENT_SECRET`.
+**Secret keys** (`app.secrets`, each rendered only when set): `POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `BTG_WEBHOOK_HMAC_SECRET`, `INTERNAL_API_KEY`, `INTERNAL_API_KEY_PREVIOUS`, `CREDENTIAL_ENCRYPTION_KEY`, `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS`, `LICENSE_KEY`, `PLUGIN_AUTH_CLIENT_ID`, `PLUGIN_AUTH_CLIENT_SECRET`, `MULTI_TENANT_SERVICE_API_KEY`, `CONSULT_AUDIT_HMAC_KEY`, `IDP_M2M_CLIENT_ID`, `IDP_M2M_CLIENT_SECRET`, `SANDBOX_FAKEBTG_ADMIN_KEY`, `COLLECTIONS_POSTGRES_PASSWORD`, `COLLECTIONS_PCR_CLIENT_ID`, `COLLECTIONS_PCR_CLIENT_SECRET`, `COLLECTIONS_CURSOR_HMAC_KEY`.
 
-**Refused at render**, with the replacement named: `MULTI_TENANCY_ENABLED`, `MULTI_TENANT_MANAGER_URL`, `MULTI_TENANT_CLIENT_TIMEOUT_SEC`, `MULTI_TENANT_CACHE_TTL_MINUTES`, `MULTI_TENANT_CB_THRESHOLD`, `MULTI_TENANT_CB_TIMEOUT_SEC`, `MIDAZ_ONBOARDING_URL`, `MIDAZ_TRANSACTION_URL`, `OUTBOX_ENABLED`, `OUTBOX_TABLE_NAME`, `CIRCUIT_BREAKER_ENABLED`, `RATE_LIMIT_READ`, `RATE_LIMIT_WRITE`, `RECONCILIATION_LOOKBACK_HOURS`, `EXAMPLE_STATUS_PROVIDER_MODE`, `RECONCILIATION_MAX_PROVIDER_PAGES`, `TRUSTED_PROXIES` (`app.configmap`); `BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `BTG_WEBHOOK_SECRET` (`app.secrets`). The retired ones are no longer read by the application.
+**Refused at render**, with the replacement named: `MULTI_TENANCY_ENABLED`, `MULTI_TENANT_MANAGER_URL`, `MULTI_TENANT_CLIENT_TIMEOUT_SEC`, `MULTI_TENANT_CACHE_TTL_MINUTES`, `MULTI_TENANT_CB_THRESHOLD`, `MULTI_TENANT_CB_TIMEOUT_SEC`, `MIDAZ_ONBOARDING_URL`, `MIDAZ_TRANSACTION_URL`, `OUTBOX_ENABLED`, `OUTBOX_TABLE_NAME`, `CIRCUIT_BREAKER_ENABLED`, `RATE_LIMIT_READ`, `RATE_LIMIT_WRITE`, `RECONCILIATION_LOOKBACK_HOURS`, `EXAMPLE_STATUS_PROVIDER_MODE`, `RECONCILIATION_MAX_PROVIDER_PAGES` (`app.configmap`); `BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `BTG_WEBHOOK_SECRET` (`app.secrets`). The retired ones are no longer read by the application.
+
+Also refused at render (`app.configmap`): `SERVER_TLS_CERT_FILE`, `SERVER_TLS_KEY_FILE`. The main port serves plain HTTP; terminate TLS at the Ingress or mesh. `TLS_TERMINATED_UPSTREAM` is no longer rendered: the app stopped reading it.
 
 ## Probes
 

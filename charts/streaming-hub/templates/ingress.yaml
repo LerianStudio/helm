@@ -9,6 +9,14 @@ Backend Service is the active role's component Service:
 */}}
 {{- $component := ternary "all" "ingest" (eq .Values.streamingHub.mode "all") -}}
 {{- $svcName := include "streaming-hub.componentFullname" (dict "context" . "component" $component) -}}
+{{- /* On ALB the target-group health check comes from the health preset and wins over user annotations. */ -}}
+{{- $annotations := deepCopy (.Values.streamingHub.ingress.annotations | default dict) -}}
+{{- if eq (toString .Values.streamingHub.ingress.className) "alb" -}}
+{{- $alb := (include "streaming-hub.health" (dict "root" . "component" $component) | fromYaml).alb -}}
+{{- $annotations = mergeOverwrite $annotations (dict
+      "alb.ingress.kubernetes.io/healthcheck-path" $alb.path
+      "alb.ingress.kubernetes.io/healthcheck-port" (toString $alb.port)) -}}
+{{- end -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -16,7 +24,7 @@ metadata:
   namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "streaming-hub.labels" (dict "context" . "component" $component) | nindent 4 }}
-  {{- with .Values.streamingHub.ingress.annotations }}
+  {{- with $annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}

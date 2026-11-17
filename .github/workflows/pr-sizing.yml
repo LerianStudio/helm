@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   triage:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ (github.event.repository.visibility == 'public' && vars.PUBLIC_RUNNERS) || vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     steps:
       - uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5.0.0
         with:

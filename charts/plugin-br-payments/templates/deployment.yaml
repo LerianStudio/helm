@@ -140,6 +140,7 @@ spec:
             - name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
               value: "IPv4"
           {{- end }}
+          {{- with (include "plugin-br-payments.licenseFileMount" . | trim) }}{{ . | nindent 10 }}{{- end }}
           resources:
             {{- toYaml .Values.app.resources | nindent 12 }}
           startupProbe: {{- toYaml $h.startupProbe | nindent 12 }}
@@ -189,8 +190,14 @@ spec:
           resources:
             {{- toYaml .Values.aws.rolesAnywhere.sidecar.resources | nindent 12 }}
         {{- end }}
-      {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+      {{- $licVolume := include "plugin-br-payments.licenseFileVolume" . | trim }}
+      {{- $raOn := and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+      {{- if or $raOn $licVolume }}
       volumes:
+        {{- with $licVolume }}
+        {{- . | nindent 8 }}
+        {{- end }}
+        {{- if $raOn }}
         - name: iam-certs
           secret:
             secretName: {{ .Values.aws.rolesAnywhere.certificateSecretName | default "plugin-br-payments-iam-tls" }}
@@ -200,6 +207,7 @@ spec:
                 path: tls.crt
               - key: tls.key
                 path: tls.key
+        {{- end }}
       {{- end }}
       {{- with .Values.app.nodeSelector }}
       nodeSelector:

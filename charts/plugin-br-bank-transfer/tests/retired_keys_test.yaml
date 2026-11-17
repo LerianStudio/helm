@@ -1,0 +1,63 @@
+suite: bank-transfer refuses pdb and rollout overrides owned by the health preset
+templates:
+  - templates/pdb.yaml
+release:
+  name: bank-transfer
+  namespace: bank-transfer
+set:
+  bankTransfer.configmap.MIDAZ_BASE_URL: http://midaz-onboarding:3000
+  bankTransfer.configmap.CRM_BASE_URL: http://midaz-crm:4000
+  bankTransfer.configmap.FEES_BASE_URL: http://plugin-fees:4000
+  bankTransfer.configmap.JD_SANDBOX_MODE: "true"
+  bankTransfer.secrets.JD_INCOMING_RAW_XML_ENCRYPTION_KEY: sample
+  bankTransfer.secrets.RECIPIENT_DETAILS_ENCRYPTION_KEY: sample
+tests:
+  - it: default render succeeds
+    template: templates/pdb.yaml
+    asserts:
+      - isKind:
+          of: PodDisruptionBudget
+  - it: keeps pdb.annotations supported
+    template: templates/pdb.yaml
+    set: {bankTransfer.pdb.annotations: {a: b}}
+    asserts:
+      - equal: {path: metadata.annotations.a, value: b}
+  - it: keeps pdb.enabled supported
+    template: templates/pdb.yaml
+    set: {bankTransfer.pdb.enabled: false}
+    asserts:
+      - hasDocuments: {count: 0}
+  - it: refuses pdb.minAvailable
+    template: templates/pdb.yaml
+    set: {bankTransfer.pdb.minAvailable: 1}
+    asserts:
+      - failedTemplate: {errorPattern: "bankTransfer.pdb.minAvailable is owned by the health preset"}
+  - it: refuses pdb.maxUnavailable
+    template: templates/pdb.yaml
+    set: {bankTransfer.pdb.maxUnavailable: 0}
+    asserts:
+      - failedTemplate: {errorPattern: "bankTransfer.pdb.maxUnavailable is owned by the health preset"}
+  - it: refuses deploymentUpdate
+    template: templates/pdb.yaml
+    set: {bankTransfer.deploymentUpdate.type: Recreate}
+    asserts:
+      - failedTemplate: {errorPattern: "bankTransfer.deploymentUpdate is owned by the health preset"}
+  - it: refuses an empty deploymentUpdate
+    template: templates/pdb.yaml
+    set: {bankTransfer.deploymentUpdate: {}}
+    asserts:
+      - failedTemplate: {errorPattern: "bankTransfer.deploymentUpdate is owned by the health preset"}
+  - it: renders a non-string pdb annotation as a string
+    template: templates/pdb.yaml
+    set:
+      bankTransfer.pdb.annotations:
+        argocd.argoproj.io/sync-wave: -1
+    asserts:
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "-1"
+  - it: renders no pdb for a singleton
+    template: templates/pdb.yaml
+    set: {bankTransfer.health.singleton: true, bankTransfer.replicaCount: 1, bankTransfer.autoscaling.enabled: false}
+    asserts:
+      - hasDocuments: {count: 0}

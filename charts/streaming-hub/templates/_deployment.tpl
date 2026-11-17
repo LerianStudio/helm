@@ -161,11 +161,13 @@ spec:
             # ALLOW_INSECURE_OTEL is a modeled setting: streamingHub.configmap.ALLOW_INSECURE_OTEL,
             # then global.observability.allowInsecureOtel, then the node-local reason; lerian-common
             # resolves it and emits the one env entry. A key in streamingHub.extraEnvVars (rendered
-            # just above) or a non-empty streamingHub.secrets value (the legacy routes) still stands,
+            # just above) or a non-empty streamingHub.secrets value (the legacy routes; the Secret only while the model is unset) still stands,
             # so the helper adds no duplicate then. An existing Secret (useExistingSecret) is not
             # visible to the chart, so a value there is overridden by this entry; set
             # streamingHub.configmap.ALLOW_INSECURE_OTEL instead.
-            {{- $legacyAllow := or (hasKey ($sh.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL") (and (not $sh.useExistingSecret) (ne (toString (index ($sh.secrets | default dict) "ALLOW_INSECURE_OTEL" | default "")) "")) }}
+            {{- /* The model wins over the Secret: a configmap, knob or global value (a refusal too) keeps the entry. */}}
+            {{- $otelModelSet := or (not (kindIs "invalid" (index ($sh.configmap | default dict) "ALLOW_INSECURE_OTEL"))) (not (kindIs "invalid" (index (($.Values.global | default dict).observability | default dict) "allowInsecureOtel"))) }}
+            {{- $legacyAllow := or (hasKey ($sh.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL") (and (not $otelModelSet) (not $sh.useExistingSecret) (ne (toString (index ($sh.secrets | default dict) "ALLOW_INSECURE_OTEL" | default "")) "")) }}
             {{- include "lerian-common.otel.podEnv" (dict "context" $ "configmap" $sh.configmap "port" 4317 "allowInsecure" (not $legacyAllow)) | nindent 12 }}
             {{- end }}
             {{- if $rolesAnywhere }}

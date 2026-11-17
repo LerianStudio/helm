@@ -278,7 +278,7 @@ With `streamingHub.telemetry.enabled` on, the pod ships telemetry to the collect
 
 `null` counts as unset. An empty string is an explicit refusal, and the app then refuses the plaintext exporter in production. The configmap value also lands in the ConfigMap, so it also reaches the app when you point at an explicit plaintext endpoint.
 
-A key in `streamingHub.extraEnvVars` or a non-empty `streamingHub.secrets.ALLOW_INSECURE_OTEL` in the chart's own Secret is the legacy route. It still works, and the chart then adds no entry of its own. With `useExistingSecret: true` the chart cannot see the Secret, so the container entry overrides any `ALLOW_INSECURE_OTEL` held there; set `streamingHub.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
+A key in `streamingHub.extraEnvVars` or a non-empty `streamingHub.secrets.ALLOW_INSECURE_OTEL` in the chart's own Secret is the legacy route, and the chart then adds no entry of its own. The Secret counts only while nothing in the order above is set: a configmap, knob or global value, a refusal included, keeps the chart's entry, which wins over the Secret. With `useExistingSecret: true` the chart cannot see the Secret, so the container entry overrides any `ALLOW_INSECURE_OTEL` held there; set `streamingHub.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
 
 ## Postgres TLS and the CA bundle
 

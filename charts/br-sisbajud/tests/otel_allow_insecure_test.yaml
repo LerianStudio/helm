@@ -1,0 +1,214 @@
+# Generated from the CI render fixture plus the telemetry switch; covers the
+# modeled ALLOW_INSECURE_OTEL setting resolved by lerian-common.
+suite: modeled ALLOW_INSECURE_OTEL
+set:
+  global:
+    env:
+      name: development
+    objectStorage:
+      sta:
+        bucket: br-sta-transfer
+    observability:
+      enabled: true
+  brSisbajud:
+    vault:
+      tokenRenewEnabled: false
+    auth:
+      jwtIssuer: dev-only-unverifiable-issuer
+      jwtVerifyCert: '-----BEGIN PUBLIC KEY-----
+
+        MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArhJ23YF4HU1WMEOdpN7J
+
+        /pJt3ICTEsyhSP8Q32J5fZ1bvWvCOo++f4mA+38wwrfst02KWUohfFKPLQsPoqBO
+
+        3PkdBlW4rSjY1k7gK1uwLbDavQTwiF29Q0CiiI//oqwOjXVdviQTwKAPlEh0FRMO
+
+        HQBvxGej4Yl1jgnYgv6+6JAajn2oSdSf6KohPjqnJeCAx04J57IXYWS3jsEwQl0+
+
+        HTFZcB1q0ECDYysUKVfVAXo6xeost7vXmVCamPqnX2/lFxD4r3T80QYgD7jjn/Fu
+
+        XvB9UDWf1a83M/RaJute6vdd10m9WTJZ0GwVM9no8NI8MZJ5Uiw+NbfNpUDmki9F
+
+        vQIDAQAB
+
+        -----END PUBLIC KEY-----
+
+        '
+    execution:
+      tls:
+        generate: true
+    secrets:
+      LICENSE_KEY: IT_LICENSE_KEY
+    license:
+      organizationIds: global
+  postgresql:
+    enabled: true
+    external: false
+  valkey:
+    enabled: true
+    external: false
+  seaweedfs:
+    enabled: true
+  openbao:
+    enabled: true
+  redpandaBundle:
+    enabled: true
+tests:
+- it: emits the node-local reason by default
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+- it: takes global.observability.allowInsecureOtel env-wide
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    global:
+      observability:
+        allowInsecureOtel: env-wide reason
+- it: the component configmap wins over the global
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  set:
+    global:
+      observability:
+        allowInsecureOtel: env-wide reason
+    brSisbajud:
+      configmap:
+        ALLOW_INSECURE_OTEL: component reason
+- it: an explicit refusal stands as the one entry
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  set:
+    global:
+      observability:
+        allowInsecureOtel: env-wide reason
+    brSisbajud:
+      configmap:
+        ALLOW_INSECURE_OTEL: ''
+- it: a null global is unset
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    global:
+      observability:
+        allowInsecureOtel: null
+- it: the chart knob sits between the configmap and the global
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: knob reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  set:
+    global:
+      observability:
+        allowInsecureOtel: env-wide reason
+    brSisbajud:
+      security:
+        allowInsecureOtel: knob reason
+- it: the configmap wins over the chart knob
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: knob reason
+  set:
+    brSisbajud:
+      security:
+        allowInsecureOtel: knob reason
+      configmap:
+        ALLOW_INSECURE_OTEL: component reason
+- it: a legacy extraEnvVars entry stands, with no duplicate
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: legacy reason
+  set:
+    brSisbajud:
+      extraEnvVars:
+      - name: ALLOW_INSECURE_OTEL
+        value: legacy reason

@@ -75,6 +75,9 @@ global:
   # collector at http://$(HOST_IP):4317.
   # Example: observability: { enabled: true }
   observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   allowInsecureOtel: "node-local collector on the pod's own node"
   # -- Env-wide auth (plugin-access-manager): enabled | host -> PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST.
   # The app refuses a blank switch and accepts PLUGIN_AUTH_ENABLED=false only in a
   # development-class environment, so the chart defaults it to "true" everywhere

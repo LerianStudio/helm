@@ -736,7 +736,7 @@ With useExistingSecret the chart cannot see the Secret, so the entry is emitted.
 
 Pass "nodeLocal" false from the collector-off branch: the entry is then emitted only when
 the model (configmap tiers or global) is set, no extraEnvVars key exists, and a Secret
-route is present (non-empty secrets.ALLOW_INSECURE_OTEL, or useExistingSecret), so the
+route is present (secrets.ALLOW_INSECURE_OTEL present at all, "" included, or useExistingSecret), so the
 modeled value wins over the Secret as with the collector on. Otherwise the ConfigMap
 (reporter.otelAllowInsecureConfigmap) carries it.
 */}}
@@ -759,8 +759,9 @@ modeled value wins over the Secret as with the collector on. Otherwise the Confi
 {{- if eq (toString .nodeLocal) "false" -}}
 {{- /* Collector off: the ConfigMap carries the model, but the Secret, read after it by
    the worker's envFrom, would beat it. Put the modeled value on the container when a
-   Secret could hold the key: the chart's own (non-empty) or an existing one. */ -}}
-{{- $secretRoute := or $comp.useExistingSecret (and (not (kindIs "invalid" $secretVal)) (ne (toString $secretVal) "")) -}}
+   Secret could hold the key: an existing one, or the chart's own whenever the key is
+   present (it renders every key, so even "" would replace the modeled reason). */ -}}
+{{- $secretRoute := or $comp.useExistingSecret (hasKey ($.Values.secrets | default dict) $key) -}}
 {{- $emit = and $modelSet (not $legacyEnv) $secretRoute -}}
 {{- end -}}
 {{- if $emit -}}

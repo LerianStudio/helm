@@ -311,6 +311,22 @@ tests:
           content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
           count: 1
 
+  - it: "manager: collector off: an empty Secret value still renders in the Secret, so the global reason goes on the container"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: ""
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+
   - it: "manager: collector off: a Secret reason with no model gets no container entry"
     template: templates/manager/deployment.yaml
     set:
@@ -654,6 +670,22 @@ tests:
           content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
           count: 1
 
+  - it: "worker Deployment: collector off: an empty Secret value still renders in the Secret, so the global reason goes on the container"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: ""
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+
   - it: "worker Deployment: collector off: a Secret reason with no model gets no container entry"
     template: templates/worker/deployment.yaml
     set:
@@ -996,6 +1028,22 @@ tests:
           path: spec.jobTargetRef.template.spec.containers[0].env
           content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
           count: 1
+
+  - it: "worker ScaledJob: collector off: an empty Secret value still renders in the Secret, so the global reason goes on the container"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: ""
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
 
   - it: "worker ScaledJob: collector off: a Secret reason with no model gets no container entry"
     template: templates/worker/keda-scaled-job.yaml

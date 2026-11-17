@@ -16,8 +16,9 @@
 {{- $explicitEndpoint := or (hasKey $cm "OTEL_EXPORTER_OTLP_ENDPOINT") $obs.otlpEndpoint (hasKey $x "OTEL_EXPORTER_OTLP_ENDPOINT") -}}
 {{- /* The operator's ALLOW_INSECURE_OTEL (security.allowInsecureOtel, configmap,
    secrets or extraEnvVars) stands, even set empty, which the app reads as a
-   refusal: the helper's own env entry would override the envFrom value. */ -}}
-{{- $operatorAllow := or (hasKey $cm "ALLOW_INSECURE_OTEL") (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ALLOW_INSECURE_OTEL" "params" (.Values.brSisbajud.security | default dict) "field" "allowInsecureOtel" "default" "")) (hasKey (.Values.brSisbajud.secrets | default dict) "ALLOW_INSECURE_OTEL") (hasKey $x "ALLOW_INSECURE_OTEL") -}}
+   refusal: the helper's own env entry would override the envFrom value. The Secret drops an
+   empty value, so only a non-empty one there counts. */ -}}
+{{- $operatorAllow := or (hasKey $cm "ALLOW_INSECURE_OTEL") (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ALLOW_INSECURE_OTEL" "params" (.Values.brSisbajud.security | default dict) "field" "allowInsecureOtel" "default" "")) (get (.Values.brSisbajud.secrets | default dict) "ALLOW_INSECURE_OTEL") (hasKey $x "ALLOW_INSECURE_OTEL") -}}
 {{- $ex := include "br-sisbajud.execution" . | fromYaml -}}
 {{- $appVolumes := include "br-sisbajud.appVolumes" . | fromYamlArray -}}
 {{- $appMounts := include "br-sisbajud.appVolumeMounts" . | fromYamlArray -}}

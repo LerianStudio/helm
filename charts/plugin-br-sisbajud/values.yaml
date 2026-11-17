@@ -37,7 +37,7 @@ global:
   #    replicaHost. redis: host | port | tls | caCert.
   #    Example: datastores: { postgres: { host: "pg.internal", ssl: "require" }, redis: { host: "valkey.internal", tls: "true" } }
   datastores: {}
-  # -- Observability: enabled | otlpEndpoint | deploymentEnvironment.
+  # -- Observability: enabled | otlpEndpoint | deploymentEnvironment | allowInsecureOtel.
   observability: {}
   # -- Auth (plugin-access-manager): enabled | host -> PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST.
   #    PLUGIN_AUTH_HOST is also where the executor mints its Mensageria token.

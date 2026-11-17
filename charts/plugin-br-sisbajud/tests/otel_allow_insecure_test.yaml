@@ -154,3 +154,50 @@ tests:
     sisbajud:
       extraEnvVars:
         ALLOW_INSECURE_OTEL: legacy reason
+- it: a non-empty value in the chart Secret stands (legacy route), with no env entry
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    sisbajud:
+      secrets:
+        ALLOW_INSECURE_OTEL: secret reason
+- it: an empty value in the chart Secret is not a route, so the modeled entry stays
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    sisbajud:
+      secrets:
+        ALLOW_INSECURE_OTEL: ''
+- it: with an existing Secret the chart cannot see the value, so the modeled entry is emitted
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    sisbajud:
+      secrets:
+        ALLOW_INSECURE_OTEL: secret reason
+      useExistingSecret: true
+      existingSecretName: app-secret

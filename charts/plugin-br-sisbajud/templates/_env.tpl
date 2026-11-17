@@ -38,6 +38,11 @@ ENV_NAME: {{ (hasKey $cm "ENV_NAME" | ternary (index $cm "ENV_NAME") $envName) |
 {{- include $kv (dict "cm" $cm "p" $s.app "f" "infraConnectTimeoutSec" "k" "INFRA_CONNECT_TIMEOUT_SEC" "d" "30") }}
 # --- HTTP server + CORS --------------------------------------------------------
 SERVER_ADDRESS: {{ (hasKey $cm "SERVER_ADDRESS" | ternary (index $cm "SERVER_ADDRESS") (printf ":%v" $s.service.port)) | quote }}
+{{- /* The app serves /health, /readyz and /metrics only on HEALTH_PORT (no
+   listener when unset); the container port and the readiness probe use the same
+   value, so it is not a configmap key. */}}
+HEALTH_PORT: {{ $s.healthPort | default 8099 | toString | quote }}
+{{- include $kv (dict "cm" $cm "p" $s "f" "shutdownTimeout" "k" "SHUTDOWN_TIMEOUT" "d" "80s") }}
 {{- include $kv (dict "cm" $cm "p" $s.server "f" "bodyLimitBytes" "k" "HTTP_BODY_LIMIT_BYTES" "d" "104857600") }}
 {{- include $kv (dict "cm" $cm "p" $s.server "f" "tlsTerminatedUpstream" "k" "TLS_TERMINATED_UPSTREAM" "d" "false") }}
 {{- /* The app binds CORS_* (ServerConfig); the lib-commons CORS middleware reads
@@ -57,6 +62,7 @@ LICENSE_FILE_PATH: "/etc/lerian/license/license"
 {{- include $kv (dict "cm" $cm "p" $s.mensageria "f" "baseUrl" "k" "MENSAGERIA_BASE_URL" "d" "") }}
 {{- $mt := include "plugin-br-sisbajud.mensageriaTls" . | fromYaml }}
 MENSAGERIA_MTLS_ENABLED: {{ $mt.raw | default "false" | quote }}
+{{- include $kv (dict "cm" $cm "p" $s.mensageria "f" "permanentBlockEnabled" "k" "MENSAGERIA_PERMANENT_BLOCK_ENABLED" "d" "false") }}
 {{- if $mt.caSecret }}
 MENSAGERIA_TLS_CA_FILE: {{ $mt.caFile | quote }}
 {{- else if index $cm "MENSAGERIA_TLS_CA_FILE" }}
@@ -128,6 +134,12 @@ EXECUTOR_HUB_WEBHOOK_TLS_KEY_FILE: {{ printf "%s/%s" (trimSuffix "/" $whTls.moun
 {{- end }}
 # --- Midaz connector (ledger URL + credentials are per institution, in the DB) ----
 {{- include $kv (dict "cm" $cm "p" $s.midaz "f" "crmMode" "k" "MIDAZ_CRM_MODE" "d" "embedded") }}
+{{- /* Single-tenant Midaz connection (v1.3.0): the URLs here, the client pairs in the
+   Secret (sisbajud.secrets.MIDAZ_*_CLIENT_* or the existing Secret). Emitted only
+   when set; multi-tenant refuses them (_validate.tpl). */}}
+{{- include $kv (dict "cm" $cm "p" $s.midaz "f" "baseUrl" "k" "MIDAZ_BASE_URL" "opt" true) }}
+{{- include $kv (dict "cm" $cm "p" $s.midaz "f" "authAddress" "k" "MIDAZ_AUTH_ADDRESS" "opt" true) }}
+{{- include $kv (dict "cm" $cm "p" $s.midaz "f" "crmBaseUrl" "k" "MIDAZ_CRM_BASE_URL" "opt" true) }}
 # --- Inbound auth + token minting (lerian-common.auth.env) -----------------------
 {{ include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "") }}
 {{- include $kv (dict "cm" $cm "p" $s.auth "f" "productName" "k" "AUTH_PRODUCT_NAME" "opt" true) }}

@@ -49,11 +49,14 @@ global:
   idp: {}
   # -- Env-wide streaming (lib-streaming). Consumed by lerian-common.streaming.env when
   # streaming is enabled. Fields: enabled, brokers, saslUsername, tlsEnabled, compression,
-  # requiredAcks, ... (brokers gates emission). Per-app identity (client-id / cloudevents-source)
-  # keeps its service-level default unless overridden via common.configmap.
-  # The operator sets the connection here: `enabled` + `brokers`. (reporter's transport is
-  # RabbitMQ+outbox, so STREAMING_BROKERS is validated-non-empty by lib-streaming but not used
-  # to connect — set it explicitly anyway; no placeholder default is baked in.)
+  # requiredAcks, ... (brokers gates emission). Per-app identity keeps its service-level
+  # default unless overridden via common.configmap: client-id "reporter", and cloudevents-source
+  # "reporter" (the app refuses to boot with any other source).
+  # App >= 4.10.0 publishes every business event to Kafka. Single-tenant: `brokers` feeds both
+  # STREAMING_BROKERS (validated by lib-streaming, never dialled) and STREAMING_KAFKA_BROKERS
+  # (the list the app dials); common.configmap.STREAMING_KAFKA_BROKERS overrides the dialled one.
+  # Multi-tenant: the Tenant Manager serves the brokers per tenant; STREAMING_KAFKA_BROKERS is
+  # not emitted.
   # Example: streaming: { enabled: true, brokers: "redpanda:9092" }
   streaming: {}
   # -- Env-wide service discovery (Consul). Placeholder block: reporter keeps SD_* as
@@ -145,7 +148,7 @@ manager:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.8.0"
+    tag: "4.10.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -316,6 +319,10 @@ manager:
   # -- Extra pod volumes and container mounts, e.g. a catalog tree for REGULATORY_CATALOG_DIR.
   extraVolumes: []
   extraVolumeMounts: []
+  # -- Signed licence file instead of LICENSE_KEY: a Secret with key `license`, mounted
+  # at /etc/lerian/license, LICENSE_FILE_PATH set. Needs an image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
   # -- HPA configuration (used when KEDA is disabled)
   autoscaling:
     enabled: true
@@ -355,7 +362,7 @@ worker:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.8.0"
+    tag: "4.10.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -463,6 +470,10 @@ worker:
   # -- Extra pod volumes and container mounts, e.g. a catalog tree for REGULATORY_CATALOG_DIR.
   extraVolumes: []
   extraVolumeMounts: []
+  # -- Signed licence file instead of LICENSE_KEY: a Secret with key `license`, mounted
+  # at /etc/lerian/license, LICENSE_FILE_PATH set. Needs an image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
   # -- KEDA configuration for worker auto-scaling (default mode)
   keda:
     scaledJob:
@@ -577,7 +588,7 @@ secrets:
   #   - MONGO_PASSWORD                                  (external MongoDB only; bundled is single-sourced)
   #   - APP_ENC_KEY                                     (fetcher integration; base64 32-byte key)
   #   - DATASOURCE_CRED_ENC_KEY                         (app >= 3.0.0 only; hex AES key)
-  #   - LICENSE_KEY                                     (app >= 4.6.0: manager AND worker refuse to boot without it)
+  #   - LICENSE_KEY                                     (app >= 4.6.0: manager AND worker refuse to boot without it; not needed with licenseFile)
   #   - ORGANIZATION_IDS                                (optional; per-organization license, "global" when unset)
   #
   # Chart-managed path (default): leave `useExistingSecret: false` and set the values
@@ -610,7 +621,8 @@ secrets:
   OBJECT_STORAGE_ACCESS_KEY_ID: ""
   OBJECT_STORAGE_SECRET_KEY: ""
   # -- Product license. REQUIRED for app >= 4.6.0: the manager AND the worker refuse to boot
-  # without it, and the chart refuses to render it for those tags (reporter.licenseKeyRequired).
+  # without it, and the chart refuses to render it for those tags (reporter.licenseKeyRequired),
+  # unless <component>.licenseFile.existingSecret is set.
   # Rendered into both Secrets from here. Left commented so a release still on 4.5.x renders
   # exactly as before; set it (or carry it in the existing Secret) before moving to 4.6.0.
   # LICENSE_KEY: ""
@@ -798,8 +810,7 @@ mongodb:
     rootPassword: ""
     # -- Secret with the root password. The default points the subchart at the one this chart keeps
     # across uninstall (templates/mongodb-secrets.yaml); reporter's own templates read it as empty. Name yours to replace it.
-    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname"
-      . }}{{ end }}'
+    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
   persistence:
     size: 8Gi
     # -- The data volume outlives the release: helm uninstall keeps it.

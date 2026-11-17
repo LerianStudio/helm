@@ -1,0 +1,107 @@
+suite: collections module (app 1.5.0)
+templates:
+  - templates/secrets.yaml
+  - templates/deployment.yaml
+  - templates/configmap.yaml
+set:
+  postgresql.enabled: true
+  app.configmap.BTG_API_BASE_URL: https://btg.example.test
+  app.configmap.BTG_AUTH_URL: https://btg.example.test/token
+  app.configmap.MIDAZ_LEDGER_URL: http://midaz:3000
+  app.configmap.ORGANIZATION_IDS: global
+  app.secrets.PROVIDER_CLIENT_ID: x
+  app.secrets.PROVIDER_CLIENT_SECRET: x
+  app.secrets.PLUGIN_AUTH_CLIENT_ID: x
+  app.secrets.PLUGIN_AUTH_CLIENT_SECRET: x
+  app.secrets.LICENSE_KEY: x
+  app.secrets.CONSULT_AUDIT_HMAC_KEY: "0123456789abcdef0123456789abcdef"
+  app.secrets.BTG_WEBHOOK_HMAC_SECRET: "0123456789abcdef0123456789abcdef"
+  app.secrets.INTERNAL_API_KEY: "0123456789abcdef0123456789abcdef"
+  app.secrets.CREDENTIAL_ENCRYPTION_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+tests:
+  - it: renders the collections keys into the ConfigMap when set
+    template: templates/configmap.yaml
+    set:
+      app.configmap.MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE: collections
+      app.configmap.COLLECTIONS_POSTGRES_HOST: collections-db
+      app.configmap.COLLECTIONS_POSTGRES_PORT: 5433
+      app.configmap.COLLECTIONS_POSTGRES_SSLMODE: require
+      app.configmap.COLLECTIONS_COMMAND_DISPATCH_CONCURRENCY: 8
+      app.configmap.COLLECTIONS_DISABLED: true
+      app.configmap.WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP: true
+    asserts:
+      - equal:
+          path: data.MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE
+          value: collections
+      - equal:
+          path: data.COLLECTIONS_POSTGRES_HOST
+          value: collections-db
+      - equal:
+          path: data.COLLECTIONS_POSTGRES_PORT
+          value: "5433"
+      - equal:
+          path: data.COLLECTIONS_POSTGRES_SSLMODE
+          value: require
+      - equal:
+          path: data.COLLECTIONS_COMMAND_DISPATCH_CONCURRENCY
+          value: "8"
+      - equal:
+          path: data.COLLECTIONS_DISABLED
+          value: "true"
+      - equal:
+          path: data.WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP
+          value: "true"
+  - it: keeps the module off by rendering none of its keys when unset
+    template: templates/configmap.yaml
+    asserts:
+      - notExists:
+          path: data.MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE
+      - notExists:
+          path: data.COLLECTIONS_POSTGRES_HOST
+      - notExists:
+          path: data.COLLECTIONS_POSTGRES_DB
+      - notExists:
+          path: data.COLLECTIONS_DISABLED
+      - notExists:
+          path: data.WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP
+  - it: renders the collections secrets into the Secret, not the ConfigMap
+    templates:
+      - templates/secrets.yaml
+      - templates/configmap.yaml
+    set:
+      app.secrets.COLLECTIONS_POSTGRES_PASSWORD: pg-pass
+      app.secrets.COLLECTIONS_PCR_CLIENT_ID: pcr-id
+      app.secrets.COLLECTIONS_PCR_CLIENT_SECRET: pcr-secret
+      app.secrets.COLLECTIONS_CURSOR_HMAC_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+    asserts:
+      - equal:
+          path: stringData.COLLECTIONS_POSTGRES_PASSWORD
+          value: pg-pass
+        template: templates/secrets.yaml
+      - equal:
+          path: stringData.COLLECTIONS_PCR_CLIENT_ID
+          value: pcr-id
+        template: templates/secrets.yaml
+      - equal:
+          path: stringData.COLLECTIONS_PCR_CLIENT_SECRET
+          value: pcr-secret
+        template: templates/secrets.yaml
+      - equal:
+          path: stringData.COLLECTIONS_CURSOR_HMAC_KEY
+          value: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+        template: templates/secrets.yaml
+      - notExists:
+          path: data.COLLECTIONS_POSTGRES_PASSWORD
+        template: templates/configmap.yaml
+      - notExists:
+          path: data.COLLECTIONS_CURSOR_HMAC_KEY
+        template: templates/configmap.yaml
+  - it: leaves the collections secrets out when unset
+    template: templates/secrets.yaml
+    asserts:
+      - notExists:
+          path: stringData.COLLECTIONS_POSTGRES_PASSWORD
+      - notExists:
+          path: stringData.COLLECTIONS_PCR_CLIENT_SECRET
+      - notExists:
+          path: stringData.COLLECTIONS_CURSOR_HMAC_KEY

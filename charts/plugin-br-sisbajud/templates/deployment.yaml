@@ -93,6 +93,9 @@ spec:
             - name: http
               containerPort: {{ $s.service.port }}
               protocol: TCP
+            - name: health
+              containerPort: {{ get $extra "HEALTH_PORT" | default $s.healthPort | default 8099 }}
+              protocol: TCP
             {{- if $webhookOn }}
             - name: webhook
               containerPort: {{ $wh.port | default 9082 }}
@@ -126,7 +129,7 @@ spec:
             {{- . | nindent 12 }}
             {{- end }}
           {{- include "lerian-common.httpProbe" (dict "kind" "livenessProbe" "probe" $s.livenessProbe "port" "http" "path" "/version" "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
-          {{- include "lerian-common.httpProbe" (dict "kind" "readinessProbe" "probe" $s.readinessProbe "port" "http" "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
+          {{- include "lerian-common.httpProbe" (dict "kind" "readinessProbe" "probe" $s.readinessProbe "port" "health" "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
           resources:
             {{- toYaml $s.resources | nindent 12 }}
           {{- $licMount := include "plugin-br-sisbajud.licenseFileMount" . | trim }}

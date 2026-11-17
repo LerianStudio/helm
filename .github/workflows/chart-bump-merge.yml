@@ -1,0 +1,294 @@
+name: Chart Bump Merge
+
+# Merges a routine chart bump (see chart-bump-automerge.yml) once its CI is green. Nothing waits
+# on CI: this runs for a few seconds each time a check on a bot update/ branch completes, and
+# only the run that finds every check done does the merge. A run that finds a check still
+# pending exits; one that finds a failure sends the Severino ticket instead.
+#
+# Triggers: workflow_run for the repository's pull_request workflows, and check_run for the
+# checks of other apps (Socket, Radagast), whose completion no workflow_run reports. Both run
+# from main with this repository's secrets, and nothing from the pull request is executed.
+# Lint PR (Validate PR title) and PR Labeling (triage) run on pull_request_target, whose runs
+# carry no pull request: their checks may still be pending at merge time, but a failure blocks.
+#
+# Safety net: an event can be missed (GitHub drops check_run for suites tied to Actions, a
+# conflicting pull request runs no CI, an API read fails on the last completion). The sweep job
+# runs every 2 hours for a few seconds and tickets any bot bump still open after STALE_MINUTES,
+# so a stuck bump always reaches a human.
+#
+# The merge uses the push bot's token: the bot is an always-bypass actor on the main ruleset,
+# and --admin is what makes gh use that bypass. The ruleset holds no required status checks, only
+# the review requirement, so the bypass skips the review alone; CI is enforced by the checks read
+# here, repeated right before the merge. The bot's push, unlike GITHUB_TOKEN's, triggers
+# workflows. release.yml skips the push bot's pushes (its own release commits) unless the head
+# commit carries MERGE_MARKER, which only this merge writes.
+
+on:
+  workflow_run:
+    workflows:
+      - Helm Install Test
+      - Helm Chart Standard
+      - Chart Image Refs
+      - Markdown Liquid Guard
+      - Sanitizacao de dado regulado
+    types: [completed]
+  check_run:
+    types: [completed]
+  schedule:
+    - cron: '23 */2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Queued, not cancelled: each run reads the live state, so the last one decides.
+  group: chart-bump-merge-${{ github.event.workflow_run.head_sha || github.event.check_run.head_sha || 'sweep' }}
+  cancel-in-progress: false
+
+env:
+  # Checks that must exist and pass; a missing or skipped one is not green.
+  REQUIRED_CHECKS: |-
+    Install + upgrade (kind)
+    Validate Helm chart standard
+    Chart Image Refs
+    Markdown Liquid Guard
+  # The classification workflow's jobs, and the merge job the first version ran there, left
+  # out of the evaluation.
+  IGNORED_CHECKS: '["Classify chart bump","Notify Severino","Merge routine bump"]'
+  # pull_request_target checks: no event of theirs reaches this workflow, so pending is not
+  # waited on. A failure still blocks.
+  NON_BLOCKING_PENDING: '["Validate PR title","triage"]'
+  # A bot bump still open this long after its last push is ticketed by the sweep.
+  STALE_MINUTES: '90'
+  REVIEW_LABEL: needs-human-review
+  TICKET_LABEL: severino-ticket-sent
+  # Written into the merge commit body; release.yml matches it. Change both together.
+  MERGE_MARKER: "Auto-merged-by: chart-bump-automerge"
+  BOT_LOGIN: lerian-studio-midaz-push-bot[bot]
+
+jobs:
+  merge:
+    name: Merge routine bump
+    # Filtered here so the many unrelated completions cost no runner. GitHub Actions' own
+    # check runs are left out: they are already reported through workflow_run, and this
+    # job's own completion would otherwise trigger it again.
+    if: >-
+      vars.AUTOMERGE_ENABLED == 'true'
+      && ((github.event_name == 'workflow_run'
+           && github.event.workflow_run.event == 'pull_request'
+           && startsWith(github.event.workflow_run.head_branch, 'update/'))
+          || (github.event_name == 'check_run'
+              && github.event.check_run.app.slug != 'github-actions'
+              && startsWith(github.event.check_run.check_suite.head_branch, 'update/')))
+    runs-on: ${{ (github.event.repository.visibility == 'public' && vars.PUBLIC_RUNNERS) || vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      checks: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Find the pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.event.check_run.head_sha }}
+        run: |
+          set -euo pipefail
+          number=$(gh api "repos/${REPO}/commits/${HEAD_SHA}/pulls" | jq -r \
+            --arg sha "$HEAD_SHA" --arg bot "$BOT_LOGIN" \
+            '[.[] | select(.state == "open" and .base.ref == "main" and .head.sha == $sha
+                           and .user.login == $bot and (.head.ref | startswith("update/"))
+                           and .head.repo.full_name == .base.repo.full_name)] | first | .number // empty')
+          if [ -z "$number" ]; then
+            echo "No open bot update pull request at ${HEAD_SHA}; nothing to do"
+          fi
+          echo "number=${number}" >> "$GITHUB_OUTPUT"
+          echo "head_sha=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout main
+        if: steps.pr.outputs.number != ''
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Classify
+        id: classify
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: python3 .github/scripts/chart-bump-classify.py
+
+      # Not routine: chart-bump-automerge.yml already sent the ticket.
+      - name: Evaluate checks
+        id: checks
+        if: steps.classify.outputs.routine == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          # The completion that triggered this run can take a moment to show in the checks API.
+          sleep 10
+          echo "verdict=$(bash .github/scripts/chart-bump-checks.sh | tail -n1)" >> "$GITHUB_OUTPUT"
+
+      - name: Send Severino review ticket
+        if: steps.checks.outputs.verdict == 'failed'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
+          BOT_MENTION: ${{ secrets.SLACK_BOT_SEVERINO }}
+          SLACK_CHANNEL: ${{ vars.SLACK_CHANNEL_DEVOPS }}
+        run: bash .github/scripts/severino-ticket.sh
+
+      - name: Check the pull request is unchanged and mergeable
+        id: ready
+        if: steps.checks.outputs.verdict == 'green'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          # mergeable is computed lazily and reads UNKNOWN for a few seconds.
+          for _ in 1 2 3 4 5 6; do
+            state=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid,baseRefName,mergeable,state,labels)
+            jq -e '.mergeable != "UNKNOWN"' <<<"$state" >/dev/null && break
+            sleep 5
+          done
+          echo "$state"
+          if jq -e --arg l "$REVIEW_LABEL" 'any(.labels[]; .name == $l)' <<<"$state" >/dev/null; then
+            echo "Pull request carries ${REVIEW_LABEL}; leaving it to a human"
+            exit 0
+          fi
+          if ! jq -e --arg sha "$HEAD_SHA" '.headRefOid == $sha and .baseRefName == "main" and .state == "OPEN"' <<<"$state" >/dev/null; then
+            echo "Pull request moved, was retargeted or closed; a newer run decides"
+            exit 0
+          fi
+          if ! jq -e '.mergeable == "MERGEABLE"' <<<"$state" >/dev/null; then
+            echo "Pull request is not mergeable ($(jq -r .mergeable <<<"$state")); leaving it to a human"
+            echo "ticket=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "merge=true" >> "$GITHUB_OUTPUT"
+
+      - name: Send Severino review ticket (not mergeable)
+        if: steps.ready.outputs.ticket == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
+          BOT_MENTION: ${{ secrets.SLACK_BOT_SEVERINO }}
+          SLACK_CHANNEL: ${{ vars.SLACK_CHANNEL_DEVOPS }}
+        run: bash .github/scripts/severino-ticket.sh
+
+      # No approving review: the bot authored the pull request and cannot approve it, and --admin
+      # already skips the review requirement. Every action on the pull request is the bot's own.
+      - name: Generate push bot token
+        id: app-token
+        if: steps.ready.outputs.merge == 'true'
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
+          private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
+          repositories: helm
+
+      - name: Merge
+        if: steps.ready.outputs.merge == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+          CHECKS_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          # Read the checks again right before the merge: the bypass skips the review only, so
+          # this read is what keeps a check re-run since the first one from being merged over.
+          verdict=$(GH_TOKEN="$CHECKS_TOKEN" bash .github/scripts/chart-bump-checks.sh | tail -n1)
+          if [ "$verdict" != "green" ]; then
+            echo "Checks are ${verdict} on the fresh read; a later completion decides"
+            exit 0
+          fi
+          # The sweep or a human may have sent it to review since the ready step read the labels.
+          if GH_TOKEN="$CHECKS_TOKEN" gh pr view "$PR_NUMBER" --repo "$REPO" --json labels \
+              --jq '.labels[].name' | grep -qx "$REVIEW_LABEL"; then
+            echo "Pull request now carries ${REVIEW_LABEL}; leaving it to a human"
+            exit 0
+          fi
+          # The subject keeps the repository's default (PR title and number), which semantic-release reads.
+          gh pr merge "$PR_NUMBER" --repo "$REPO" --merge --admin --match-head-commit "$HEAD_SHA" --body "$MERGE_MARKER"
+          # Audit trail in the bot's name, in place of the approving review it cannot leave.
+          gh pr comment "$PR_NUMBER" --repo "$REPO" \
+            --body "Auto-merged: routine chart bump (only versions raised within the same major, no new env vars) with CI green. See chart-bump-merge.yml run ${RUN_URL}." \
+            || echo "::warning::Merged, but the audit comment could not be posted"
+
+      # The merge was attempted and refused: in doubt, a human looks.
+      - name: Send Severino review ticket (merge failed)
+        if: failure() && steps.ready.outputs.merge == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
+          BOT_MENTION: ${{ secrets.SLACK_BOT_SEVERINO }}
+          SLACK_CHANNEL: ${{ vars.SLACK_CHANNEL_DEVOPS }}
+        run: bash .github/scripts/severino-ticket.sh
+
+  # Safety net for the event-driven merge above: a bot bump still open STALE_MINUTES after its
+  # last push, without a ticket, gets one. It never merges; a human takes it from there.
+  sweep:
+    name: Ticket stale chart bumps
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ${{ (github.event.repository.visibility == 'public' && vars.PUBLIC_RUNNERS) || vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Ticket stale bumps
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
+          BOT_MENTION: ${{ secrets.SLACK_BOT_SEVERINO }}
+          SLACK_CHANNEL: ${{ vars.SLACK_CHANNEL_DEVOPS }}
+        run: |
+          set -euo pipefail
+          cutoff=$(date -u -d "-${STALE_MINUTES} minutes" +%Y-%m-%dT%H:%M:%SZ)
+          candidates=$(gh api --paginate "repos/${REPO}/pulls?state=open&base=main&per_page=100" | jq -r \
+            --arg bot "$BOT_LOGIN" --arg label "$TICKET_LABEL" \
+            '.[] | select(.user.login == $bot and (.head.ref | startswith("update/")))
+                 | select(any(.labels[]; .name == $label) | not)
+                 | "\(.number) \(.head.sha)"')
+          stale=""
+          while read -r n sha; do
+            [ -z "$n" ] && continue
+            # Measured from the last push, not from opening: a new push restarts CI.
+            pushed=$(gh api "repos/${REPO}/commits/${sha}" --jq '.commit.committer.date')
+            [[ "$pushed" < "$cutoff" ]] && stale+="${n} "
+          done <<<"$candidates"
+          if [ -z "$stale" ]; then
+            echo "No stale chart bumps"
+            exit 0
+          fi
+          status=0
+          for n in $stale; do
+            echo "Chart bump #${n} still open after ${STALE_MINUTES} minutes; sending the ticket"
+            PR_NUMBER="$n" bash .github/scripts/severino-ticket.sh || status=1
+          done
+          exit "$status"

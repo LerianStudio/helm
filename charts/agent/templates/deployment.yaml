@@ -99,11 +99,13 @@ spec:
           {{- /* ALLOW_INSECURE_OTEL is a modeled setting: agent.configmap.ALLOW_INSECURE_OTEL, then
              global.observability.allowInsecureOtel, then the node-local reason; lerian-common
              resolves it and emits the one env entry. A key in agent.extraEnvVars or a
-             non-empty agent.secrets value (the legacy routes) still stands, so the helper adds
+             non-empty agent.secrets value (the legacy routes; the Secret only while the model is unset) still stands, so the helper adds
              no duplicate then.
              An existing Secret (useExistingSecret) is not visible to the chart, so a value
              there is overridden by this entry; set agent.configmap.ALLOW_INSECURE_OTEL instead. */}}
-          {{- $legacyAllow := (and (not .Values.agent.useExistingSecret) (ne (toString (index (.Values.agent.secrets | default dict) "ALLOW_INSECURE_OTEL" | default "")) "")) }}
+          {{- /* The model wins over the Secret: a configmap, knob or global value (a refusal too) keeps the entry. */}}
+          {{- $otelModelSet := or (not (kindIs "invalid" (index (.Values.agent.configmap | default dict) "ALLOW_INSECURE_OTEL"))) (not (kindIs "invalid" (index (($.Values.global | default dict).observability | default dict) "allowInsecureOtel"))) }}
+          {{- $legacyAllow := (and (not $otelModelSet) (not .Values.agent.useExistingSecret) (ne (toString (index (.Values.agent.secrets | default dict) "ALLOW_INSECURE_OTEL" | default "")) "")) }}
           {{- range .Values.agent.extraEnvVars }}{{- if eq .name "ALLOW_INSECURE_OTEL" }}{{- $legacyAllow = true }}{{- end }}{{- end }}
           {{- include "lerian-common.otel.podEnv" (dict "context" $ "configmap" .Values.agent.configmap "port" 4317 "allowInsecure" (not $legacyAllow)) | nindent 10 }}
           {{- end }}

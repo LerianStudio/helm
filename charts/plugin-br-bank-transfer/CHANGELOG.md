@@ -1,5 +1,27 @@
 # Plugin-br-bank-transfer Changelog
 
+## [3.2.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.2.4)
+
+Features:
+- Add a Helm upgrade guide for `plugin-br-bank-transfer` `v3.2.3`. (@victorlazari)
+- Add a Helm upgrade guide for `plugin-br-bank-transfer` `v3.2.2`. (@victorlazari)
+- Add a Helm upgrade guide for `plugin-br-bank-transfer` `v3.2.1`. (@victorlazari)
+
+Fixes:
+- Render `ALLOW_INSECURE_OTEL` with the collector off and test for null values. (@guimoreirar)
+- Take `ALLOW_INSECURE_OTEL` from the modeled setting. (@guimoreirar)
+- Allow the node-local OTEL hop to boot in production. (@guimoreirar)
+
+Improvements:
+- Show `allowInsecureOtel` in the `global.observability` example. (@guimoreirar)
+- Document `ALLOW_INSECURE_OTEL` in the configmap telemetry block. (@guimoreirar)
+- Align the `3.1` upgrade guide with renders and app `3.5.0`/`3.6.0`. (@gandalf-at-lerian)
+- Bound rollout claims. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.2.3...plugin-br-bank-transfer-v3.2.4)
+
+---
+
 ## [3.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.2.3)
 
 Fixes:

@@ -20,7 +20,7 @@ Notices arrive through the Streaming Hub **webhook** (default, own listener on `
 
 | Resource | Notes |
 |---|---|
-| Deployment | `ghcr.io/lerianstudio/plugin-br-sisbajud`, HTTP API `:4029` (liveness `/version`, readiness `/readyz`), webhook `:9082` |
+| Deployment | `ghcr.io/lerianstudio/plugin-br-sisbajud`, HTTP API `:4029` (liveness `/version`), health port `:8099` (`HEALTH_PORT`: readiness `/readyz`, also `/health` and `/metrics`; not exposed by the Service), webhook `:9082` |
 | Service / Service `-webhook` | ClusterIP; the webhook Service exposes only the listener |
 | Ingress / Ingress `-webhook` | both optional; expose only the webhook path to the Streaming Hub |
 | Job `-migrations` | `ghcr.io/lerianstudio/plugin-br-sisbajud-migrations`, pre-install/pre-upgrade hook (ArgoCD PreSync, wave -5) |
@@ -49,6 +49,7 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 | `sisbajud.mensageria.baseUrl` | `MENSAGERIA_BASE_URL` | https; turns the process into the executor (Mensageria mode) |
 | `sisbajud.executor.enabled` | `EXECUTOR_ENABLED` | `""` (default, not emitted) \| `true` \| `false`. `true` without `mensageria.baseUrl` = DIRECT-only executor (see below); `false` never turns a configured Mensageria off |
 | `sisbajud.mensageria.mtlsEnabled` | `MENSAGERIA_MTLS_ENABLED` | `false` (one-way TLS). `true` requires the CA and the client pair. Must match the Mensageria |
+| `sisbajud.mensageria.permanentBlockEnabled` | `MENSAGERIA_PERMANENT_BLOCK_ENABLED` | `false` (default) \| `true`. Permanent block through the Mensageria; needs `global.streaming.enabled: true` written (see the stream paragraph) |
 | `sisbajud.mensageria.ca.existingSecret` (+ `key`, `mountPath`) | `MENSAGERIA_TLS_CA_FILE` | server CA, mounted at `<mountPath>/ca.crt`. Optional in one-way TLS (empty = system trust store); empty falls back to `tls.existingSecret` + `tls.caKey` |
 | `sisbajud.mensageria.tls.existingSecret` (+ `certKey`, `keyKey`, `mountPath`) | `MENSAGERIA_TLS_CLIENT_CERT_FILE`, `MENSAGERIA_TLS_CLIENT_KEY_FILE` | client pair, mounted (at `<mountPath>/tls.crt`, `tls.key`) and emitted **only with mTLS** |
 | `sisbajud.executor.m2mSubject` | `EXECUTOR_M2M_SUBJECT` | `sub` of the executor M2M token |
@@ -80,11 +81,11 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 | `sisbajud.licenseFile.existingSecret` | `LICENSE_FILE_PATH` | optional signed licence file (key `license`), mounted at `/etc/lerian/license` on the app and the migrations runner; replaces `LICENSE_KEY`. Needs an image on lib-license-go v5. The external-Postgres migrations Job (PreSync) mounts it too, so that Secret must exist before the sync |
 | `global.auth.*` | `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST` | |
 
-Liveness probes `/version` (static build info, always 200): the app's `/health` stays 503 until its startup self-probe passes. Readiness stays on `/readyz`.
+Liveness probes `/version` on the HTTP port (static build info, always 200): the app's `/health` stays 503 until its startup self-probe passes. Readiness probes `/readyz` on the health port (`sisbajud.healthPort`, default 8099, rendered as `HEALTH_PORT`): the app serves `/health`, `/readyz` and `/metrics` only there, and opens no health listener without `HEALTH_PORT`. `SHUTDOWN_TIMEOUT` (`sisbajud.shutdownTimeout`, default `80s`) is the shutdown budget after the 15s drain delay; `terminationGracePeriodSeconds` (105) covers both plus 10s.
 
 `VAULT_ADDR` and `MENSAGERIA_BASE_URL` must be https (`VAULT_ADDR` may be http only for a loopback host or `ENVIRONMENT_NAME` `local|development|test`); argocd-vault-plugin placeholders (`<path:...>`) are not checked at render.
 
-`STREAMING_ENABLED` follows the DIRECT permanent block, which is on by default: a DIRECT executor without the permanent block starts no producer or consumer. The permanent block (`sisbajud.direct.permanentBlockEnabled: true`, the default) reads the balance-change stream: set `global.streaming.brokers` (plus `tlsEnabled`, required in a production-like environment, and `saslMechanism`/`saslUsername` as the brokers need; `STREAMING_SASL_PASSWORD` and `STREAMING_TLS_CA_CERT` in `sisbajud.secrets`). the stream is on whenever the permanent block is, unless `global.streaming.enabled` is explicitly `false`; with the permanent block off it is on only when `global.streaming.enabled` is explicitly `true` (a brokers block alone never starts one); `sisbajud.configmap.STREAMING_ENABLED` overrides both, and `sisbajud.configmap.STREAMING_*` overrides the global transport values. The render fails with the permanent block on and no streaming. `STREAMING_CLOUDEVENTS_SOURCE` is pinned to `plugin-br-sisbajud` (the app refuses any other). `sisbajud.configmap` accepts only the executor's non-credential keys (`values.schema.json`); credentials go in `sisbajud.secrets` (emitted only when set) or the existing Secret.
+`STREAMING_ENABLED` follows the DIRECT permanent block, which is on by default: a DIRECT executor without the permanent block starts no producer or consumer. The permanent block (`sisbajud.direct.permanentBlockEnabled: true`, the default) reads the balance-change stream: set `global.streaming.brokers` (plus `tlsEnabled`, required in a production-like environment, and `saslMechanism`/`saslUsername` as the brokers need; `STREAMING_SASL_PASSWORD` and `STREAMING_TLS_CA_CERT` in `sisbajud.secrets`). the stream is on whenever the permanent block is, unless `global.streaming.enabled` is explicitly `false`; with the permanent block off it is on only when `global.streaming.enabled` is explicitly `true` (a brokers block alone never starts one); `sisbajud.configmap.STREAMING_ENABLED` overrides both, and `sisbajud.configmap.STREAMING_*` overrides the global transport values. The render fails with the permanent block on and no streaming. `sisbajud.mensageria.permanentBlockEnabled` never turns the stream on: it requires `global.streaming.enabled: true` written, and the render fails without it. `STREAMING_CLOUDEVENTS_SOURCE` is pinned to `plugin-br-sisbajud` (the app refuses any other). `sisbajud.configmap` accepts only the executor's non-credential keys (`values.schema.json`); credentials go in `sisbajud.secrets` (emitted only when set) or the existing Secret.
 
 **AWS KMS key mode.** With `KMS_PROVIDER=aws` the key mode is now required: set `sisbajud.kms.awsKeyMode` (or `global.kms.awsKeyMode`); `provided` needs both `awsKeyArn` and `awsCredentialsKeyArn`, and they must differ; `managed` needs both empty (the app creates and owns the keys). `awsKmsTimeoutSec` and `awsKmsRotationCheckIntervalSec` are validated in every aws mode. The mode and both ARNs are trimmed both for validation and in the ConfigMap; `awsKmsTimeoutSec` and `awsKmsRotationCheckIntervalSec` are validated after trimming but rendered as set (the app trims them at boot). `"+30"` is refused at render although the app accepts it (deliberately stricter).
 
@@ -116,6 +117,10 @@ Existing Mensageria installs are unchanged: with `executor.enabled` unset the `E
 - While the switch is off and ACTIVE permanents exist, the app sets the gauge `sisbajud_executor_permanent_active_with_switch_off` (and logs an ERROR once per episode). Alert on `> 0`: turn the switch back on, or let those permanents close.
 - Turning the switch off (a rollback) with ACTIVE permanents is REFUSED at boot when that path cannot be served (`DIRECT_PERMANENT_BLOCK_ENABLED=false with ACTIVE permanents whose maintenance cannot run`): their capture, expiry and retry would stop silently. So with ACTIVE permanents, roll back by setting `permanentBlockEnabled: false` AND `global.streaming.enabled: true` (keeping `global.streaming.brokers` and its TLS/SASL): the stream and the result emitter (which follows it) stay on, so the ACTIVE permanents keep capturing and publishing. A rollback that also turns streaming off (or drops the brokers) does not boot.
 
+## Mensageria permanent block switch (`MENSAGERIA_PERMANENT_BLOCK_ENABLED`)
+
+`sisbajud.mensageria.permanentBlockEnabled` (default `false`) turns the permanent block on for the Mensageria channel. Turn it on for a client only after that client's Mensageria accepts the final contract. It needs `global.streaming.enabled: true` (written) with `global.streaming.brokers`, `global.auth.enabled: true`, a single-tenant install and the result emitter not set to `false`; the render fails naming the value to set otherwise. Because the stream is written, switching the key off later keeps the stream and the maintenance of ACTIVE permanents.
+
 ## Midaz CRM mode
 
 `sisbajud.midaz.crmMode` (`MIDAZ_CRM_MODE`) must match the Midaz the institutions use; set it explicitly. The default is `embedded` (Midaz v4). An install on Midaz v3 must set `legacy`, also on upgrade: a v3 install that relied on the old `legacy` default switches to `embedded` and every holder read fails.
@@ -126,6 +131,24 @@ Existing Mensageria installs are unchanged: with `executor.enabled` unset the `E
 | v3 | `legacy` |
 
 With the wrong mode every holder read fails.
+
+## Midaz connection (single tenant)
+
+In single tenant the executor reaches Midaz through the environment, not through each institution's row (plugin v1.3.0). The render fails naming the key:
+
+| Value | Env | Where | Rule |
+|-------|-----|-------|------|
+| `sisbajud.midaz.baseUrl` | `MIDAZ_BASE_URL` | ConfigMap | **Required** in executor mode |
+| `sisbajud.midaz.authAddress` | `MIDAZ_AUTH_ADDRESS` | ConfigMap | Auth group: optional, all-or-nothing |
+| `sisbajud.secrets.MIDAZ_LEDGER_CLIENT_ID` / `MIDAZ_LEDGER_CLIENT_SECRET` | same | Secret (or the existing Secret) | Auth group: optional, all-or-nothing |
+| `sisbajud.secrets.MIDAZ_CRM_CLIENT_ID` / `MIDAZ_CRM_CLIENT_SECRET` | same | Secret (or the existing Secret) | Required with `crmMode: legacy` when the auth group is set; needs `authAddress` and `crmBaseUrl` in either mode |
+| `sisbajud.midaz.crmBaseUrl` | `MIDAZ_CRM_BASE_URL` | ConfigMap | The standalone CRM root (Midaz v3) of a legacy institution (`crmMode: legacy`, or a row overriding legacy under `embedded`); with the auth group set it requires the CRM pair |
+
+A Midaz without auth needs only `baseUrl`. With auth, set `authAddress` and the ledger client pair together; a partial group is refused. The URLs are https (http only to a loopback host, or outside production), and each client pair is set whole. With `useExistingSecret: true` the chart cannot read the Secret: the group is decided by `authAddress`, and the Secret must carry the client pairs.
+
+**Upgrade note (plugin v1.3.0):** a single-tenant install must set `sisbajud.midaz.baseUrl` (and the auth group when its Midaz requires auth; with `crmMode: legacy`, or any institution row overriding `legacy`, also the CRM pair and `sisbajud.midaz.crmBaseUrl`, since a row's own CRM URL is no longer used) before upgrading; the render fails without `baseUrl`. Multi-tenant is unchanged: each institution keeps its own connection, and the render refuses any of these keys there.
+
+**Upgrade note (plugin v1.3.0, health port):** the app serves `/readyz` only on `HEALTH_PORT`. This chart sets it (8099) and moves the readiness probe there; an older chart with the v1.3.0 image never becomes Ready, so upgrade chart and image together. A scrape of `/metrics` must target the pod's `health` port, not the Service.
 
 ## Development profile
 

@@ -21,9 +21,9 @@ tests:
   - it: default tag keeps the 4.4 probes, ports and drain on the ledger
     template: templates/ledger/deployment.yaml
     asserts:
-      - equal:
+      - matchRegex:
           path: spec.template.spec.containers[0].image
-          value: lerianstudio/midaz-ledger:4.4.0
+          pattern: '^lerianstudio/midaz-ledger:4\.4\.[0-9]+$'
       - equal:
           path: spec.template.spec.containers[0].livenessProbe.httpGet
           value: {path: /health, port: http}

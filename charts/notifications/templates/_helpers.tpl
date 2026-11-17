@@ -7,7 +7,7 @@ Topology:
   - worker-email    (consumer, health probe only)
   - worker-sms      (consumer, health probe only)
   - worker-webhook  (consumer, health probe only)
-External deps (no subcharts): Postgres, Redis, RabbitMQ.
+External deps: Postgres, Redis, RabbitMQ. Subchart: lerian-common-helm (health preset only).
 ================================================================================
 */}}
 
@@ -185,3 +185,40 @@ volumes:
           path: license
 {{- end }}
 {{- end }}
+
+{{/*
+================================================================================
+HEALTH PRESET (lerian-common.health)
+================================================================================
+Probes, ports, HEALTH_PORT / SHUTDOWN_* env, grace, rollout strategy, PDB and the
+API's internal `health` Service port belong to the preset; they are not values.
+Call: include "notifications.health" (dict "context" $ "key" "api" "name" "notifications") | fromYaml
+
+minImage is the first image that serves HEALTH_PORT: 1.2.0-beta.6, the beta cut by
+the app change. The guard compares one semver and a prerelease sorts by identifier:
+beta < rc < stable. It refuses beta.5 and older; v1.2.0-rc.1 sorts above the floor
+but predates the cut, so staging pairs this chart only with an rc cut after it.
+*/}}
+{{- define "notifications.minImage" -}}1.2.0-beta.6{{- end -}}
+
+{{- define "notifications.health" -}}
+{{- $v := .context.Values -}}
+{{- $c := index $v .key -}}
+{{- if hasKey $v "terminationGracePeriodSeconds" -}}{{- fail "notifications: terminationGracePeriodSeconds is owned by the health preset; remove it (tune <component>.health.drainSeconds / shutdownSeconds)" -}}{{- end -}}
+{{- range $k := list "probes" "deploymentStrategy" -}}
+{{- if hasKey $c $k -}}{{- fail (printf "notifications: %s.%s is owned by the health preset; remove it" $.key $k) -}}{{- end -}}
+{{- end -}}
+{{- if and (ne $c.health.stack "go") (hasKey $c "containerPort") -}}{{- fail (printf "notifications: %s.containerPort is gone: the worker's only listener is the health port 8099; remove it" .key) -}}{{- end -}}
+{{- range $k := list "maxUnavailable" "minAvailable" -}}
+{{- if and (eq $.key "api") $c.pdb (hasKey $c.pdb $k) -}}{{- fail (printf "notifications: %s.pdb.%s is owned by the health preset; remove it" $.key $k) -}}{{- end -}}
+{{- end -}}
+{{- include "lerian-common.health" (dict
+      "name" .name
+      "component" (dict "image" (dict "tag" ($c.image.tag | default .context.Chart.AppVersion)) "configmap" (merge (dict) ($v.config | default dict) ($v.extraConfig | default dict) ($c.extraEnvVars | default dict)))
+      "health" $c.health "port" $c.containerPort "minImage" (include "notifications.minImage" .context)
+      "replicas" $c.replicaCount "autoscaling" $c.autoscaling) -}}
+{{- end -}}
+
+{{- define "notifications.api.health" -}}
+{{- include "notifications.health" (dict "context" . "key" "api" "name" "notifications") -}}
+{{- end -}}

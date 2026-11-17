@@ -13,6 +13,8 @@ This is a patch release that stops rendering the `common.license.isDevelopment` 
 
 The `isDevelopment` field has been removed from the `common.license` configuration block. This field was previously used to route the license SDK to a development gateway. The chart no longer renders it.
 
+> **Historical scope:** This guide covers chart 1.0.3 to 1.0.4 with the default app 1.0.0 images (license SDK v4.1.0), not later application releases. Chart 1.0.4 removes only the modeled `common.license.isDevelopment` mapping; it does not disable the SDK's `IS_DEVELOPMENT` switch. An exact pod environment value of `IS_DEVELOPMENT=true` still selects the development gateway. The variable can also enter through `common.configmap`, `worker.configmap` (worker only), `common.secrets`, an operator-managed shared Secret, `common.secretRefs.IS_DEVELOPMENT`, or the component's `extraEnvVars`.
+
 #### What Changed
 
 | Setting | v1.0.3 | v1.0.4 |
@@ -41,7 +43,8 @@ common:
 
 - If you have `common.license.isDevelopment` set in your `values.yaml`, it will be silently ignored after the upgrade
 - The chart no longer renders `IS_DEVELOPMENT` from `common.license.isDevelopment` into the manager and worker ConfigMap
-- If you set `isDevelopment: "true"` for a key issued by the dev license gateway, the manager and worker now validate that key on the production gateway (`https://license.lerian.io`)
+- The manager and worker pods restart on upgrade even without this key: `checksum/config` hashes the shared ConfigMap, whose chart-version label changes on upgrade. The `checksum/secret` annotation hashes the chart-managed shared Secret only when `common.useExistingSecret` is false; it is omitted when that setting is true because the Secret is operator-managed
+- If `common.license.isDevelopment` was your only source of `IS_DEVELOPMENT=true`, removing its mapping makes app 1.0.0 use the production gateway (`https://license.lerian.io`). Other environment injection paths can still select the development gateway; inspect both manager and worker configurations before upgrading.
 
 #### Action Required
 
@@ -72,12 +75,14 @@ common:
     organizationIds: "your-org-id"
 ```
 
-> **Important:** If you set `common.license.isDevelopment: "true"` for a key issued by the dev license gateway, the manager and worker now validate that key on the production gateway. Before you upgrade, set a `LICENSE_KEY` that the production gateway accepts.
+> **Important:** For app 1.0.0, removing `common.license.isDevelopment` switches to the production gateway only if no other source supplies `IS_DEVELOPMENT=true`. Before a production upgrade, remove that development override from all environment sources for both components and configure a `LICENSE_KEY` accepted by the production gateway. Inspect configuration privately; do not print or decode Secret values into shared logs.
 
 ## Preview changes before upgrading
 
+Prepare `values-migrated.yaml` as the complete intended configuration: preserve unrelated settings and existing Secret references, remove the retired key, and check every environment injection path described above. Keep any values backups private because they may contain credentials. Both commands below reset stored values and apply this complete file; a partial example is not sufficient.
+
 ```bash
-helm diff upgrade br-sta oci://ghcr.io/lerianstudio/br-sta-helm --version 1.0.4 -n br-sta
+helm diff upgrade br-sta oci://ghcr.io/lerianstudio/br-sta-helm --version 1.0.4 -n br-sta --reset-values -f values-migrated.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -85,5 +90,5 @@ helm diff upgrade br-sta oci://ghcr.io/lerianstudio/br-sta-helm --version 1.0.4 
 ## Command to upgrade
 
 ```bash
-helm upgrade br-sta oci://ghcr.io/lerianstudio/br-sta-helm --version 1.0.4 -n br-sta
+helm upgrade br-sta oci://ghcr.io/lerianstudio/br-sta-helm --version 1.0.4 -n br-sta --reset-values -f values-migrated.yaml
 ```

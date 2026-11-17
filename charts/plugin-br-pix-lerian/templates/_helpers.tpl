@@ -702,3 +702,29 @@ Inputs (dict): context (root), values (the component block), configmap (its
   value: {{ include "lerian-common.otel.allowInsecure" (dict "context" .context "configmap" $cm) | quote }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+plugin-br-pix-lerian.otelAllowInsecure.configmap — the ConfigMap line that carries
+global.observability.allowInsecureOtel to the app, so the env-wide setting also
+reaches it when the Deployment does NOT ship the node-local endpoint (an operator
+endpoint, or the collector off). With the node-local hop on, the Deployment's env
+entry carries the same value and wins.
+
+Renders only when global.observability.allowInsecureOtel is present and non-null,
+the component configmap does not carry a non-null ALLOW_INSECURE_OTEL (that one
+already reaches the ConfigMap through the pass-through), and the key is not in the
+component extraEnvVars (which renders it as env instead). Null tiers are unset;
+"" / "false" is a refusal and is rendered as is.
+
+Inputs (dict): context (root), values (the component block), configmap (its
+.configmap map, nil-safe).
+*/}}
+{{- define "plugin-br-pix-lerian.otelAllowInsecure.configmap" -}}
+{{- $values := .values | default dict -}}
+{{- $cm := .configmap | default dict -}}
+{{- $obs := (.context.Values.global | default dict).observability | default dict -}}
+{{- $global := index $obs "allowInsecureOtel" -}}
+{{- if and (not (kindIs "invalid" $global)) (kindIs "invalid" (index $cm "ALLOW_INSECURE_OTEL")) (not (hasKey ($values.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL")) -}}
+ALLOW_INSECURE_OTEL: {{ $global | toString | quote }}
+{{- end -}}
+{{- end -}}

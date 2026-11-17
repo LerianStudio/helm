@@ -1,5 +1,14 @@
 # Notifications Changelog
 
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/notifications-v1.2.0)
+
+Features:
+- Serve notifications probes on the health port `8099`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/notifications-v1.1.0...notifications-v1.2.0)
+
+---
+
 ## [1.1.0](https://github.com/LerianStudio/helm/releases/tag/notifications-v1.1.0)
 
 Features:

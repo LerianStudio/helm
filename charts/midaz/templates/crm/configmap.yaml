@@ -22,7 +22,7 @@ data:
 
   # Mongo DB (host/user/port via lerian-common datastore mask; tuning via passthrough)
   MONGO_URI: {{ $cm.MONGO_URI | default "mongodb" | quote }}
-  MONGO_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.crm.datastores "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.crm.datastores "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" (include "midaz.mongodbHost" $)) | quote }}
   MONGO_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.crm.datastores "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
   MONGO_NAME: {{ $cm.MONGO_NAME | default "crm" | quote }}
   MONGO_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.crm.datastores "configmap" $cm "type" "mongo" "field" "user" "nativeKey" "MONGO_USER" "default" "midaz") | quote }}

@@ -192,6 +192,12 @@ bankTransfer:
 
 ---
 
+## Probes and health port
+
+The `lerian-common.health` preset owns probes, ports, grace period, rollout strategy and PodDisruptionBudget; the render refuses probe, grace period and PDB value overrides, and `HEALTH_PORT` or `SHUTDOWN_*` in `bankTransfer.configmap`. The app serves `/health`, `/readyz` and `/metrics` on the internal port 8099, never through the Ingress.
+
+Probes: startup and liveness `/health`, readiness `/readyz`, all on port 8099. See [UPGRADE-3.2](docs/UPGRADE-3.2.md) for the multi-tenant route, load balancer checks and rollback.
+
 ## Parameters
 
 ### Bank Transfer Service
@@ -202,7 +208,7 @@ bankTransfer:
 | `bankTransfer.replicaCount` | Number of replicas for the deployment | `2` |
 | `bankTransfer.image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-br-bank-transfer` |
 | `bankTransfer.image.pullPolicy` | Image pull policy | `IfNotPresent` |
-| `bankTransfer.image.tag` | Image tag used for deployment | `3.5.0` |
+| `bankTransfer.image.tag` | Image tag used for deployment; the chart refuses tags below `3.6.0-beta.9`, the first image that serves the health port | `3.6.0-beta.9` |
 | `bankTransfer.imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `bankTransfer.revisionHistoryLimit` | Old ReplicaSets to retain | `10` |
 | `nameOverride` | Overrides the default generated name | `bank-transfer` |
@@ -214,15 +220,13 @@ bankTransfer:
 | `bankTransfer.ingress.tls` | TLS configuration for ingress | `[]` |
 | `bankTransfer.service.type` | Kubernetes service type | `ClusterIP` |
 | `bankTransfer.service.port` | Service port | `4027` |
-| `bankTransfer.deploymentUpdate.type` | Deployment strategy type | `RollingUpdate` |
+| `bankTransfer.health.shutdownSeconds` | SHUTDOWN_TIMEOUT, one total budget for the graceful stop; the grace period is derived (drain 15s + this + 10s). `health.drainSeconds` tunes the drain | `30` |
 | `bankTransfer.podSecurityContext` | Pod security context | `{}` |
 | `bankTransfer.securityContext` | Security context for the container | See `values.yaml` |
-| `bankTransfer.pdb.enabled` | Enable or disable PodDisruptionBudget | `true` |
-| `bankTransfer.pdb.minAvailable` | Minimum number of available pods. Used only when `maxUnavailable` is unset or `0`/empty; the chart default sets `maxUnavailable`, so this value is ignored unless you clear it | `1` |
-| `bankTransfer.pdb.maxUnavailable` | Maximum number of unavailable pods. Takes precedence over `minAvailable` when set | `1` |
+| `bankTransfer.pdb.enabled` | Enable or disable PodDisruptionBudget (`maxUnavailable: 1`, `AlwaysAllow`; the budget comes from the health preset) | `true` |
 | `bankTransfer.resources` | CPU and memory limits for pods | See `values.yaml` |
 | `bankTransfer.autoscaling.enabled` | Enable or disable horizontal pod autoscaling | `true` |
-| `bankTransfer.autoscaling.minReplicas` | Minimum number of replicas | `2` |
+| `bankTransfer.autoscaling.minReplicas` | Minimum number of replicas (the health preset floors an unset value at 2) | `2` |
 | `bankTransfer.autoscaling.maxReplicas` | Maximum number of replicas | `5` |
 | `global.scheduling.spread` | Pod spreading preset (enabled / hostname / zone / maxSkew / minDomains / nodeTaintsPolicy), see [Pod Spreading](#pod-spreading-globalschedulingspread) | `{enabled: true, hostname: ScheduleAnyway, zone: "", maxSkew: 1, minDomains: 0, nodeTaintsPolicy: ""}` |
 | `bankTransfer.spread` | Field-level override of `global.scheduling.spread` | `{}` |

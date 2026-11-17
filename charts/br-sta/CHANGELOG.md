@@ -1,5 +1,62 @@
 # Br-sta Changelog
 
+## [1.0.10](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.10)
+
+Fixes:
+- Update `br-sta-manager@1.4.2`, `br-sta-worker@1.4.2`, `br-sta-migrations@1.4.2`, and `mock-sta-server@1.4.2`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-sta` `v1.0.9`. (@victorlazari)
+- Add Helm upgrade guide for `br-sta` `v1.0.8`. (@victorlazari)
+- Clarify upgrade safety. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.9...br-sta-v1.0.10)
+
+---
+
+## [1.0.9](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.9)
+
+Fixes:
+- Update `br-sta-manager` to `1.4.1`. (@lerian-studio)
+- Update `br-sta-worker` to `1.4.1`. (@lerian-studio)
+- Update `br-sta-migrations` to `1.4.1`. (@lerian-studio)
+- Update `mock-sta-server` to `1.4.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.8...br-sta-v1.0.9)
+
+---
+
+## [1.0.8](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.8)
+
+Fixes:
+- Update `br-sta-manager@1.4.0`, `br-sta-worker@1.4.0`, `br-sta-migrations@1.4.0`, and `mock-sta-server@1.4.0` to ensure compatibility and resolve existing issues. (@lerian-studio)
+
+Improvements:
+- Correct the upgrade guide to provide clearer instructions and prevent potential user errors. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.7...br-sta-v1.0.8)
+
+---
+
+## [1.0.7](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.7)
+
+Features:
+- Update `br-sta` to `1.3.0`. (@gandalf-at-lerian)
+
+Fixes:
+- Remove the organization ID from the development bundle note. (@bedatty)
+- Maintain retired knobs as set-only for images below `1.3.0`. (@gandalf-at-lerian)
+- Preserve `ORGANIZATION_IDS` for images pinned below `1.3.0`. (@gandalf-at-lerian)
+
+Improvements:
+- Wait for the old pods to stop before performing the `1.0.6` check. (@fredcamaral)
+- Stop the `audit_outbox` writers before the `1.0.6` check. (@fredcamaral)
+- Add the reviewed `1.0.6` upgrade guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.6...br-sta-v1.0.7)
+
+---
+
 ## [1.0.6](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.6)
 
 Features:
@@ -98,3 +155,4 @@ Improvements:
 - Document the `br-sta` chart. (@guimoreirar)
 
 [View all changes](https://github.com/LerianStudio/helm/commits/br-sta-v1.0.0)
+

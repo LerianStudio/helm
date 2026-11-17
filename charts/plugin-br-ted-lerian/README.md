@@ -14,9 +14,9 @@ Helm chart for `LerianStudio/plugin-br-ted-lerian`, the TED transfers plugin for
 
 | Resource | Notes |
 |---|---|
-| Deployment | `ghcr.io/lerianstudio/plugin-br-ted-lerian`, HTTP API `:8080` (liveness `/health`, readiness `/readyz`) |
+| Deployment | `ghcr.io/lerianstudio/plugin-br-ted-lerian`, HTTP API `:8080`; liveness `/health` and readiness `/readyz` on the internal health port `8099` |
 | Service / Ingress | ClusterIP; Ingress on by default (`nginx`) |
-| HPA / PDB | on by default (1-5 replicas, `maxUnavailable: 1`) |
+| HPA / PDB | on by default (2-5 replicas, PDB `maxUnavailable: 1`, owned by the health preset) |
 | ConfigMap / Secret | env; no credential is ever rendered in the ConfigMap |
 | Job `-bootstrap-postgres` | optional (`global.externalPostgresDefinitions.enabled`): creates database, role and grants on an external PostgreSQL |
 
@@ -123,12 +123,24 @@ Non-secret values live in the ConfigMap, credentials in the Secret. A key the Co
 
 ### Required app settings
 
-App `1.0.0-beta.64` refuses to boot without these, and the chart does not set them:
+App `1.0.0-beta.86` refuses to boot without these, and the chart does not set them:
 
 - `RAIL_ALLOWED_HOSTS`: the comma-separated `host[:port]` values of the rail this installation calls.
 - `AUDIT_MONGO_URI` (single-tenant only). In production the URI must request TLS (`tls=true` or `mongodb+srv://`).
 - With `plugin-br-ted-lerian.env: production` (the default): `global.auth.enabled: true`, `TRUSTED_PROXIES` (the IPs or CIDRs of the proxy in front of the service), `REDIS_TLS: "true"`, and a `POSTGRES_SSLMODE` of `require`, `verify-ca` or `verify-full` (`global.cloud` or `global.datastores.postgres.ssl`).
 - Outside production, `POSTGRES_SSLMODE: disable` (the chart default and the `values-template.yaml` value) also needs `plugin-br-ted-lerian.allowInsecureTls: "true"`.
+
+## Probes and health port
+
+The `lerian-common.health` preset owns the probes, `HEALTH_PORT`, `SHUTDOWN_DRAIN_DELAY`, `SHUTDOWN_TIMEOUT`, the grace period (drain 15s + shutdown 30s + 10s = 55s), the rollout strategy (`RollingUpdate`, `maxSurge: 25%`, `maxUnavailable: 0`) and the PodDisruptionBudget (`maxUnavailable: 1`, `unhealthyPodEvictionPolicy: AlwaysAllow`). None is a value, and the render refuses `livenessProbe`, `readinessProbe`, `startupProbe`, `terminationGracePeriodSeconds`, `pdb`, `deploymentUpdate` and `HEALTH_PORT` / `SHUTDOWN_*` in `configmap`.
+
+| Probe | Path (port 8099) | Notes |
+|-------|------------------|-------|
+| Startup | `/health` | Covers boot before liveness and readiness start. |
+| Liveness | `/health` | Process only. |
+| Readiness | `/readyz` | The pod's own state. |
+
+Port `8099` is the named `health` port on the ClusterIP Service only; the Ingress never routes to it. The preset refuses an image below `1.0.0-beta.86`, the first one that serves the health port, so a chart rollback must roll the image back with it.
 
 ## Application Version Mapping
 

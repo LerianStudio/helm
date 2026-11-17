@@ -37,15 +37,15 @@ The partition CronJob and the partition reconcile Job mount the ledger's licence
 
 When `ledger.secrets.LICENSE_KEY` is set (and `ledger.useExistingSecret` is `false`), a hook Secret named `<ledger fullname>-license-hook` carries only `LICENSE_KEY` ahead of the partition reconcile Job, so the Job has the key on the first upgrade that sets it. With `useExistingSecret: true` the Job reads the key from your Secret, as the ledger does.
 
-With `ledger.configmap.MULTI_TENANT_ENABLED: "true"`, the partition CronJob and reconcile Job now receive `REDIS_PASSWORD` the same way the ledger Deployment does. A multi-tenant ledger keeps its licence file in Valkey, and without the password every partition run would fetch it from the licence service.
+With `ledger.configmap.MULTI_TENANT_ENABLED: "true"`, the partition CronJob and reconcile Job now receive `REDIS_PASSWORD` the same way the ledger Deployment does.
 
 ## BYOC: what the licence-validating images need
 
 These apply when you move `ledger.image.tag` and `tracer.image.tag` to an image built on lib-license-go v5:
 
-- **First boot:** each pod needs outbound access to `license.lerian.io` on port 443, or a mounted licence file (`licenseFile.existingSecret`).
-- **Single-tenant ledger and tracer:** the database role the application uses needs `CREATE` on the schema of the single-tenant transaction database and of the tracer database. Alternatively, pre-create the `lerian_license_file` table with a role that owns it.
-- **Multi-tenant ledger:** the licence file is stored in Valkey. It needs no database grant.
+- **Every process start:** without a mounted licence file, each pod start and each run of the partition CronJob or reconcile Job needs outbound access to `license.lerian.io` on port 443. A mounted licence file (`licenseFile.existingSecret`) removes that need, also during a licence-service outage.
+- **Storage:** from Midaz 4.5.0-rc.2 on (lib-license-go v5.3.0), the licence lives only in memory and needs no database grant and no Valkey key. Ledger migration 000073 and tracer migration 000053 drop the `lerian_license_file` table, and the multi-tenant ledger deletes its Valkey key at boot. Earlier v5 images (4.5.0-rc.1 and the 4.5.0 betas) still create the table at runtime and need `CREATE` on the schema.
+- **Pre-created table:** the migrations run as the application database user. If another role owns `lerian_license_file`, the drop fails and blocks the upgrade. Before the upgrade, check the owner with `SELECT tableowner FROM pg_tables WHERE tablename = 'lerian_license_file';` and have that role or a DBA drop the table.
 - **Renewal:** the licence is renewed every 6 hours.
 
 ## Action required

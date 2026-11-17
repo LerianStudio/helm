@@ -273,8 +273,10 @@ This shows references and mount paths, not file contents, successful licence loa
 
 ## Preview changes before upgrading
 
+Both commands below explicitly reset stored overrides and apply the same complete intended values file. Preserve unrelated configuration and Secret references: an incomplete file can remove them. An empty intended mapping otherwise permits implicit reuse of stored values.
+
 ```bash
-helm diff upgrade "$RELEASE" oci://ghcr.io/lerianstudio/plugin-br-payments-helm --namespace "$NAMESPACE" --version 2.3.0 -f "$VALUES_FILE"
+helm diff upgrade "$RELEASE" oci://ghcr.io/lerianstudio/plugin-br-payments-helm --namespace "$NAMESPACE" --version 2.3.0 --reset-values -f "$VALUES_FILE"
 ```
 
 > **Note:** Requires an independently reviewed installation of the [helm-diff plugin](https://github.com/databus23/helm-diff). Diff output can expose sensitive values; review it privately. Preview does not prove that application `1.2.0` can start without `LICENSE_KEY`.
@@ -282,6 +284,6 @@ helm diff upgrade "$RELEASE" oci://ghcr.io/lerianstudio/plugin-br-payments-helm 
 ## Command to upgrade
 
 ```bash
-helm upgrade "$RELEASE" oci://ghcr.io/lerianstudio/plugin-br-payments-helm --namespace "$NAMESPACE" --version 2.3.0 -f "$VALUES_FILE"
+helm upgrade "$RELEASE" oci://ghcr.io/lerianstudio/plugin-br-payments-helm --namespace "$NAMESPACE" --version 2.3.0 --reset-values -f "$VALUES_FILE"
 ```
 <!-- {% endraw %} -->

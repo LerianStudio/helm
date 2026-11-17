@@ -1266,9 +1266,10 @@ subchart Secrets, and the node-local OTLP endpoint. Input: dict root, component.
 {{- /* The operator's ALLOW_INSECURE_OTEL (common.security.allowInsecureOtel, configmap,
    secrets, the worker's own configmap or this pod's extraEnvVars) stands, even set
    empty, which the app reads as a refusal: the helper's own env entry would override
-   the envFrom value. Only the worker has a configmap of its own. */}}
+   the envFrom value. Only the worker has a configmap of its own.
+   The Secret drops an empty value, so only a non-empty one there counts. */}}
 {{- $ownCm := ternary (.Values.worker.configmap | default dict) dict (eq $component "worker") }}
-{{- $operatorAllow := or (hasKey $cm "ALLOW_INSECURE_OTEL") (hasKey $ownCm "ALLOW_INSECURE_OTEL") (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ALLOW_INSECURE_OTEL" "params" (.Values.common.security | default dict) "field" "allowInsecureOtel" "default" "")) (hasKey (.Values.common.secrets | default dict) "ALLOW_INSECURE_OTEL") (hasKey $x "ALLOW_INSECURE_OTEL") }}
+{{- $operatorAllow := or (hasKey $cm "ALLOW_INSECURE_OTEL") (hasKey $ownCm "ALLOW_INSECURE_OTEL") (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ALLOW_INSECURE_OTEL" "params" (.Values.common.security | default dict) "field" "allowInsecureOtel" "default" "")) (get (.Values.common.secrets | default dict) "ALLOW_INSECURE_OTEL") (hasKey $x "ALLOW_INSECURE_OTEL") }}
 {{ include "lerian-common.otel.podEnv" (dict "port" 4317 "allowInsecure" (not $operatorAllow)) }}
 {{- end }}
 {{- end -}}

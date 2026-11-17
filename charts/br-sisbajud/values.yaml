@@ -57,7 +57,7 @@ global:
   # test relax the app's production gates; anything else is production-like.
   # Example: env: { name: "staging" }
   env: {}
-  # -- Env-wide observability: enabled | otlpEndpoint | deploymentEnvironment.
+  # -- Env-wide observability: enabled | otlpEndpoint | deploymentEnvironment | allowInsecureOtel.
   # With enabled=true and no otlpEndpoint, the pod ships to the node-local
   # collector at http://$(HOST_IP):4317.
   # Example: observability: { enabled: true }

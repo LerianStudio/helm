@@ -17,11 +17,16 @@
 {{- /* ALLOW_INSECURE_OTEL is a modeled setting: brSisbajud.configmap.ALLOW_INSECURE_OTEL,
    then brSisbajud.security.allowInsecureOtel, then global.observability.allowInsecureOtel,
    then the node-local reason; lerian-common resolves it and emits the one env entry.
-   A key in extraEnvVars (the legacy route) still stands, so the helper adds no duplicate. */ -}}
+   A key in extraEnvVars or a non-empty brSisbajud.secrets value (the legacy routes) still
+   stands, so the helper adds no duplicate. An existing Secret (useExistingSecret) is not
+   visible to the chart, so a value there is overridden by this entry; set
+   brSisbajud.configmap.ALLOW_INSECURE_OTEL instead. */ -}}
+{{- $legacyAllow := or (hasKey $x "ALLOW_INSECURE_OTEL") (and (not .Values.brSisbajud.useExistingSecret) (ne (toString (index (.Values.brSisbajud.secrets | default dict) "ALLOW_INSECURE_OTEL" | default "")) "")) -}}
 {{- $otelCm := $cm -}}
 {{- $otelSec := .Values.brSisbajud.security | default dict -}}
-{{- if and (not (hasKey $cm "ALLOW_INSECURE_OTEL")) (hasKey $otelSec "allowInsecureOtel") (not (kindIs "invalid" $otelSec.allowInsecureOtel)) -}}
-{{- $otelCm = merge (dict "ALLOW_INSECURE_OTEL" $otelSec.allowInsecureOtel) $cm -}}
+{{- /* A null configmap value is unset, as lerian-common reads it, so the knob still applies. */ -}}
+{{- if and (kindIs "invalid" (index $cm "ALLOW_INSECURE_OTEL")) (hasKey $otelSec "allowInsecureOtel") (not (kindIs "invalid" $otelSec.allowInsecureOtel)) -}}
+{{- $otelCm = merge (dict "ALLOW_INSECURE_OTEL" $otelSec.allowInsecureOtel) (omit $cm "ALLOW_INSECURE_OTEL") -}}
 {{- end -}}
 {{- $ex := include "br-sisbajud.execution" . | fromYaml -}}
 {{- $appVolumes := include "br-sisbajud.appVolumes" . | fromYamlArray -}}
@@ -179,7 +184,7 @@ spec:
                   key: {{ include "br-sisbajud.openbaoTokenKey" . }}
             {{- end }}
             {{- if and $telemetry (not $explicitEndpoint) }}
-            {{- include "lerian-common.otel.podEnv" (dict "context" $ "configmap" $otelCm "port" 4317 "allowInsecure" (not (hasKey $x "ALLOW_INSECURE_OTEL"))) | nindent 12 }}
+            {{- include "lerian-common.otel.podEnv" (dict "context" $ "configmap" $otelCm "port" 4317 "allowInsecure" (not $legacyAllow)) | nindent 12 }}
             {{- end }}
             {{- with (include "br-sisbajud.corsExtraEnv" . | trim) }}
             {{- . | nindent 12 }}

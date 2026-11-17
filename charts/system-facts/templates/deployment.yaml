@@ -74,7 +74,11 @@ spec:
           {{- include "system-facts.infraSecretRef" (dict "context" . "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 10 }}
           {{- end }}
           {{- if $otelEnabled }}
-          {{- include "lerian-common.otel.podEnv" (dict "port" 4317 "scheme" "http://") | nindent 10 }}
+          {{- /* The operator's ALLOW_INSECURE_OTEL (configmap or extraEnvVars) stands: the helper's
+             own entry would override it, or duplicate it in the container env. */}}
+          {{- $operatorAllow := hasKey ((index .Values "system-facts").configmap | default dict) "ALLOW_INSECURE_OTEL" }}
+          {{- range ((index .Values "system-facts").extraEnvVars | default list) }}{{- if eq .name "ALLOW_INSECURE_OTEL" }}{{- $operatorAllow = true }}{{- end }}{{- end }}
+          {{- include "lerian-common.otel.podEnv" (dict "port" 4317 "scheme" "http://" "allowInsecure" (not $operatorAllow)) | nindent 10 }}
           {{- end }}
           {{- if $rolesAnywhereEnabled }}
           {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 10 }}

@@ -162,12 +162,13 @@ global:
   # A native `<component>.configmap.ENV_NAME` still wins.
   # Example: env: { name: "production" }
   env: {}
-  # -- Env-wide observability (OTel collector): enabled / otlpEndpoint / deploymentEnvironment.
+  # -- Env-wide observability (OTel collector): enabled / otlpEndpoint / deploymentEnvironment / allowInsecureOtel.
   observability: {}
   # example ↓ (uncomment & fill; comments render nothing = default stays empty):
   #   enabled: true
   #   otlpEndpoint: "otel-collector-lerian:4317"
   #   deploymentEnvironment: "production"
+  #   allowInsecureOtel: "node-local collector on the pod's own node"
   # -- Env-wide multi-tenant (tenant-manager): url / redisHost / redisPort / redisTls / ...
   multiTenant: {}
   # example ↓ (uncomment & fill; comments render nothing = default stays empty):

@@ -911,7 +911,8 @@
               "BALANCE_SYNC_FORK_BACKOFF_BASE_MS",
               "BALANCE_SYNC_FORK_BACKOFF_MAX_MS",
               "REDIS_PORT",
-              "TRANSACTION_BATCH_MAX_SIZE"
+              "TRANSACTION_BATCH_MAX_SIZE",
+              "ALLOW_INSECURE_OTEL"
             ]
           }
         },
@@ -1597,7 +1598,8 @@
               "TRACER_TRANSPORT",
               "TRUSTED_PROXIES",
               "TRUSTED_PROXY_CIDRS",
-              "VERSION"
+              "VERSION",
+              "ALLOW_INSECURE_OTEL"
             ]
           }
         },
@@ -2297,7 +2299,8 @@
               "TRACER_TRANSPORT",
               "TRUSTED_PROXIES",
               "TRUSTED_PROXY_CIDRS",
-              "VERSION"
+              "VERSION",
+              "ALLOW_INSECURE_OTEL"
             ]
           }
         },

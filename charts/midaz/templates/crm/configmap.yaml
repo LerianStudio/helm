@@ -50,6 +50,20 @@ data:
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" $envName) | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "midaz-grafana:4317") | quote }}
+  {{- /* ALLOW_INSECURE_OTEL: crm.configmap.ALLOW_INSECURE_OTEL, then
+     global.observability.allowInsecureOtel; null is unset and nothing renders when both are.
+     Rendered here so the setting reaches the app with the node-local collector off too
+     (an explicit plaintext endpoint); with it on, the Deployment's env entry carries the
+     same value. A key in crm.extraEnvVars renders below instead. */}}
+  {{- $otelAllowCm := $cm | default dict }}
+  {{- $otelAllowObs := (.Values.global | default dict).observability | default dict }}
+  {{- if not (hasKey (.Values.crm.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL") }}
+  {{- if not (kindIs "invalid" (index $otelAllowCm "ALLOW_INSECURE_OTEL")) }}
+  ALLOW_INSECURE_OTEL: {{ index $otelAllowCm "ALLOW_INSECURE_OTEL" | toString | quote }}
+  {{- else if not (kindIs "invalid" (index $otelAllowObs "allowInsecureOtel")) }}
+  ALLOW_INSECURE_OTEL: {{ index $otelAllowObs "allowInsecureOtel" | toString | quote }}
+  {{- end }}
+  {{- end }}
   ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}
 
   # AUTH (shared) — wired to the global.auth contract (configmap.<KEY> overrides)

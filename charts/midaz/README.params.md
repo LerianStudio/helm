@@ -46,7 +46,7 @@
 | `global.externalMongoDefinitions.midazCredentials.password` | string | `""` | Password for midaz user (ignored if useExistingSecret.name is set) |
 | `global.externalMongoDefinitions.midazCredentials.roles` | list | `readWrite` on `onboarding`, `transaction`, `crm`, `fees` | List of roles to grant to the user. Each item is a {role, db} pair. |
 | `global.datastores` | object | `{}` | Shared datastore masks. Keys: postgresOnboarding / postgresTransaction / mongoOnboarding / mongoTransaction / mongoCrm / mongoFees / mongo / redis / broker. Each accepts host/port/user/replicaHost/name; `ssl` is honored only under the generic `postgres` key (and `global.cloud`), not under `postgresOnboarding`/`postgresTransaction`. |
-| `global.observability` | object | `{}` | Env-wide observability (OTel collector): enabled / otlpEndpoint / deploymentEnvironment. |
+| `global.observability` | object | `{}` | Env-wide observability (OTel collector): enabled / otlpEndpoint / deploymentEnvironment / allowInsecureOtel. |
 | `global.multiTenant` | object | `{}` | Env-wide multi-tenant (tenant-manager): url / redisHost / redisPort / redisTls / ... |
 | `global.streaming` | object | `{}` | Env-wide streaming (lib-streaming / RedPanda): brokers / saslMechanism / saslUsername / tlsEnabled / ... |
 | `global.auth` | object | `{}` | Env-wide auth (plugin-access-manager): enabled / host. |

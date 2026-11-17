@@ -1,0 +1,373 @@
+suite: node-local OTEL hop in production
+release:
+  name: midaz
+  namespace: midaz
+set:
+  ledger.secrets.LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  ledger.secrets.RABBITMQ_DEFAULT_PASS: sample
+  ledger.secrets.RABBITMQ_CONSUMER_PASS: sample
+  ledger.configmap.ENV_NAME: development
+  rabbitmq.authentication.erlangCookie.value: "0123456789abcdef0123456789abcdef"
+  tracer.enabled: true
+  crm.enabled: true
+  crm.secrets.LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  crm.secrets.LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+tests:
+  - it: ledger carries ALLOW_INSECURE_OTEL with the node-local collector
+    template: templates/ledger/deployment.yaml
+    documentSelector: {path: kind, value: Deployment}
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: crm carries ALLOW_INSECURE_OTEL with the node-local collector
+    template: templates/crm/deployment.yaml
+    documentSelector: {path: kind, value: Deployment}
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: tracer carries ALLOW_INSECURE_OTEL with the node-local collector
+    template: templates/tracer/deployment.yaml
+    documentSelector: {path: kind, value: Deployment}
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: an operator value in ledger.extraEnvVars stands
+    template: templates/ledger/deployment.yaml
+    documentSelector: {path: kind, value: Deployment}
+    set:
+      ledger.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: without the node-local collector nothing is emitted
+    template: templates/ledger/deployment.yaml
+    documentSelector: {path: kind, value: Deployment}
+    set:
+      otel-collector-lerian.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: global.observability.allowInsecureOtel sets the value env-wide
+    template: templates/crm/deployment.yaml
+    documentSelector: {path: kind, value: Deployment}
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: the component configmap wins over the global
+    template: templates/tracer/deployment.yaml
+    documentSelector: {path: kind, value: Deployment}
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      tracer.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "component reason"}
+
+  - it: an explicit refusal stands as the one entry
+    template: templates/ledger/deployment.yaml
+    documentSelector: {path: kind, value: Deployment}
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      ledger.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: 'ledger: the ConfigMap renders configmap.ALLOW_INSECURE_OTEL (reaches the app with the collector off)'
+    template: templates/ledger/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: component reason
+    set:
+      ledger:
+        configmap:
+          ALLOW_INSECURE_OTEL: component reason
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'ledger: the ConfigMap takes global.observability.allowInsecureOtel when the component is unset'
+    template: templates/ledger/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: env-wide reason
+    set:
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'ledger: a null component value falls through to the global in the ConfigMap'
+    template: templates/ledger/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: env-wide reason
+    set:
+      ledger:
+        configmap:
+          ALLOW_INSECURE_OTEL: null
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'ledger: an explicit refusal renders as the empty value'
+    template: templates/ledger/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: ''
+    set:
+      ledger:
+        configmap:
+          ALLOW_INSECURE_OTEL: ''
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'ledger: nothing renders in the ConfigMap when neither is set'
+    template: templates/ledger/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - notExists:
+        path: data.ALLOW_INSECURE_OTEL
+
+  - it: 'ledger: a legacy extraEnvVars entry renders once, from extraEnvVars'
+    template: templates/ledger/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: legacy reason
+    set:
+      ledger:
+        configmap:
+          ALLOW_INSECURE_OTEL: component reason
+        extraEnvVars:
+          ALLOW_INSECURE_OTEL: legacy reason
+
+  - it: 'crm: the ConfigMap renders configmap.ALLOW_INSECURE_OTEL (reaches the app with the collector off)'
+    template: templates/crm/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: component reason
+    set:
+      crm:
+        configmap:
+          ALLOW_INSECURE_OTEL: component reason
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'crm: the ConfigMap takes global.observability.allowInsecureOtel when the component is unset'
+    template: templates/crm/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: env-wide reason
+    set:
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'crm: a null component value falls through to the global in the ConfigMap'
+    template: templates/crm/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: env-wide reason
+    set:
+      crm:
+        configmap:
+          ALLOW_INSECURE_OTEL: null
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'crm: an explicit refusal renders as the empty value'
+    template: templates/crm/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: ''
+    set:
+      crm:
+        configmap:
+          ALLOW_INSECURE_OTEL: ''
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'crm: nothing renders in the ConfigMap when neither is set'
+    template: templates/crm/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - notExists:
+        path: data.ALLOW_INSECURE_OTEL
+
+  - it: 'crm: a legacy extraEnvVars entry renders once, from extraEnvVars'
+    template: templates/crm/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: legacy reason
+    set:
+      crm:
+        configmap:
+          ALLOW_INSECURE_OTEL: component reason
+        extraEnvVars:
+          ALLOW_INSECURE_OTEL: legacy reason
+
+  - it: 'tracer: the ConfigMap renders configmap.ALLOW_INSECURE_OTEL (reaches the app with the collector off)'
+    template: templates/tracer/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: component reason
+    set:
+      tracer:
+        configmap:
+          ALLOW_INSECURE_OTEL: component reason
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'tracer: the ConfigMap takes global.observability.allowInsecureOtel when the component is unset'
+    template: templates/tracer/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: env-wide reason
+    set:
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'tracer: a null component value falls through to the global in the ConfigMap'
+    template: templates/tracer/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: env-wide reason
+    set:
+      tracer:
+        configmap:
+          ALLOW_INSECURE_OTEL: null
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'tracer: an explicit refusal renders as the empty value'
+    template: templates/tracer/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: ''
+    set:
+      tracer:
+        configmap:
+          ALLOW_INSECURE_OTEL: ''
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'tracer: nothing renders in the ConfigMap when neither is set'
+    template: templates/tracer/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - notExists:
+        path: data.ALLOW_INSECURE_OTEL
+
+  - it: 'tracer: a legacy extraEnvVars entry renders once, from extraEnvVars'
+    template: templates/tracer/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: legacy reason
+    set:
+      tracer:
+        configmap:
+          ALLOW_INSECURE_OTEL: component reason
+        extraEnvVars:
+          ALLOW_INSECURE_OTEL: legacy reason

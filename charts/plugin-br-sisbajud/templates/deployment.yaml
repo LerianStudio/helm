@@ -120,9 +120,9 @@ spec:
             {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 12 }}
             {{- end }}
             {{- if and $telemetry (not $explicitEndpoint) }}
-            {{- /* The operator's ALLOW_INSECURE_OTEL (configmap or extraEnvVars) stands: the helper's
-               own entry would override it, or duplicate it in the container env. */}}
-            {{- include "lerian-common.otel.podEnv" (dict "port" 4317 "allowInsecure" (not (or (hasKey $cm "ALLOW_INSECURE_OTEL") (hasKey $extra "ALLOW_INSECURE_OTEL")))) | nindent 12 }}
+            {{- /* The operator's ALLOW_INSECURE_OTEL (configmap, secrets or extraEnvVars) stands:
+               the helper's own entry would override it, or duplicate it in the container env. */}}
+            {{- include "lerian-common.otel.podEnv" (dict "port" 4317 "allowInsecure" (not (or (hasKey $cm "ALLOW_INSECURE_OTEL") (hasKey ($s.secrets | default dict) "ALLOW_INSECURE_OTEL") (hasKey $extra "ALLOW_INSECURE_OTEL")))) | nindent 12 }}
             {{- end }}
             {{- if $raOn }}
             {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 12 }}

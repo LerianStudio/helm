@@ -96,13 +96,13 @@ spec:
           {{- end }}
           {{- if eq (toString .Values.agent.configmap.ENABLE_TELEMETRY) "true" }}
           {{- if not .Values.agent.configmap.OTEL_EXPORTER_OTLP_ENDPOINT }}
-          {{- /* The operator's ALLOW_INSECURE_OTEL (agent.configmap, agent.secrets or
-             agent.extraEnvVars) stands: the helper's own entry would override it, or
-             duplicate it in the container env. The ConfigMap and the Secret drop an
-             empty value, so only a non-empty one there counts. */}}
-          {{- $operatorAllow := or (ne (toString (get (.Values.agent.configmap | default dict) "ALLOW_INSECURE_OTEL")) "") (ne (toString (get (.Values.agent.secrets | default dict) "ALLOW_INSECURE_OTEL")) "") }}
-          {{- range .Values.agent.extraEnvVars }}{{- if eq .name "ALLOW_INSECURE_OTEL" }}{{- $operatorAllow = true }}{{- end }}{{- end }}
-          {{- include "lerian-common.otel.podEnv" (dict "port" 4317 "allowInsecure" (not $operatorAllow)) | nindent 10 }}
+          {{- /* ALLOW_INSECURE_OTEL is a modeled setting: agent.configmap.ALLOW_INSECURE_OTEL, then
+             global.observability.allowInsecureOtel, then the node-local reason; lerian-common
+             resolves it and emits the one env entry. A key in agent.extraEnvVars (the
+             legacy route) still stands, so the helper adds no duplicate then. */}}
+          {{- $legacyAllow := false }}
+          {{- range .Values.agent.extraEnvVars }}{{- if eq .name "ALLOW_INSECURE_OTEL" }}{{- $legacyAllow = true }}{{- end }}{{- end }}
+          {{- include "lerian-common.otel.podEnv" (dict "context" $ "configmap" .Values.agent.configmap "port" 4317 "allowInsecure" (not $legacyAllow)) | nindent 10 }}
           {{- end }}
           {{- end }}
           {{- with .Values.agent.extraEnvVars }}

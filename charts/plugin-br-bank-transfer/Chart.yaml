@@ -10,7 +10,7 @@ sources:
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 3.2.4
+version: 3.3.0
 appVersion: "3.7.0"
 keywords:
   - bank-transfer

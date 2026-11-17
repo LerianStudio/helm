@@ -35,6 +35,13 @@ global:
       roles:
         - role: "readWrite"
           db: "plugin-br-pix-indirect-btg-db"
+  # -- Env-wide telemetry settings. Fields: allowInsecureOtel (ALLOW_INSECURE_OTEL on the
+  # plaintext node-local hop; see the README); a component's configmap.ALLOW_INSECURE_OTEL wins.
+  # The node-local collector itself is switched by otel-collector-lerian.enabled.
+  observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   allowInsecureOtel: "node-local collector on the pod's own node"
 # -- Optional signed licence file, an alternative to pix.secrets.LICENSE_KEY. The Secret is mounted
 # read-only as the directory /etc/lerian/license (key `license`) on every component. File mode needs
 # an image on lib-license-go v5.
@@ -172,6 +179,13 @@ pix:
   # -- All environment variables are declared in the templates/configmap.yaml
   # @default -- templates/configmap.yaml
   configmap:
+    # ALLOW_INSECURE_OTEL — with otel-collector-lerian.enabled, pix ships to the
+    # node-local collector at $(HOST_IP):4317 in plaintext, which lib-observability refuses
+    # in production unless ALLOW_INSECURE_OTEL carries a reason. The chart sets it on the
+    # container: pix.configmap.ALLOW_INSECURE_OTEL, else global.observability.allowInsecureOtel,
+    # else "node-local collector on the pod's own node". "" or "false" refuses (the app then
+    # will not boot on the node-local hop in production); null is unset. See the README.
+    # ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
     ALLOW_INSECURE_TLS: "true"
     # Deployment Mode
     DEPLOYMENT_MODE: "local"
@@ -366,6 +380,13 @@ inbound:
   # -- All environment variables are declared in the templates/configmap.yaml
   # @default -- templates/configmap.yaml
   configmap:
+    # ALLOW_INSECURE_OTEL — with otel-collector-lerian.enabled, inbound ships to the
+    # node-local collector at $(HOST_IP):4317 in plaintext, which lib-observability refuses
+    # in production unless ALLOW_INSECURE_OTEL carries a reason. The chart sets it on the
+    # container: inbound.configmap.ALLOW_INSECURE_OTEL, else global.observability.allowInsecureOtel,
+    # else "node-local collector on the pod's own node". "" or "false" refuses (the app then
+    # will not boot on the node-local hop in production); null is unset. See the README.
+    # ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
     # Database Configuration
     # Infra hosts are derived collapse-aware in templates/*/configmap.yaml when left empty.
     DB_HOST: ""
@@ -478,6 +499,13 @@ outbound:
   # -- All environment variables are declared in the templates/configmap.yaml
   # @default -- templates/configmap.yaml
   configmap:
+    # ALLOW_INSECURE_OTEL — with otel-collector-lerian.enabled, outbound ships to the
+    # node-local collector at $(HOST_IP):4317 in plaintext, which lib-observability refuses
+    # in production unless ALLOW_INSECURE_OTEL carries a reason. The chart sets it on the
+    # container: outbound.configmap.ALLOW_INSECURE_OTEL, else global.observability.allowInsecureOtel,
+    # else "node-local collector on the pod's own node". "" or "false" refuses (the app then
+    # will not boot on the node-local hop in production); null is unset. See the README.
+    # ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
     ALLOW_INSECURE_TLS: "true"
     # Environment
     ENV_NAME: "staging"
@@ -601,6 +629,13 @@ reconciliation:
   # -- All environment variables are declared in the templates/configmap.yaml
   # @default -- templates/configmap.yaml
   configmap:
+    # ALLOW_INSECURE_OTEL — with otel-collector-lerian.enabled, reconciliation ships to the
+    # node-local collector at $(HOST_IP):4317 in plaintext, which lib-observability refuses
+    # in production unless ALLOW_INSECURE_OTEL carries a reason. The chart sets it on the
+    # container: reconciliation.configmap.ALLOW_INSECURE_OTEL, else global.observability.allowInsecureOtel,
+    # else "node-local collector on the pod's own node". "" or "false" refuses (the app then
+    # will not boot on the node-local hop in production); null is unset. See the README.
+    # ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
     # Database Configuration
     # Infra hosts are derived collapse-aware in templates/*/configmap.yaml when left empty.
     DB_HOST: ""
@@ -707,6 +742,13 @@ schedule:
   # -- All environment variables are declared in the templates/schedule/configmap.yaml
   # @default -- templates/schedule/configmap.yaml
   configmap:
+    # ALLOW_INSECURE_OTEL — with otel-collector-lerian.enabled, schedule ships to the
+    # node-local collector at $(HOST_IP):4317 in plaintext, which lib-observability refuses
+    # in production unless ALLOW_INSECURE_OTEL carries a reason. The chart sets it on the
+    # container: schedule.configmap.ALLOW_INSECURE_OTEL, else global.observability.allowInsecureOtel,
+    # else "node-local collector on the pod's own node". "" or "false" refuses (the app then
+    # will not boot on the node-local hop in production); null is unset. See the README.
+    # ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
     # Chart-level explicit defaults: worker active with a 15m polling loop.
     SCHEDULE_WORKER_ENABLED: "true"
     SCHEDULE_WORKER_INTERVAL: "15m"
@@ -796,6 +838,12 @@ mongodb:
   # architecture: replicaset or useStatefulSet: true needs updateStrategy.type: RollingUpdate; a StatefulSet refuses Recreate.
   updateStrategy:
     type: Recreate
+# ALLOW_INSECURE_OTEL — with otel-collector-lerian.enabled, every component ships
+# telemetry to the node-local collector at $(HOST_IP):4317 in plaintext, which
+# lib-observability refuses in production unless ALLOW_INSECURE_OTEL carries a reason.
+# The chart sets it on each container from <component>.configmap.ALLOW_INSECURE_OTEL,
+# else global.observability.allowInsecureOtel, else "node-local collector on the pod's
+# own node". See the README.
 otel-collector-lerian:
   enabled: true
 # ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

@@ -1,5 +1,6 @@
 {{- $in := dict -}}
 {{- range $k, $v := .Values.otelPodEnv }}{{- $_ := set $in $k $v -}}{{- end }}
+{{- if .Values.otelWithContext }}{{- $_ := set $in "context" $ -}}{{- $_ := set $in "configmap" .Values.app.configmap -}}{{- end }}
 apiVersion: v1
 kind: Pod
 metadata:

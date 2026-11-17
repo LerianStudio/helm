@@ -17,21 +17,60 @@ tests:
       - equal: {path: "spec.containers[0].env[1].value", value: "http://$(HOST_IP):4318"}
       - equal: {path: "spec.containers[0].env[2].name", value: ALLOW_INSECURE_OTEL}
 
-  - it: https never carries it
-    set: {otelPodEnv: {scheme: https}}
+  - it: https never carries it, whatever the setting says
+    set: {otelWithContext: true, otelPodEnv: {scheme: https}, global: {observability: {allowInsecureOtel: "reason"}}}
     asserts:
       - equal: {path: "spec.containers[0].env[1].value", value: "https://$(HOST_IP):4317"}
-      - notContains: {path: "spec.containers[0].env", content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}}
       - lengthEqual: {path: "spec.containers[0].env", count: 2}
 
-  - it: allowInsecure=false leaves the operator's own ALLOW_INSECURE_OTEL alone
+  - it: global.observability.allowInsecureOtel sets the value env-wide
+    set: {otelWithContext: true, global: {observability: {allowInsecureOtel: "env-wide reason"}}}
+    asserts:
+      - equal: {path: "spec.containers[0].env[2]", value: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}}
+
+  - it: the component configmap wins over the global
+    set: {otelWithContext: true, global: {observability: {allowInsecureOtel: "env-wide reason"}}, app: {configmap: {ALLOW_INSECURE_OTEL: "component reason"}}}
+    asserts:
+      - equal: {path: "spec.containers[0].env[2]", value: {name: ALLOW_INSECURE_OTEL, value: "component reason"}}
+
+  - it: an explicit refusal ("false" or empty) stands as the one entry
+    set: {otelWithContext: true, global: {observability: {allowInsecureOtel: "false"}}, app: {configmap: {ALLOW_INSECURE_OTEL: ""}}}
+    asserts:
+      - equal: {path: "spec.containers[0].env[2]", value: {name: ALLOW_INSECURE_OTEL, value: ""}}
+      - lengthEqual: {path: "spec.containers[0].env", count: 3}
+
+  - it: a null setting is unset, not a reason
+    set: {otelWithContext: true, global: {observability: {allowInsecureOtel: null}}}
+    asserts:
+      - equal: {path: "spec.containers[0].env[2].value", value: "node-local collector on the pod's own node"}
+
+  - it: a string allowInsecure is the value a chart knob resolved
+    set: {otelPodEnv: {allowInsecure: "chart knob reason"}}
+    asserts:
+      - equal: {path: "spec.containers[0].env[2]", value: {name: ALLOW_INSECURE_OTEL, value: "chart knob reason"}}
+
+  - it: allowInsecure=false still leaves the variable to the operator (legacy extraEnvVars)
     set: {otelPodEnv: {allowInsecure: false}}
     asserts:
       - lengthEqual: {path: "spec.containers[0].env", count: 2}
-      - equal: {path: "spec.containers[0].env[1].value", value: "http://$(HOST_IP):4317"}
+
+  - it: allowInsecure=true with a context resolves the setting
+    set: {otelWithContext: true, otelPodEnv: {allowInsecure: true}, global: {observability: {allowInsecureOtel: "env-wide reason"}}}
+    asserts:
+      - equal: {path: "spec.containers[0].env[2].value", value: "env-wide reason"}
 
   - it: podAttributes still follow
     set: {otelPodEnv: {podAttributes: true}}
     asserts:
       - lengthEqual: {path: "spec.containers[0].env", count: 5}
       - equal: {path: "spec.containers[0].env[4]", value: {name: OTEL_RESOURCE_ATTRIBUTES, value: "k8s.pod.ip=$(POD_IP)"}}
+
+  - it: a null component key falls through to the global
+    set: {otelWithContext: true, global: {observability: {allowInsecureOtel: "env-wide reason"}}, app: {configmap: {ALLOW_INSECURE_OTEL: null}}}
+    asserts:
+      - equal: {path: "spec.containers[0].env[2].value", value: "env-wide reason"}
+
+  - it: a boolean setting is rendered as its string
+    set: {otelWithContext: true, global: {observability: {allowInsecureOtel: true}}}
+    asserts:
+      - equal: {path: "spec.containers[0].env[2].value", value: "true"}

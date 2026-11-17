@@ -37,6 +37,7 @@ data:
   # STREAMING_CLOUDEVENTS_SOURCE via caradhras.extraEnvVars below — a second
   # ConfigMap key with the same name is undefined behavior.
   STREAMING_CLOUDEVENTS_SOURCE: "caradhras"
+  {{- with (include "plugin-access-manager.allowInsecureOtelConfigmap" (dict "context" $ "component" "caradhras") | trim) }}{{ . | nindent 2 }}{{ end }}
   {{- /* The endpoint only rides in the ConfigMap when it carries no password;
      with AUTH it arrives as env `redisEndpoint` from the caradhras Secret
      (templates/caradhras/deployment.yaml). redisTls is not sensitive and is

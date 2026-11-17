@@ -414,7 +414,8 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "enabled": {}
+            "enabled": {},
+            "allowInsecureOtel": {}
           },
           "description": "Env-wide telemetry gate. Consumed by lerian-common.globalValue (block \"observability\")."
         },

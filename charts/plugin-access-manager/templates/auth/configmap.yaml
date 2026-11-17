@@ -81,6 +81,7 @@ data:
           "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" $envName
           "OTEL_EXPORTER_OTLP_ENDPOINT" "")) | nindent 2 }}
   ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}
+  {{- with (include "plugin-access-manager.allowInsecureOtelConfigmap" (dict "context" $ "component" "auth") | trim) }}{{ . | nindent 2 }}{{ end }}
 
   # AUTHORIZER
   RUNNING_IN_DOCKER: {{ include "plugin-access-manager.flagDefaultTrue" .Values.auth.configmap.RUNNING_IN_DOCKER | quote }}

@@ -99,10 +99,23 @@ Every application env key is resolved with this precedence (lerian-common):
 | `global.streaming` | `enabled`, `brokers`, `tlsEnabled`, `saslMechanism`, `saslUsername`, `saslAllowPlaintext`, `compression`, `requiredAcks`, `batchLingerMs`, `importantEmitTimeoutMs` | `STREAMING_*` transport keys |
 | `global.multiTenant` | `enabled`, `url`, `redisHost`, `redisPort`, `redisTls` | `MULTI_TENANT_*` |
 | `global.auth` | `enabled`, `host` | `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST` |
-| `global.observability` | `enabled`, `otlpEndpoint`, `deploymentEnvironment` | `ENABLE_TELEMETRY`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT` |
+| `global.observability` | `enabled`, `otlpEndpoint`, `deploymentEnvironment`, `allowInsecureOtel` | `ENABLE_TELEMETRY`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT`, `ALLOW_INSECURE_OTEL` |
 | `global.cloud` | `aws` \| `gcp` \| `azure` | TLS/ssl defaults for the masks above |
 
 Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKET` defaults to `STA_INBOUND_BUCKET`, and `STA_OBJECT_STORAGE_ENDPOINT` defaults to `SEAWEEDFS_S3_ENDPOINT`.
+
+### Plaintext OTEL to the node-local collector (`ALLOW_INSECURE_OTEL`)
+
+With telemetry on and no explicit endpoint, the pod ships telemetry to the collector on its own node at `http://$(HOST_IP):4317`, in plaintext. lib-observability refuses a plaintext exporter in production unless `ALLOW_INSECURE_OTEL` carries a reason, so the chart sets that variable on the container. The value resolves in this order:
+
+1. `brSisbajud.configmap.ALLOW_INSECURE_OTEL`
+2. `brSisbajud.security.allowInsecureOtel`
+3. `global.observability.allowInsecureOtel`, one value for the whole environment
+4. the default reason, `node-local collector on the pod's own node`
+
+`null` counts as unset. An empty string is an explicit refusal, and the app then refuses the plaintext exporter in production. The configmap value also lands in the ConfigMap, so it also reaches the app when you point at an explicit plaintext endpoint.
+
+A key in `brSisbajud.extraEnvVars` or a non-empty `brSisbajud.secrets.ALLOW_INSECURE_OTEL` in the chart's own Secret is the legacy route, and the chart then adds no entry of its own. The Secret counts only while nothing in the order above is set: a configmap, knob or global value, a refusal included, keeps the chart's entry, which wins over the Secret. With `useExistingSecret: true` the chart cannot see the Secret, so the container entry overrides any `ALLOW_INSECURE_OTEL` held there; set `brSisbajud.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
 
 ### Grouped parameters and defaults
 

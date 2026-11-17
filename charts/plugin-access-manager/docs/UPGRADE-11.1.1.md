@@ -12,7 +12,7 @@
 
 ### 1. Database Password Escaping for Special Characters
 
-This patch changes the **Caradhras main server container**, not either init container. Its startup command now escapes backslashes and single quotes in `DB_PASSWORD` and encloses the password in single quotes in the PostgreSQL keyword DSN (`dataSourceName`). Spaces are preserved inside that quoted value. Double quotes, `$`, backticks and `!` are not escaped by this `sed` expression; expanding a shell variable does not re-evaluate its contents as shell commands.
+This patch changes the **Caradhras main server container**, not either init container. Its startup command now escapes backslashes and single quotes in `DB_PASSWORD` and encloses the password in single quotes in the PostgreSQL keyword DSN (`dataSourceName`). The pgx driver reads spaces inside that quoted value, but the default Caradhras `2.1.0` image also passes the same DSN to xorm, which splits it on spaces and normally rejects it (`invalid option`), so a password containing whitespace can still stop the server from starting. Double quotes, `$`, backticks and `!` are not escaped by this `sed` expression; expanding a shell variable does not re-evaluate its contents as shell commands.
 
 In v11.1.0 the password was inserted as an unquoted DSN value. Depending on the password, whitespace or backslashes could produce a parsing error or change the password passed to the driver. Do not assume that every quote or shell metacharacter caused a failure. This patch does not change the database username, database, password itself, or server-side credentials.
 
@@ -38,7 +38,7 @@ Keep the existing password and Secret references for this patch. Do not decode S
 
 **After upgrading:**
 
-Use the Deployment name and selector from the rendered preview or installed manifest; overrides can change names. With the default names in the examples:
+The new chart version also changes the auth and identity `checksum/config` annotations, so the auth and identity Deployments roll as well. Use the Deployment name and selector from the rendered preview or installed manifest; overrides can change names. With the default names in the examples:
 
 ```bash
 kubectl rollout status deployment/plugin-access-manager-caradhras -n midaz-plugins

@@ -40,7 +40,6 @@ global:
   # The node-local collector itself is switched by otel-collector-lerian.enabled.
   observability: {}
   # example ↓ (uncomment & fill; comments render nothing = default stays empty):
-  #   enabled: true
   #   allowInsecureOtel: "node-local collector on the pod's own node"
 # -- Optional signed licence file, an alternative to pix.secrets.LICENSE_KEY. The Secret is mounted
 # read-only as the directory /etc/lerian/license (key `license`) on every component. File mode needs

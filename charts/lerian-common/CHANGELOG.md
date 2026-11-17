@@ -1,5 +1,17 @@
 # Lerian-common Changelog
 
+## [2.7.0](https://github.com/LerianStudio/helm/releases/tag/lerian-common-v2.7.0)
+
+Features:
+- Model the `ALLOW_INSECURE_OTEL` setting as a configuration owned by the chart. (@guimoreirar)
+
+Improvements:
+- Add test coverage for a global `ALLOW_INSECURE_OTEL` refusal scenario without a component key. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/lerian-common-v2.6.3...lerian-common-v2.7.0)
+
+---
+
 ## [2.6.3](https://github.com/LerianStudio/helm/releases/tag/lerian-common-v2.6.3)
 
 Fixes:

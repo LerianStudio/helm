@@ -366,7 +366,8 @@
               "STREAMING_HUB_REDIS_TLS",
               "STREAMING_HUB_ROLE",
               "STREAMING_HUB_SWAGGER_ENABLED",
-              "STREAMING_HUB_TENANT_ID"
+              "STREAMING_HUB_TENANT_ID",
+              "ALLOW_INSECURE_OTEL"
             ]
           }
         },

@@ -158,10 +158,11 @@ spec:
             {{- if $sh.telemetry.enabled }}
             # OTEL endpoint is overridden per-pod via the node host IP (DaemonSet
             # collector pattern). Gated on the CHART-level streamingHub.telemetry.enabled.
-            # An operator ALLOW_INSECURE_OTEL (extraEnvVars, or a non-empty secrets value, the
-            # only one the Secret renders) stands: the helper's own entry would override it,
-            # or duplicate the extraEnvVars one. The configmap schema does not take the key.
-            {{- include "lerian-common.otel.podEnv" (dict "port" 4317 "allowInsecure" (not (or (get ($sh.secrets | default dict) "ALLOW_INSECURE_OTEL") (hasKey ($sh.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL")))) | nindent 12 }}
+            # ALLOW_INSECURE_OTEL is a modeled setting: streamingHub.configmap.ALLOW_INSECURE_OTEL,
+            # then global.observability.allowInsecureOtel, then the node-local reason; lerian-common
+            # resolves it and emits the one env entry. A key in streamingHub.extraEnvVars (the
+            # legacy route, rendered just above) still stands, so the helper adds no duplicate then.
+            {{- include "lerian-common.otel.podEnv" (dict "context" $ "configmap" $sh.configmap "port" 4317 "allowInsecure" (not (hasKey ($sh.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL"))) | nindent 12 }}
             {{- end }}
             {{- if $rolesAnywhere }}
             # Point the AWS SDK's IMDS lookup at the aws-signing-helper sidecar, which

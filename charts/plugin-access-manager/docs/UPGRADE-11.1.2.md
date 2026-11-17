@@ -42,8 +42,12 @@ If recovery is necessary, select the recorded pre-upgrade revision from release 
 
 # Preview changes before upgrading
 
+When using the bundled PostgreSQL database, upgrade-mode rendering requires its current password through `auth-database.auth.password` in the private complete `your-values.yaml` file. Preserve the existing database credentials; this is not a password-rotation step. Never put real passwords in CLI `--set` arguments, decode Secrets into terminal output, or copy dependency diagnostics containing credentials into logs or Git. A client-only render cannot establish live Secret or database state.
+
+Keep all preview output private. `--suppress-secrets` reduces Secret output in helm-diff but does not guarantee that other rendered resources or errors contain no sensitive values. Use the same complete intended values and Secret references for preview and upgrade.
+
 ```bash
-helm diff upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager -n midaz-plugins --version 11.1.2 --reset-values -f your-values.yaml
+helm diff upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager -n midaz-plugins --version 11.1.2 --reset-values --suppress-secrets -f your-values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`

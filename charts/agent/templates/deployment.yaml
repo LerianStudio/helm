@@ -98,8 +98,9 @@ spec:
           {{- if not .Values.agent.configmap.OTEL_EXPORTER_OTLP_ENDPOINT }}
           {{- /* The operator's ALLOW_INSECURE_OTEL (agent.configmap, agent.secrets or
              agent.extraEnvVars) stands: the helper's own entry would override it, or
-             duplicate it in the container env. */}}
-          {{- $operatorAllow := or (hasKey (.Values.agent.configmap | default dict) "ALLOW_INSECURE_OTEL") (hasKey (.Values.agent.secrets | default dict) "ALLOW_INSECURE_OTEL") }}
+             duplicate it in the container env. The ConfigMap and the Secret drop an
+             empty value, so only a non-empty one there counts. */}}
+          {{- $operatorAllow := or (ne (toString (get (.Values.agent.configmap | default dict) "ALLOW_INSECURE_OTEL")) "") (ne (toString (get (.Values.agent.secrets | default dict) "ALLOW_INSECURE_OTEL")) "") }}
           {{- range .Values.agent.extraEnvVars }}{{- if eq .name "ALLOW_INSECURE_OTEL" }}{{- $operatorAllow = true }}{{- end }}{{- end }}
           {{- include "lerian-common.otel.podEnv" (dict "port" 4317 "allowInsecure" (not $operatorAllow)) | nindent 10 }}
           {{- end }}

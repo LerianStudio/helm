@@ -120,10 +120,11 @@ spec:
             {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 12 }}
             {{- end }}
             {{- if and $telemetry (not $explicitEndpoint) }}
-            {{- /* The operator's ALLOW_INSECURE_OTEL (configmap, secrets or extraEnvVars) stands:
-               the helper's own entry would override it, or duplicate it in the container env.
-               The Secret drops an empty value, so only a non-empty one there counts. */}}
-            {{- include "lerian-common.otel.podEnv" (dict "port" 4317 "allowInsecure" (not (or (hasKey $cm "ALLOW_INSECURE_OTEL") (ne (toString (get ($s.secrets | default dict) "ALLOW_INSECURE_OTEL")) "") (hasKey $extra "ALLOW_INSECURE_OTEL")))) | nindent 12 }}
+            {{- /* ALLOW_INSECURE_OTEL is a modeled setting: sisbajud.configmap.ALLOW_INSECURE_OTEL, then
+               global.observability.allowInsecureOtel, then the node-local reason; lerian-common
+               resolves it and emits the one env entry. A key in sisbajud.extraEnvVars (the
+               legacy route) still stands, so the helper adds no duplicate then. */}}
+            {{- include "lerian-common.otel.podEnv" (dict "context" $ "configmap" $cm "port" 4317 "allowInsecure" (not (hasKey $extra "ALLOW_INSECURE_OTEL"))) | nindent 12 }}
             {{- end }}
             {{- if $raOn }}
             {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 12 }}

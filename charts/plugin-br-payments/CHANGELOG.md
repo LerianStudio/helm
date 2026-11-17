@@ -1,5 +1,16 @@
 # Plugin-br-payments Changelog
 
+## [2.7.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.7.0)
+
+Features:
+
+- Wire the `plugin-br-payments` `1.5.0` environment variables into the chart. (@guimoreirar)
+- Update `plugin-br-payments` to `1.5.0` with new environment variables. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.6.0...plugin-br-payments-v2.7.0)
+
+---
+
 ## [2.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.6.0)
 
 Features:

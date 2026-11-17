@@ -203,6 +203,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `MULTI_TENANT_URL` | `global.multiTenant.url`, else `""` |
 | `MULTI_TENANT_SERVICE_NAME` | `"plugin-br-payments"` |
 | `MULTI_TENANT_POSTGRES_MODULE` | `""` |
+| `MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE` | unset (no app default; read only by app versions from 1.5.0). Names the Tenant Manager module that carries each tenant's collections database and turns the collections module on in multi-tenant; it must differ from `MULTI_TENANT_POSTGRES_MODULE` or the app refuses to boot. Set `MULTI_TENANT_POSTGRES_MODULE` too wherever the collections run |
 | `MULTI_TENANT_ALLOW_INSECURE_HTTP` | `"false"` |
 | `MULTI_TENANT_TIMEOUT` | `"10"` |
 | `MULTI_TENANT_CACHE_TTL_SEC` | `"3600"` |
@@ -240,6 +241,34 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `MIGRATION_LOCK_TIMEOUT_MS` | `"10000"` |
 | `DB_METRICS_INTERVAL_SEC` | `"15"` |
 | `IDEMPOTENCY_RECORD_TTL_HOURS` | `"48"` |
+
+</details>
+
+<details><summary><b>COLLECTIONS (Gestão de Cobrança)</b></summary>
+
+Read only by app versions from 1.5.0. The module ships off: with neither `MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE` nor `COLLECTIONS_POSTGRES_HOST` set, the app reads none of these keys. With the module on, a value outside its bounds stops the boot. `COLLECTIONS_POSTGRES_PASSWORD`, `COLLECTIONS_PCR_CLIENT_ID`, `COLLECTIONS_PCR_CLIENT_SECRET` and `COLLECTIONS_CURSOR_HMAC_KEY` are `app.secrets` keys: the cursor HMAC key (standard base64 of exactly 32 bytes) is required once the module is on, and the PCR client credentials are single-tenant only, set both or neither.
+
+| Key | Default |
+|-----|---------|
+| `COLLECTIONS_POSTGRES_HOST` | unset (no app default). Turns the collections module on in single-tenant; the app then refuses to boot without `COLLECTIONS_POSTGRES_USER` and `COLLECTIONS_POSTGRES_DB`, or when host:port/database is the main `POSTGRES_*` database. In production it also needs `COLLECTIONS_POSTGRES_PASSWORD` and an sslmode of `require`, `verify-ca` or `verify-full` |
+| `COLLECTIONS_POSTGRES_PORT` | unset (app default `5432`) |
+| `COLLECTIONS_POSTGRES_USER` | unset (no app default; required with `COLLECTIONS_POSTGRES_HOST`) |
+| `COLLECTIONS_POSTGRES_DB` | unset (app default `plugin-br-payments-collections`) |
+| `COLLECTIONS_POSTGRES_SSLMODE` | unset (app default `disable`; production and `DEPLOYMENT_MODE=saas` require `require`, `verify-ca` or `verify-full`) |
+| `COLLECTIONS_POSTGRES_MAX_OPEN_CONNS` | unset (app default `10`; in multi-tenant, the pool limit of each tenant's collections database) |
+| `COLLECTIONS_POSTGRES_MAX_IDLE_CONNS` | unset (app default `5`; in multi-tenant, the pool limit of each tenant's collections database) |
+| `COLLECTIONS_COMMAND_RESEND_INTERVAL_SEC` | unset (app default `10`, bounds 1–3600) |
+| `COLLECTIONS_COMMAND_PROCESSING_TIMEOUT_SEC` | unset (app default `300`, bounds 180–3600) |
+| `COLLECTIONS_COMMAND_DISPATCH_CONCURRENCY` | unset (app default `4`, bounds 1–64) |
+| `COLLECTIONS_SUBSCRIPTION_CHECK_INTERVAL_SEC` | unset (app default `300`, bounds 60–3600) |
+| `COLLECTIONS_NOTICE_APPLY_INTERVAL_SEC` | unset (app default `5`, bounds 1–300) |
+| `COLLECTIONS_BENEFICIARY_POLL_INTERVAL_SEC` | unset (app default `30`, bounds 5–3600) |
+| `COLLECTIONS_AGREEMENT_BRANCH_SWEEP_INTERVAL_SEC` | unset (app default `3600`, bounds 60–86400) |
+| `COLLECTIONS_INVENTORY_INTERVAL_SEC` | unset (app default `900`, bounds 60–86400) |
+| `COLLECTIONS_ENABLEMENT_ITEM_INTERVAL_SEC` | unset (app default `5`, bounds 1–300) |
+| `COLLECTIONS_TITLE_FACT_DISPATCH_INTERVAL_SEC` | unset (app default `5`, bounds 1–300) |
+| `COLLECTIONS_TITLE_OUTCOME_POLL_INTERVAL_SEC` | unset (app default `30`, bounds 5–3600) |
+| `COLLECTIONS_DISABLED` | unset (app default `"false"`; single-tenant only: `"true"` refuses new issuances with 422 PBP-0833 while what was already issued keeps closing) |
 
 </details>
 
@@ -364,6 +393,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | Key | Default |
 |-----|---------|
 | `WEBHOOK_PUBLIC_BASE_URL` | unset (app default) |
+| `WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP` | unset (app default `"false"`; development only: `"true"` acknowledges an `http://` `WEBHOOK_PUBLIC_BASE_URL`, and the app refuses it unless `ENV_NAME` is `local`, `development` or `test`) |
 | `WEBHOOK_SKIP_URL_VALIDATION` | unset (app default) |
 | `WEBHOOK_CONNECTION_GRACE_WINDOW_SEC` | unset (app default) |
 | `WEBHOOK_DISPATCHER_INTERVAL` | unset (app default) |
@@ -388,7 +418,7 @@ The chart injects `ALLOW_INSECURE_OTEL` only together with the node-local collec
 
 </details>
 
-**Secret keys** (`app.secrets`, each rendered only when set): `POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `BTG_WEBHOOK_HMAC_SECRET`, `INTERNAL_API_KEY`, `INTERNAL_API_KEY_PREVIOUS`, `CREDENTIAL_ENCRYPTION_KEY`, `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS`, `LICENSE_KEY`, `PLUGIN_AUTH_CLIENT_ID`, `PLUGIN_AUTH_CLIENT_SECRET`, `MULTI_TENANT_SERVICE_API_KEY`, `CONSULT_AUDIT_HMAC_KEY`, `IDP_M2M_CLIENT_ID`, `IDP_M2M_CLIENT_SECRET`, `SANDBOX_FAKEBTG_ADMIN_KEY`.
+**Secret keys** (`app.secrets`, each rendered only when set): `POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `BTG_WEBHOOK_HMAC_SECRET`, `INTERNAL_API_KEY`, `INTERNAL_API_KEY_PREVIOUS`, `CREDENTIAL_ENCRYPTION_KEY`, `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS`, `LICENSE_KEY`, `PLUGIN_AUTH_CLIENT_ID`, `PLUGIN_AUTH_CLIENT_SECRET`, `MULTI_TENANT_SERVICE_API_KEY`, `CONSULT_AUDIT_HMAC_KEY`, `IDP_M2M_CLIENT_ID`, `IDP_M2M_CLIENT_SECRET`, `SANDBOX_FAKEBTG_ADMIN_KEY`, `COLLECTIONS_POSTGRES_PASSWORD`, `COLLECTIONS_PCR_CLIENT_ID`, `COLLECTIONS_PCR_CLIENT_SECRET`, `COLLECTIONS_CURSOR_HMAC_KEY`.
 
 **Refused at render**, with the replacement named: `MULTI_TENANCY_ENABLED`, `MULTI_TENANT_MANAGER_URL`, `MULTI_TENANT_CLIENT_TIMEOUT_SEC`, `MULTI_TENANT_CACHE_TTL_MINUTES`, `MULTI_TENANT_CB_THRESHOLD`, `MULTI_TENANT_CB_TIMEOUT_SEC`, `MIDAZ_ONBOARDING_URL`, `MIDAZ_TRANSACTION_URL`, `OUTBOX_ENABLED`, `OUTBOX_TABLE_NAME`, `CIRCUIT_BREAKER_ENABLED`, `RATE_LIMIT_READ`, `RATE_LIMIT_WRITE`, `RECONCILIATION_LOOKBACK_HOURS`, `EXAMPLE_STATUS_PROVIDER_MODE`, `RECONCILIATION_MAX_PROVIDER_PAGES` (`app.configmap`); `BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `BTG_WEBHOOK_SECRET` (`app.secrets`). The retired ones are no longer read by the application.
 

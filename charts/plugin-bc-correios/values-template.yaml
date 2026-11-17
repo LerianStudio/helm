@@ -10,7 +10,7 @@ bc-correios:
   image:
     repository: ghcr.io/lerianstudio/br-correios
     pullPolicy: IfNotPresent
-    tag: "1.2.2"  # REQUIRED - Set the image version
+    tag: "1.2.3"  # REQUIRED - Set the image version
 
   imagePullSecrets: []
 

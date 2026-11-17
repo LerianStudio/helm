@@ -68,5 +68,5 @@ dependencies:
   # same form the other charts in this repo use for lerian-common-helm.
   - name: lerian-common-helm
     # 2.6.0 is the first lerian-common-helm that ships the lerian-common.health preset.
-    version: "2.6.1"
+    version: "2.6.3"
     repository: "oci://ghcr.io/lerianstudio"

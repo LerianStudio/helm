@@ -158,7 +158,9 @@ spec:
             {{- if $sh.telemetry.enabled }}
             # OTEL endpoint is overridden per-pod via the node host IP (DaemonSet
             # collector pattern). Gated on the CHART-level streamingHub.telemetry.enabled.
-            {{- include "lerian-common.otel.podEnv" (dict "port" 4317) | nindent 12 }}
+            # An operator ALLOW_INSECURE_OTEL (configmap or extraEnvVars) stands: the
+            # helper's own entry would override it, or duplicate the extraEnvVars one.
+            {{- include "lerian-common.otel.podEnv" (dict "port" 4317 "allowInsecure" (not (or (hasKey ($sh.configmap | default dict) "ALLOW_INSECURE_OTEL") (hasKey ($sh.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL")))) | nindent 12 }}
             {{- end }}
             {{- if $rolesAnywhere }}
             # Point the AWS SDK's IMDS lookup at the aws-signing-helper sidecar, which

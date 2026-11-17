@@ -66,3 +66,38 @@ tests:
       - notContains:
           path: spec.template.spec.containers[0].env
           content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: global.observability.allowInsecureOtel sets the value env-wide
+    template: templates/crm/deployment.yaml
+    documentSelector: {path: kind, value: Deployment}
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: the component configmap wins over the global
+    template: templates/tracer/deployment.yaml
+    documentSelector: {path: kind, value: Deployment}
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      tracer.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "component reason"}
+
+  - it: an explicit refusal stands as the one entry
+    template: templates/ledger/deployment.yaml
+    documentSelector: {path: kind, value: Deployment}
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      ledger.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}

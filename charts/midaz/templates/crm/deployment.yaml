@@ -89,12 +89,13 @@ spec:
               value: "$(HOST_IP):4317"
             - name: "OTEL_RESOURCE_ATTRIBUTES"
               value: "k8s.pod.ip=$(POD_IP)"
-            {{- /* The node-local hop is plaintext, which lib-observability refuses in
-               production unless ALLOW_INSECURE_OTEL carries a reason. An operator
-               value in extraEnvVars (the ConfigMap) stands: this entry would beat it. */}}
+            {{- /* ALLOW_INSECURE_OTEL is a modeled setting: crm.configmap.ALLOW_INSECURE_OTEL, then
+               global.observability.allowInsecureOtel, then the node-local reason; lerian-common
+               resolves it and emits the one env entry. A key in crm.extraEnvVars (the
+               legacy route) still stands, so the helper adds no duplicate then. */}}
             {{- if not (hasKey (.Values.crm.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL") }}
             - name: "ALLOW_INSECURE_OTEL"
-              value: "node-local collector on the pod's own node"
+              value: {{ include "lerian-common.otel.allowInsecure" (dict "context" $ "configmap" .Values.crm.configmap) | quote }}
             {{- end }}
             {{- end }}
           resources:

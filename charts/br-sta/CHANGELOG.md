@@ -1,5 +1,32 @@
 # Br-sta Changelog
 
+## [1.0.11](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.11)
+
+Features:
+- Add documentation for `ALLOW_INSECURE_OTEL` in `values.yaml` and show `allowInsecureOtel` in the `global.observability` example. (@guimoreirar)
+
+Fixes:
+- Ensure the modeled `ALLOW_INSECURE_OTEL` setting takes precedence over the chart Secret. (@guimoreirar)
+- Maintain a chart-Secret `ALLOW_INSECURE_OTEL` and document the setting. (@guimoreirar)
+- Preserve a worker or common `ALLOW_INSECURE_OTEL` refusal. (@guimoreirar)
+- Use the modeled setting for `ALLOW_INSECURE_OTEL`. (@guimoreirar)
+- Count only a non-empty `ALLOW_INSECURE_OTEL` where the chart drops empty ones. (@guimoreirar)
+- Ensure `ALLOW_INSECURE_OTEL` is set in `worker.configmap`. (@guimoreirar)
+- Retain `ALLOW_INSECURE_OTEL` from secrets or set it empty. (@guimoreirar)
+- Allow the node-local OTEL hop to boot in production. (@guimoreirar)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides. (@victorlazari, @gandalf-at-lerian)
+- List worker environment override in documentation. (@victorlazari)
+- Add Helm upgrade guide for `br-sta` `v1.0.10`. (@victorlazari)
+- Clarify upgrade safety in documentation. (@victorlazari)
+- Isolate historical license guidance in documentation. (@victorlazari)
+- Qualify secret checksums in documentation. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.10...br-sta-v1.0.11)
+
+---
+
 ## [1.0.10](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.10)
 
 Fixes:

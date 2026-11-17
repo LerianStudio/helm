@@ -1,5 +1,14 @@
 # Plugin-br-bank-transfer Changelog
 
+## [3.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.2.3)
+
+Fixes:
+- Updated the plugin to roll pods when there are changes in the configmap and secret, ensuring that the latest configurations are always applied. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.2.2...plugin-br-bank-transfer-v3.2.3)
+
+---
+
 ## [3.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.2.2)
 
 Fixes:

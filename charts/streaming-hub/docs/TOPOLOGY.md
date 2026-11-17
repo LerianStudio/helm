@@ -7,8 +7,8 @@ exposes that runtime choice through the single `streamingHub.mode` switch.
 
 ## The role model
 
-Every role serves the **full** Fiber control plane on `:8080`
-(`/healthz`, `/readyz`, `/metrics`, `/v1`, `/admin`). The role gates **which
+Every role serves the **full** Fiber control plane on `:8080` (`/health`,
+`/version`, `/v1`, `/admin`); `/readyz` and `/metrics` are on the internal health port `8099`. The role gates **which
 background Launcher Apps register** and **which Kafka clients dial** — not which
 HTTP routes mount.
 
@@ -21,10 +21,10 @@ HTTP routes mount.
 ## How the chart maps mode → workloads
 
 - **`mode: all`** → `templates/all/*` render: one `streaming-hub-all` Deployment
-  with `STREAMING_HUB_ROLE=all`, plus its Service (and HPA/PDB when enabled).
+  with `STREAMING_HUB_ROLE=all`, plus its Service and PDB (and HPA when enabled).
 - **`mode: split`** → `templates/ingest/*` and `templates/delivery/*` render:
   two Deployments (`streaming-hub-ingest`, `streaming-hub-delivery`) with the
-  matching role env, plus their Services (and per-role HPA/PDB).
+  matching role env, plus their Services (and per-role PDB, plus HPA when enabled).
 
 The shared singletons (`templates/configmap.yaml`, `templates/secrets.yaml`,
 `templates/serviceaccount.yaml`) are role-invariant and rendered exactly once

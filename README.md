@@ -24,7 +24,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `10.4.2` | 4.4.1 | 3.8.4 |
+| `11.1.1` | 4.4.3 | 3.8.4 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -64,7 +64,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `5.4.0` | 4.8.0 | 4.8.0 |
+| `5.4.2` | 4.10.0 | 4.10.0 |
 -----------------
 
 ### Plugin BR Bank Transfer 
@@ -77,7 +77,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | bankTransfer Version |
 | :---: | :---: |
-| `3.2.2` | 3.6.0 |
+| `3.2.3` | 3.6.0 |
 -----------------
 
 
@@ -95,7 +95,7 @@ component that changed, so their tags may legitimately differ.
 
 | Chart Version | API Version | Worker Version |
 | :---: | :---: | :---: |
-| `0.7.0` | 1.6.1 | 1.6.1 |
+| `0.8.0` | 1.6.1 | 1.6.1 |
 -----------------
 
 ### BR JD Courier
@@ -146,7 +146,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.5.0` | 1.3.0 |
+| `2.7.0` | 1.5.0 |
 -----------------
 
 ### Fetcher
@@ -214,7 +214,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `4.5.3` | 3.2.0 |
+| `4.5.5` | 3.5.0 |
 -----------------
 
 ### Plugin BC Correios
@@ -225,7 +225,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `4.0.2` | 1.1.0 |
+| `4.0.3` | 1.1.0 |
 
 -----------------
 
@@ -248,7 +248,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version | Migrations Version |
 | :---: | :---: | :---: |
-| `1.4.4` | 1.1.0 | 1.1.0 |
+| `1.5.0` | 1.1.0 | 1.1.0 |
 | `1.1.0` | `1.0.0-beta.109` | `1.0.0-beta.109` |
 -----------------
 
@@ -262,7 +262,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Sisbajud Version | Migrations Version |
 | :---: | :---: | :---: |
-| `1.5.1` | 1.3.0 | 1.3.0 |
+| `1.6.1` | 1.5.0 | 1.4.0 |
 -----------------
 
 ### Plugin BR TED Lerian
@@ -288,7 +288,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version | Migrations Version |
 | :---: | :---: | :---: | :---: |
-| `1.0.7` | 1.3.0 | 1.3.0 | 1.3.0 |
+| `1.0.10` | 1.4.2 | 1.4.2 | 1.4.2 |
 -----------------
 
 ### Agent
@@ -314,7 +314,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.1.0` | 3.1.0 |
+| `2.2.0` | 3.4.0 |
 -----------------
 
 ### Lerian Common (Library)
@@ -327,7 +327,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version |
 | :---: |
-| `2.6.1` |
+| `2.6.2` |
 -----------------
 
 ### System Facts

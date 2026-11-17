@@ -62,6 +62,7 @@ LICENSE_FILE_PATH: "/etc/lerian/license/license"
 {{- include $kv (dict "cm" $cm "p" $s.mensageria "f" "baseUrl" "k" "MENSAGERIA_BASE_URL" "d" "") }}
 {{- $mt := include "plugin-br-sisbajud.mensageriaTls" . | fromYaml }}
 MENSAGERIA_MTLS_ENABLED: {{ $mt.raw | default "false" | quote }}
+{{- include $kv (dict "cm" $cm "p" $s.mensageria "f" "permanentBlockEnabled" "k" "MENSAGERIA_PERMANENT_BLOCK_ENABLED" "d" "false") }}
 {{- if $mt.caSecret }}
 MENSAGERIA_TLS_CA_FILE: {{ $mt.caFile | quote }}
 {{- else if index $cm "MENSAGERIA_TLS_CA_FILE" }}

@@ -9,6 +9,7 @@ plugin-br-sisbajud {{ .Values.sisbajud.image.tag | default .Chart.AppVersion }} 
 {{- end }}
   KMS:         {{ include "plugin-br-sisbajud.kmsProvider" . }}
   Permanent:   DIRECT_PERMANENT_BLOCK_ENABLED={{ include "plugin-br-sisbajud.val" (dict "cm" (.Values.sisbajud.configmap | default dict) "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "p" (.Values.sisbajud.direct | default dict) "f" "permanentBlockEnabled" "d" "true") | default "true" }}. Off stops only NEW permanents; ACTIVE ones keep running.
+               MENSAGERIA_PERMANENT_BLOCK_ENABLED={{ include "plugin-br-sisbajud.val" (dict "cm" (.Values.sisbajud.configmap | default dict) "k" "MENSAGERIA_PERMANENT_BLOCK_ENABLED" "p" (.Values.sisbajud.mensageria | default dict) "f" "permanentBlockEnabled" "d" "false") | default "false" }}.
                Alert on sisbajud_executor_permanent_active_with_switch_off > 0 (see the chart README).
 
 Verify:

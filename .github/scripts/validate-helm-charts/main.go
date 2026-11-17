@@ -799,6 +799,15 @@ func isTemplateSecretKey(key string) bool {
 		return false
 	}
 
+	// Selectors naming which secret manager the app reads (ANTIFRAUD_SECRETS_BACKEND:
+	// aws|vault, SECRET_STORE_PROVIDER), not a secret value.
+	if strings.Contains(normalized, "secret") &&
+		(strings.HasSuffix(normalized, "backend") ||
+			strings.HasSuffix(normalized, "store") ||
+			strings.HasSuffix(normalized, "provider")) {
+		return false
+	}
+
 	if strings.Contains(normalized, "password") ||
 		strings.HasSuffix(normalized, "pass") ||
 		strings.Contains(normalized, "privatekey") ||

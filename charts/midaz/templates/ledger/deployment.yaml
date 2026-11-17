@@ -206,6 +206,13 @@ spec:
               value: "$(HOST_IP):4317"
             - name: "OTEL_RESOURCE_ATTRIBUTES"
               value: "k8s.pod.ip=$(POD_IP)"
+            {{- /* The node-local hop is plaintext, which lib-observability refuses in
+               production unless ALLOW_INSECURE_OTEL carries a reason. An operator
+               value in extraEnvVars (the ConfigMap) stands: this entry would beat it. */}}
+            {{- if not (hasKey (.Values.ledger.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL") }}
+            - name: "ALLOW_INSECURE_OTEL"
+              value: "node-local collector on the pod's own node"
+            {{- end }}
             {{- end }}
             {{- /* Points the AWS SDK inside the ledger at the sidecar's loopback IMDS
                instead of the (absent) instance metadata service. */}}

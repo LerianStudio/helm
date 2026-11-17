@@ -665,39 +665,54 @@ global.serviceDiscovery (all optional): enabled, address, tls, tlsSkipVerify, wo
 
 {{/*
 plugin-br-pix-lerian.otelAllowInsecure.env — the ALLOW_INSECURE_OTEL container
-env entry for a component whose Deployment points the app at the node-local
-collector ("$(HOST_IP):4317", plaintext). lib-observability refuses a plaintext
-exporter in a strict deployment environment (production / prod) unless
-ALLOW_INSECURE_OTEL carries a reason, so the chart owns that variable wherever it
-ships the node-local endpoint itself. The caller includes this ONLY next to its
-own "$(HOST_IP):4317" entry; an operator endpoint (configmap, global or
-extraEnvVars) gets nothing.
+env entry. lib-observability refuses a plaintext exporter in a strict deployment
+environment (production / prod) unless ALLOW_INSECURE_OTEL carries a reason.
 
-The value is a modeled setting (lerian-common.otel.allowInsecure):
+nodeLocal=true: the chart itself injects HOST_IP from status.hostIP and points
+the app at "$(HOST_IP):4317" (plaintext, the pod's own node). The value is the
+modeled setting (lerian-common.otel.allowInsecure):
   <component>.configmap.ALLOW_INSECURE_OTEL
   > global.observability.allowInsecureOtel
   > "node-local collector on the pod's own node"
 null is unset; "" / "false" is a refusal and is emitted as is.
 
+nodeLocal=false: the endpoint is not the chart's node-local hop (an operator
+endpoint, an operator-supplied HOST_IP, or telemetry off), so the default reason
+never applies; the modeled value reaches the app through the ConfigMap. The
+entry is emitted only when the model is set AND the chart-rendered Secret carries
+ALLOW_INSECURE_OTEL: the Secret is imported after the ConfigMap and would beat
+the model, so an explicit env entry keeps "the model wins over the Secret".
+
 Legacy routes still stand, and then no entry is emitted (a duplicate env name
 breaks the apply):
   - ALLOW_INSECURE_OTEL in <component>.extraEnvVars;
-  - a non-empty ALLOW_INSECURE_OTEL in <component>.secrets, while the model is
-    unset (the model wins over the Secret, a refusal included) and the chart
-    renders the Secret. With useExistingSecret the chart cannot see the Secret,
-    so the entry is emitted and overrides a value there.
+  - ALLOW_INSECURE_OTEL in <component>.secrets (any non-null value the Secret
+    renders non-empty, a YAML false/0 included), while the model is unset.
+    With useExistingSecret the chart cannot see the Secret, so on the node-local
+    branch the entry is emitted and overrides a value there.
 
 Inputs (dict): context (root), values (the component block), configmap (its
-.configmap map, nil-safe).
+.configmap map, nil-safe), nodeLocal (bool).
 */}}
 {{- define "plugin-br-pix-lerian.otelAllowInsecure.env" -}}
 {{- $values := .values | default dict -}}
 {{- $cm := .configmap | default dict -}}
 {{- $obs := (.context.Values.global | default dict).observability | default dict -}}
 {{- $modelSet := or (not (kindIs "invalid" (index $cm "ALLOW_INSECURE_OTEL"))) (not (kindIs "invalid" (index $obs "allowInsecureOtel"))) -}}
-{{- $secretAllow := and (not $modelSet) (not $values.useExistingSecret) (ne (toString (index ($values.secrets | default dict) "ALLOW_INSECURE_OTEL" | default "")) "") -}}
-{{- $legacy := or (hasKey ($values.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL") $secretAllow -}}
-{{- if not $legacy -}}
+{{- /* Match what <component>/secrets.yaml renders ({{ $value | quote }}): null
+   renders empty, a bool false renders "false", 0 renders "0". */ -}}
+{{- $secretVal := index ($values.secrets | default dict) "ALLOW_INSECURE_OTEL" -}}
+{{- $secretSet := and (not $values.useExistingSecret) (not (kindIs "invalid" $secretVal)) (ne (toString $secretVal) "") -}}
+{{- $extra := hasKey ($values.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL" -}}
+{{- $emit := false -}}
+{{- if not $extra -}}
+{{- if .nodeLocal -}}
+{{- $emit = not (and $secretSet (not $modelSet)) -}}
+{{- else -}}
+{{- $emit = and $modelSet $secretSet -}}
+{{- end -}}
+{{- end -}}
+{{- if $emit -}}
 - name: ALLOW_INSECURE_OTEL
   value: {{ include "lerian-common.otel.allowInsecure" (dict "context" .context "configmap" $cm) | quote }}
 {{- end -}}

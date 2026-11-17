@@ -88,10 +88,11 @@ spec:
           only emitted when the configmap does NOT set a non-empty
           OTEL_EXPORTER_OTLP_ENDPOINT (values ship the key as "") —
           otherwise it would silently clobber the operator's endpoint.
-          Next to each "$(HOST_IP):4317" entry the chart also emits
-          ALLOW_INSECURE_OTEL (plugin-br-pix-lerian.otelAllowInsecure.env): the
-          node-local hop is plaintext, which lib-observability refuses in
-          production without a reason. An operator endpoint gets none.
+          Next to the "$(HOST_IP):4317" entry, when the chart itself injects
+          HOST_IP from status.hostIP, it also emits ALLOW_INSECURE_OTEL
+          (plugin-br-pix-lerian.otelAllowInsecure.env): the node-local hop is
+          plaintext, which lib-observability refuses in production without a
+          reason. An operator endpoint or operator HOST_IP gets no default.
           */}}
           {{- /* default dict: `configmap: null` in values yields nil, and a field
                access on nil panics rather than falling through to the default. */}}
@@ -154,7 +155,7 @@ spec:
             {{- if and $emitOtelEndpoint (not $operatorHostIP) }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "$(HOST_IP):4317"
-            {{- with (include "plugin-br-pix-lerian.otelAllowInsecure.env" (dict "context" $ "values" $values "configmap" $cm)) }}
+            {{- with (include "plugin-br-pix-lerian.otelAllowInsecure.env" (dict "context" $ "values" $values "configmap" $cm "nodeLocal" true)) }}
             {{- . | nindent 12 }}
             {{- end }}
             {{- end }}
@@ -167,7 +168,12 @@ spec:
             {{- if and $emitOtelEndpoint $operatorHostIP }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "$(HOST_IP):4317"
-            {{- with (include "plugin-br-pix-lerian.otelAllowInsecure.env" (dict "context" $ "values" $values "configmap" $cm)) }}
+            {{- end }}
+            {{- /* Not the chart's own node-local hop (operator endpoint, operator HOST_IP,
+               or telemetry off): no default reason; an entry only when the model must beat
+               a Secret value. */}}
+            {{- if not (and $emitOtelEndpoint (not $operatorHostIP)) }}
+            {{- with (include "plugin-br-pix-lerian.otelAllowInsecure.env" (dict "context" $ "values" $values "configmap" $cm "nodeLocal" false)) }}
             {{- . | nindent 12 }}
             {{- end }}
             {{- end }}

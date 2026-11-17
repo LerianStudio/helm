@@ -72,7 +72,10 @@ global:
   # -- Env-wide observability, consumed by lerian-common.otel.env. Declare once at
   # the umbrella level; a component brCcs.configmap.<KEY> still overrides per-service.
   # Precedence: brCcs.configmap.<KEY> > global.observability.<field> > chart default.
+  # Fields: enabled, otlpEndpoint, deploymentEnvironment, allowInsecureOtel (ALLOW_INSECURE_OTEL reason for the plaintext node-local collector hop).
   observability:
+    # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+    #   allowInsecureOtel: "node-local collector on the pod's own node"
     # -- Enable telemetry export (ENABLE_TELEMETRY). Unset → chart default "false".
     enabled: false
     # -- OTLP collector endpoint (OTEL_EXPORTER_OTLP_ENDPOINT). Unset → chart default "".
@@ -321,6 +324,17 @@ brCcs:
   # SWAGGER_{HOST,SCHEMES}.
   # @default -- templates/configmap.yaml
   configmap: {}
+  # ALLOW_INSECURE_OTEL: with ENABLE_TELEMETRY "true" above, the pod ships OTLP in
+  # plaintext to the collector on its own node ($(HOST_IP):4317), which
+  # lib-observability refuses in production unless ALLOW_INSECURE_OTEL carries a
+  # reason. The chart sets it on the container, resolved in this order:
+  #   brCcs.configmap.ALLOW_INSECURE_OTEL > global.observability.allowInsecureOtel
+  #   > "node-local collector on the pod's own node".
+  # null = unset (falls through); "" or "false" = explicit refusal (stops the
+  # chain; the app then refuses the plaintext exporter in production). A key in
+  # brCcs.extraEnvVars stands instead and the chart adds no entry of its own.
+  # configmap:
+  #   ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
 
   # -- Secrets for storing sensitive data. Provide real values via an existing
   # Secret (useExistingSecret) or a secrets manager — NEVER commit real values.

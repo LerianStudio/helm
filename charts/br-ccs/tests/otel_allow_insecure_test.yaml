@@ -1,0 +1,186 @@
+suite: br-ccs lets the node-local OTEL hop boot in production
+templates:
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+  - templates/deployment.yaml
+release:
+  name: br-ccs
+  namespace: br-ccs
+set:
+  # The chart targets the node-local collector ($(HOST_IP):4317, no scheme =
+  # plaintext) exactly when brCcs.configmap.ENABLE_TELEMETRY is "true".
+  brCcs.configmap.ENABLE_TELEMETRY: "true"
+tests:
+  # --- Container env (deployment) -------------------------------------------
+  - it: the plaintext node-local endpoint carries the default ALLOW_INSECURE_OTEL reason
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: global.observability.allowInsecureOtel sets the value env-wide
+    template: templates/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: the component configmap wins over the global
+    template: templates/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      brCcs.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "component reason"}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: an explicit refusal stands as the one entry
+    template: templates/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      brCcs.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: a null component value is unset and falls through to the global
+    template: templates/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      brCcs.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+
+  - it: a null global is unset and leaves the node-local reason
+    template: templates/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: an operator value in extraEnvVars stands and the chart adds no entry
+    template: templates/deployment.yaml
+    set:
+      brCcs.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: an existing Secret is invisible to the chart, so the entry is still emitted
+    template: templates/deployment.yaml
+    set:
+      brCcs.useExistingSecret: true
+      brCcs.existingSecretName: br-ccs-external
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: telemetry off emits no entry
+    template: templates/deployment.yaml
+    set:
+      brCcs.configmap.ENABLE_TELEMETRY: "false"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: telemetry through global.observability with an explicit endpoint gets neither the node hop nor the variable
+    template: templates/deployment.yaml
+    set:
+      brCcs.configmap.ENABLE_TELEMETRY: null
+      global.observability.enabled: true
+      global.observability.otlpEndpoint: https://otel.example.com:4317
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT}
+          any: true
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  # --- ConfigMap (reaches the app when the node-local hop is off) ------------
+  - it: the ConfigMap renders configmap.ALLOW_INSECURE_OTEL over the global
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.ENABLE_TELEMETRY: "false"
+      brCcs.configmap.ALLOW_INSECURE_OTEL: "component reason"
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: component reason
+
+  - it: the ConfigMap takes global.observability.allowInsecureOtel when the component is unset
+    template: templates/configmap.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: env-wide reason
+
+  - it: a null component value falls through to the global in the ConfigMap
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.ALLOW_INSECURE_OTEL: null
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: env-wide reason
+
+  - it: an explicit refusal is rendered as is in the ConfigMap
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.ALLOW_INSECURE_OTEL: ""
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ""
+
+  - it: the ConfigMap carries no ALLOW_INSECURE_OTEL when nothing is set
+    template: templates/configmap.yaml
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+
+  - it: the ConfigMap renders the extraEnvVars value once when the legacy key is set
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.ALLOW_INSECURE_OTEL: "component reason"
+      brCcs.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: operator reason

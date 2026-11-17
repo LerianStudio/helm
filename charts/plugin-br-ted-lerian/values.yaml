@@ -196,6 +196,13 @@ plugin-br-ted-lerian:
   streaming:
     # -- Enable lib-streaming for this component (emits STREAMING_ENABLED + STREAMING_* from global.streaming)
     enabled: false
+  # ALLOW_INSECURE_OTEL — with otel.enabled, the pod ships to the node-local collector
+  # at $(HOST_IP):4317 in plaintext, which lib-observability refuses in production
+  # unless ALLOW_INSECURE_OTEL carries a reason. The chart sets it on the container:
+  # plugin-br-ted-lerian.configmap.ALLOW_INSECURE_OTEL, else
+  # global.observability.allowInsecureOtel, else "node-local collector on the pod's own
+  # node". "" or "false" refuses (the app then will not boot on the node-local hop in
+  # production); null is unset. See the README.
   otel:
     # -- Enable OpenTelemetry for this component (emits ENABLE_TELEMETRY + the OTLP podEnv)
     enabled: false

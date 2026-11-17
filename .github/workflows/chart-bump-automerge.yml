@@ -48,6 +48,7 @@ jobs:
       pull-requests: read
     outputs:
       routine: ${{ steps.classify.outputs.routine }}
+      reason: ${{ steps.classify.outputs.reason }}
     steps:
       - name: Checkout main
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -92,4 +93,8 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
           BOT_MENTION: ${{ secrets.SLACK_BOT_SEVERINO }}
           SLACK_CHANNEL: ${{ vars.SLACK_CHANNEL_DEVOPS }}
+          REASON: >-
+            ${{ needs.classify.result == 'failure' && 'the classifier failed, so the bump was not checked'
+            || needs.classify.outputs.routine != 'true' && needs.classify.outputs.reason
+            || 'auto-merge is off (AUTOMERGE_ENABLED)' }}
         run: bash .github/scripts/severino-ticket.sh

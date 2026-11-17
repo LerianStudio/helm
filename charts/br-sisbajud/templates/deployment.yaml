@@ -14,6 +14,9 @@
 {{- $telemetry := eq (include "br-sisbajud.isTrue" (include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false"))) "true" -}}
 {{- $obs := (.Values.global | default dict).observability | default dict -}}
 {{- $explicitEndpoint := or (hasKey $cm "OTEL_EXPORTER_OTLP_ENDPOINT") $obs.otlpEndpoint (hasKey $x "OTEL_EXPORTER_OTLP_ENDPOINT") -}}
+{{- /* The operator's ALLOW_INSECURE_OTEL (security.allowInsecureOtel, configmap or
+   extraEnvVars) stands: the helper's own entry would override it. */ -}}
+{{- $operatorAllow := or (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ALLOW_INSECURE_OTEL" "params" (.Values.brSisbajud.security | default dict) "field" "allowInsecureOtel" "default" "")) (hasKey $x "ALLOW_INSECURE_OTEL") -}}
 {{- $ex := include "br-sisbajud.execution" . | fromYaml -}}
 {{- $appVolumes := include "br-sisbajud.appVolumes" . | fromYamlArray -}}
 {{- $appMounts := include "br-sisbajud.appVolumeMounts" . | fromYamlArray -}}
@@ -170,7 +173,7 @@ spec:
                   key: {{ include "br-sisbajud.openbaoTokenKey" . }}
             {{- end }}
             {{- if and $telemetry (not $explicitEndpoint) }}
-            {{- include "lerian-common.otel.podEnv" (dict "port" 4317) | nindent 12 }}
+            {{- include "lerian-common.otel.podEnv" (dict "port" 4317 "allowInsecure" (not $operatorAllow)) | nindent 12 }}
             {{- end }}
             {{- with (include "br-sisbajud.corsExtraEnv" . | trim) }}
             {{- . | nindent 12 }}

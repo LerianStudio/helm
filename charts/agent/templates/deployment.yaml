@@ -55,8 +55,10 @@ spec:
           env:
           # Writable state for the read-only root filesystem, and Helm's own
           # cache/config/data homes and temp dir inside it. Both are emptyDir
-          # volumes below, which is why an enrolled identity is kept in the
-          # <fullname>-identity Secret as well.
+          # volumes below, which is why an enrolled identity, and a renewal
+          # secret a rotation has not settled yet, is kept in the
+          # <fullname>-identity Secret as well. The state dir mirrors both for
+          # a container restart, which reads it before the Secret.
           - name: AGENT_STATE_DIR
             value: "/var/lib/lerian-agent"
           - name: TMPDIR

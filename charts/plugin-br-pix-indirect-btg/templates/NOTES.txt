@@ -105,11 +105,11 @@
 ---
 
 📖 API Documentation (application 1.10.0 and later):
-{{- $docsBase := printf "http://localhost:%v" .Values.pix.service.port }}
+{{- $docsBase := "http://localhost:4014" }}
 {{- if .Values.pix.ingress.enabled }}
 {{- $first := first .Values.pix.ingress.hosts }}
 {{- if and $first $first.host }}
-{{- $docsBase = printf "http%s://%s" (ternary "s" "" (and .Values.pix.ingress.tls (gt (len .Values.pix.ingress.tls) 0))) $first.host }}
+{{- $docsBase = printf "http%s://%s" (ternary "s" "" (not (empty .Values.pix.ingress.tls))) $first.host }}
 {{- end }}
 {{- end }}
 

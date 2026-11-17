@@ -1,5 +1,30 @@
 # Agent Changelog
 
+## [1.0.6](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.6)
+
+Features:
+
+- Document `ALLOW_INSECURE_OTEL` in `values.yaml`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the modeled `ALLOW_INSECURE_OTEL` setting takes precedence over the chart Secret. (@guimoreirar)
+- Maintain a chart-Secret `ALLOW_INSECURE_OTEL` and document the setting. (@guimoreirar)
+- Retrieve `ALLOW_INSECURE_OTEL` from the modeled setting. (@guimoreirar)
+- Count only non-empty `ALLOW_INSECURE_OTEL` values, addressing cases where the chart omits empty ones. (@guimoreirar)
+- Preserve an `ALLOW_INSECURE_OTEL` setting in `agent.secrets`. (@guimoreirar)
+- Retain an `ALLOW_INSECURE_OTEL` setting in `agent.configmap`. (@guimoreirar)
+- Enable the node-local OTEL hop to boot in production environments. (@guimoreirar)
+
+Improvements:
+
+- Name the conditional digest step in the `1.0.5` guide. (@fredcamaral)
+- Add an upgrade guide for `1.0.5`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.5...agent-v1.0.6)
+
+---
+
 ## [1.0.5](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.5)
 
 Fixes:
@@ -80,3 +105,4 @@ Improvements:
 - Bring the agent chart to the repository's values contract. (@bedatty)
 
 [View all changes](https://github.com/LerianStudio/helm/commits/agent-v1.0.0)
+

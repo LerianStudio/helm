@@ -29,13 +29,17 @@ global:
   #     redis: { host: "my-elasticache.example.com:6379" }
   datastores: {}
   # -- Env-wide telemetry. Consumed by lerian-common.otel.env (block
-  # "observability"). Fields: enabled, otlpEndpoint, deploymentEnvironment.
+  # "observability"). Fields: enabled, otlpEndpoint, deploymentEnvironment,
+  # allowInsecureOtel (ALLOW_INSECURE_OTEL on the plaintext node-local hop; see the README).
   # (configmap.ENABLE_TELEMETRY / OTEL_EXPORTER_OTLP_ENDPOINT /
   # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT override; falls back to
   # boilerplate.otel.* when neither this nor a native key is set.) Per-service
   # OTEL identity (library/service name/version) stays in boilerplate.otel.
   # Example: observability: { enabled: true, otlpEndpoint: "otel-collector:4317" }
   observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   allowInsecureOtel: "node-local collector on the pod's own node"
   # -- Env-wide plugin-access-manager auth. Consumed by lerian-common.auth.env
   # (block "auth"). Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
   # Example: auth: { host: "http://plugin-access-manager-auth:4000" }
@@ -207,6 +211,13 @@ system-facts:
   streaming:
     # -- Enable lib-streaming for this component (emits STREAMING_ENABLED + STREAMING_* from global.streaming)
     enabled: false
+  # ALLOW_INSECURE_OTEL — with otel.enabled, the pod ships to the node-local collector
+  # at $(HOST_IP):4317 in plaintext, which lib-observability refuses in production
+  # unless ALLOW_INSECURE_OTEL carries a reason. The chart sets it on the container:
+  # system-facts.configmap.ALLOW_INSECURE_OTEL, else
+  # global.observability.allowInsecureOtel, else "node-local collector on the pod's own
+  # node". "" or "false" refuses (the app then will not boot on the node-local hop in
+  # production); null is unset. See the README.
   otel:
     # -- Enable OpenTelemetry for this component (emits ENABLE_TELEMETRY + the OTLP podEnv)
     enabled: false

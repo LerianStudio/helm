@@ -7,3 +7,4 @@ app:
   configmap: {}
   service: {type: ClusterIP, port: 4000}
   ingress: {className: alb}
+otelPodEnv: {}

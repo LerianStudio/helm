@@ -1,0 +1,11 @@
+{{- $in := dict -}}
+{{- range $k, $v := .Values.otelPodEnv }}{{- $_ := set $in $k $v -}}{{- end }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: otel
+spec:
+  containers:
+    - name: app
+      image: app:{{ .Values.app.image.tag }}
+      env: {{- include "lerian-common.otel.podEnv" $in | nindent 8 }}

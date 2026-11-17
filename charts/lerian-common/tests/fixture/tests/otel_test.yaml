@@ -1,0 +1,37 @@
+suite: lerian-common otel.podEnv
+templates:
+  - templates/otel.yaml
+tests:
+  - it: the default plaintext hop to the node-local collector carries ALLOW_INSECURE_OTEL
+    asserts:
+      - equal:
+          path: "spec.containers[0].env"
+          value:
+            - {name: HOST_IP, valueFrom: {fieldRef: {fieldPath: status.hostIP}}}
+            - {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "http://$(HOST_IP):4317"}
+            - {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: an explicit http:// scheme still carries it
+    set: {otelPodEnv: {port: 4318, scheme: "http://"}}
+    asserts:
+      - equal: {path: "spec.containers[0].env[1].value", value: "http://$(HOST_IP):4318"}
+      - equal: {path: "spec.containers[0].env[2].name", value: ALLOW_INSECURE_OTEL}
+
+  - it: https never carries it
+    set: {otelPodEnv: {scheme: https}}
+    asserts:
+      - equal: {path: "spec.containers[0].env[1].value", value: "https://$(HOST_IP):4317"}
+      - notContains: {path: "spec.containers[0].env", content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}}
+      - lengthEqual: {path: "spec.containers[0].env", count: 2}
+
+  - it: allowInsecure=false leaves the operator's own ALLOW_INSECURE_OTEL alone
+    set: {otelPodEnv: {allowInsecure: false}}
+    asserts:
+      - lengthEqual: {path: "spec.containers[0].env", count: 2}
+      - equal: {path: "spec.containers[0].env[1].value", value: "http://$(HOST_IP):4317"}
+
+  - it: podAttributes still follow
+    set: {otelPodEnv: {podAttributes: true}}
+    asserts:
+      - lengthEqual: {path: "spec.containers[0].env", count: 5}
+      - equal: {path: "spec.containers[0].env[4]", value: {name: OTEL_RESOURCE_ATTRIBUTES, value: "k8s.pod.ip=$(POD_IP)"}}

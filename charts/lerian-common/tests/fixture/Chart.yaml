@@ -1,6 +1,6 @@
 apiVersion: v2
 name: health-fixture
-description: Test-only consumer of the lerian-common health preset; run with `helm unittest charts/lerian-common/tests/fixture`.
+description: Test-only consumer of the lerian-common helpers (health preset, otel.podEnv); run with `helm unittest charts/lerian-common/tests/fixture`.
 version: 0.0.0
 dependencies:
   - name: lerian-common-helm

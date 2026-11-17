@@ -34,6 +34,14 @@ HOST_IP, as a URL (`http://$(HOST_IP):4317`): the OTel SDK parses this env var
 with url.Parse and rejects a bare host:port. With podAttributes=true it also adds POD_IP + OTEL_RESOURCE_ATTRIBUTES.
 Caller gates on whether the collector is enabled and nindents (usually 10).
 
+The node-local hop is plaintext, and lib-observability refuses a plaintext
+exporter in production unless ALLOW_INSECURE_OTEL carries a reason, so the app
+would exit at boot. With the http scheme the helper also emits
+ALLOW_INSECURE_OTEL; with https it never does. A container `env` entry beats the
+ConfigMap, and a second entry with the same name breaks the apply, so a caller
+whose operator already sets ALLOW_INSECURE_OTEL (configmap, extraEnvVars or a
+chart knob) passes allowInsecure=false and the operator's value stands.
+
 Usage (in a component deployment.yaml, inside `env:`):
   {{- if (index .Values "otel-collector-lerian").enabled }}
   {{- include "lerian-common.otel.podEnv" (dict "port" 4317) | nindent 10 }}
@@ -44,14 +52,22 @@ Inputs (dict):
   scheme        (opt)  URL scheme, "http" (default) or "https"; a trailing "://"
                        is accepted. gRPC collectors take http:// (plaintext) too.
   podAttributes (opt)  bool — also emit POD_IP + OTEL_RESOURCE_ATTRIBUTES
+  allowInsecure (opt)  bool, default true — emit ALLOW_INSECURE_OTEL with the
+                       http scheme; false when the operator already sets it
 */}}
 {{- define "lerian-common.otel.podEnv" -}}
+{{- $scheme := .scheme | default "http" | trimSuffix "://" -}}
+{{- $allowInsecure := ternary .allowInsecure true (hasKey . "allowInsecure") -}}
 - name: "HOST_IP"
   valueFrom:
     fieldRef:
       fieldPath: status.hostIP
 - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
-  value: "{{ .scheme | default "http" | trimSuffix "://" }}://$(HOST_IP):{{ .port | default 4317 }}"
+  value: "{{ $scheme }}://$(HOST_IP):{{ .port | default 4317 }}"
+{{- if and $allowInsecure (ne $scheme "https") }}
+- name: "ALLOW_INSECURE_OTEL"
+  value: "node-local collector on the pod's own node"
+{{- end }}
 {{- if .podAttributes }}
 - name: "POD_IP"
   valueFrom:

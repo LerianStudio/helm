@@ -223,7 +223,7 @@ bankTransfer:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.6.0"
+    tag: "3.7.0"
   # -- PostgreSQL migrations. External Postgres: a Job (Helm hook pre-install,pre-upgrade;
   # ArgoCD PreSync). Bundled Postgres: an initContainer of each app pod, so no pod starts
   # on an unmigrated schema; the hook notes below apply to the external Job only.
@@ -453,6 +453,22 @@ bankTransfer:
     # Authentication (inbound — plugin-access-manager)
     # PLUGIN_AUTH_ENABLED/PLUGIN_AUTH_ADDRESS are NOT pinned — the chart
     # already defaults them in templates/configmap.yaml.
+    # AUTH_CACHE_TTL (app v3.7.0): lib-auth decision cache, a Go duration such
+    # as "30s". Unset = no cache (lib-auth default); above 0 a partner change
+    # reaches the pod only after the TTL.
+    # AUTH_CACHE_TTL: ""
+    # =================================================================
+
+    # =================================================================
+    # Partner antifraud (app v3.7.0) — rendered only when set.
+    # ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: exact hosts (comma-separated) a tenant
+    # route may reach over http or a private address, e.g. an in-cluster
+    # Flowker (BYOC / Lerian operation only; leave unset on Lerian Cloud).
+    # ANTIFRAUD_SECRETS_BACKEND: where the antifraud credentials live, "aws" or
+    # "vault"; no app default, and unset makes an enabled flow deny with
+    # INVALID_CONFIG. Credentials come from the secret manager, never env.
+    # ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: ""
+    # ANTIFRAUD_SECRETS_BACKEND: ""
     # =================================================================
 
     # =================================================================

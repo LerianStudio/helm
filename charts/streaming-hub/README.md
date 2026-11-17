@@ -268,6 +268,18 @@ This chart provisions **none** of the following — they live outside it:
 
 ---
 
+## Plaintext OTEL to the node-local collector (`ALLOW_INSECURE_OTEL`)
+
+With `streamingHub.telemetry.enabled` on, the pod ships telemetry to the collector on its own node at `http://$(HOST_IP):4317`, in plaintext. lib-observability refuses a plaintext exporter in production unless `ALLOW_INSECURE_OTEL` carries a reason, so the chart sets that variable on the container. The value resolves in this order:
+
+1. `streamingHub.configmap.ALLOW_INSECURE_OTEL`
+2. `global.observability.allowInsecureOtel`, one value for the whole environment
+3. the default reason, `node-local collector on the pod's own node`
+
+`null` counts as unset. An empty string is an explicit refusal, and the app then refuses the plaintext exporter in production. The configmap value also lands in the ConfigMap, so it also reaches the app when you point at an explicit plaintext endpoint.
+
+A key in `streamingHub.extraEnvVars` or a non-empty `streamingHub.secrets.ALLOW_INSECURE_OTEL` in the chart's own Secret is the legacy route. It still works, and the chart then adds no entry of its own. With `useExistingSecret: true` the chart cannot see the Secret, so the container entry overrides any `ALLOW_INSECURE_OTEL` held there; set `streamingHub.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
+
 ## Postgres TLS and the CA bundle
 
 The DSN decides whether the server certificate is verified; the chart only makes

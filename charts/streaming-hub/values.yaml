@@ -59,7 +59,8 @@ global:
   # -- Shared observability contract (lerian-common.globalValue block `observability`).
   #    Empty by default → the template ships the defaults. Fields: otlpEndpoint
   #    (OTEL_EXPORTER_OTLP_ENDPOINT), insecureExporter (OTEL_INSECURE_EXPORTER),
-  #    deploymentEnvironment (ENV_NAME). The per-pod OTLP endpoint override is
+  #    deploymentEnvironment (ENV_NAME), allowInsecureOtel (ALLOW_INSECURE_OTEL on the
+  #    plaintext node-local hop; see the README). The per-pod OTLP endpoint override is
   #    governed separately by streamingHub.telemetry.enabled.
   observability: {}
   # -- Shared multi-tenant contract (lib-commons/multitenancy). `enabled` drives the

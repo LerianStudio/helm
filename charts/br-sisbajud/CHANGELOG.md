@@ -1,5 +1,28 @@
 # Br-sisbajud Changelog
 
+## [1.5.1](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.5.1)
+
+Features:
+
+- Documented the `ALLOW_INSECURE_OTEL` setting in `values.yaml` and included it in the `global.observability` example. (@guimoreirar)
+
+Fixes:
+
+- Allowed the modeled `ALLOW_INSECURE_OTEL` setting to override the chart Secret. (@guimoreirar)
+- Ensured that a null `configmap ALLOW_INSECURE_OTEL` falls through to the appropriate configuration knob. (@guimoreirar)
+- Modified the system to take `ALLOW_INSECURE_OTEL` from the modeled setting. (@guimoreirar)
+- Adjusted the logic to count only a non-empty `ALLOW_INSECURE_OTEL` where the chart drops empty ones. (@guimoreirar)
+- Maintained an `ALLOW_INSECURE_OTEL` from secrets or set it to empty when necessary. (@guimoreirar)
+- Enabled the node-local OTEL hop to boot in production environments. (@guimoreirar)
+
+Improvements:
+
+- Bounded upgrade claims in the documentation. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.5.0...br-sisbajud-v1.5.1)
+
+---
+
 ## [1.5.0](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.5.0)
 
 Features:

@@ -38,9 +38,11 @@ Keep the existing password and Secret references for this patch. Do not decode S
 
 **After upgrading:**
 
-The new chart version also changes the auth and identity `checksum/config` annotations, so the auth and identity Deployments roll as well. Use the Deployment name and selector from the rendered preview or installed manifest; overrides can change names. With the default names in the examples:
+The new chart version also changes the auth and identity `checksum/config` annotations, so all three application Deployments roll even with the same image pins. The bundled PostgreSQL and Valkey StatefulSet pod templates are unchanged under identical intended values. Use the Deployment name and selector from the rendered preview or installed manifest; overrides can change names. With the default names in the examples:
 
 ```bash
+kubectl rollout status deployment/plugin-access-manager-auth -n midaz-plugins
+kubectl rollout status deployment/plugin-access-manager-identity -n midaz-plugins
 kubectl rollout status deployment/plugin-access-manager-caradhras -n midaz-plugins
 kubectl get pods -n midaz-plugins -l 'app.kubernetes.io/name=plugin-access-manager-caradhras,app.kubernetes.io/instance=plugin-access-manager'
 ```
@@ -52,6 +54,8 @@ Verify both init containers complete, the main server becomes Ready, and the exi
 Stop and identify the failure before retrying. If a rollback is necessary, select the recorded known-good revision from `helm history plugin-access-manager -n midaz-plugins` and follow the tested recovery procedure. Helm rollback does not restore PostgreSQL data, external Secrets or rotated database credentials. Rolling back to `11.1.0` also restores the unquoted password DSN, so it is not a viable recovery for passwords that depend on this fix. Restore data or credentials only under the coordinated database recovery plan; do not rotate to a weaker password as a workaround.
 
 ## Preview changes before upgrading
+
+The bundled PostgreSQL Secret uses cluster `lookup` to preserve its existing password. An offline/client-only preview cannot read it and is not a credential-rotation plan; without privately supplied current passwords, upgrade rendering can fail or show generated Secret/checksum differences. Keep current bundled-store credentials in the private complete intended values file through your approved secure process, never CLI `--set` or decoded terminal output. Where your configuration relies on existing cluster objects, use a lookup-aware server-side preview supported by your Helm/helm-diff versions; it requires authorized cluster access and has not been exercised by this guide. Review Secret references and all three application rollouts privately before applying.
 
 ```bash
 helm diff upgrade plugin-access-manager oci://ghcr.io/lerianstudio/plugin-access-manager -n midaz-plugins --version 11.1.1 --reset-values -f values-11.1.1.yaml --suppress-secrets

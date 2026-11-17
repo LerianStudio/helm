@@ -39,6 +39,9 @@ global:
   datastores: {}
   # -- Observability: enabled | otlpEndpoint | deploymentEnvironment | allowInsecureOtel.
   observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   allowInsecureOtel: "node-local collector on the pod's own node"
   # -- Auth (plugin-access-manager): enabled | host -> PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST.
   #    PLUGIN_AUTH_HOST is also where the executor mints its Mensageria token.
   auth: {}

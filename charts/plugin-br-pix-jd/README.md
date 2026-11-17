@@ -29,7 +29,7 @@ The chart **refuses to render** without these:
 | `api.configmap.POSTGRES_HOST` | host of the external PostgreSQL | empty | the render fails |
 | `api.secrets.POSTGRES_PASSWORD` | password of the external PostgreSQL | empty | the render fails. Or supply it through `api.existingSecret.name` |
 | `api.configmap.REDIS_HOST` | `host:port` of the Valkey or Redis | empty | the render fails. The rate limiter is fail-closed: without Redis it refuses every request |
-| `api.secrets.LICENSE_KEY` | your license key | empty | the render fails. The API and the worker validate it at startup in every mode. Or supply it through `api.existingSecret.name`, and `worker.existingSecret.name` when the worker runs |
+| `api.secrets.LICENSE_KEY` | your license key | empty | the render fails. The API and the worker validate it at startup. Or supply it through `api.existingSecret.name`, and `worker.existingSecret.name` when the worker runs. Or set `api.licenseFile.existingSecret` (and `worker.licenseFile.existingSecret`): a Secret with a signed licence file under the key `license`, mounted as the directory `/etc/lerian/license` with `LICENSE_FILE_PATH` set; file mode needs an image on lib-license-go v5 |
 
 The chart **renders** without the values below, but the service does not work without them:
 
@@ -86,6 +86,27 @@ Every value under `api.secrets` is sensitive. Keep it in a Kubernetes Secret, ne
 To use a Secret that you manage, set `api.existingSecret.name`. The chart then renders no Secret for the API and reads every secret key — `LICENSE_KEY`, `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, the JD/Midaz/CRM credentials and the optional keys above — from that Secret. With the worker enabled, also set `worker.existingSecret.name` to the same Secret: otherwise the chart renders a Secret for the worker, and the render fails without `api.secrets.LICENSE_KEY`. The chart does not check that Secret's content: to sign payment orders, it must carry both signing keys.
 
 If you use argocd-vault-plugin, a `<path:...>` placeholder skips the chart's format checks, because the plugin substitutes it after Helm runs. The value in your vault must then hold the key in the right format — for a PEM, with real line breaks.
+
+## Installing behind the JD Courier
+
+When the install receives its JD traffic through the JD Courier, the Courier calls the API on a machine credential whose role is `service`, and the API admits that role only under the inverted authorization model. The chart models that as one block:
+
+| Key | What it does | Default |
+| :-- | :----------- | :------ |
+| `courier.enabled` | emits `AUTH_M2M_INVERSION_ENABLED="true"` **and** `AUTH_M2M_PRODUCT_FORWARD_ENABLED="true"` in the API ConfigMap, always as a pair: under the legacy model every Courier delivery answers `403`, and inversion without forward answers `403` just the same. The worker serves no Courier routes and never gets the pair. `false` emits neither variable — the application defaults both to off | `false` |
+| `courier.accountClaims.enabled` | emits `COURIER_ACCOUNT_CLAIMS_ENABLED="true"` in the **worker** ConfigMap only: the worker sweep that claims each participant's CRM accounts on its Courier. Requires `worker.enabled=true` — the render fails otherwise — and is independent of `courier.enabled` | `false` |
+
+Prerequisites that are not this chart's:
+
+- `api.configmap.PLUGIN_AUTH_ENABLED="true"`: the admission pair authorizes the Courier's bearer, so it does nothing with authentication off.
+- The Courier's credential, with source `jd-courier`: issued by the Tenant Manager in a multi-tenant install, or by the install's service-credential issuer in single-tenant.
+- The `service` role published to the Access Manager. In single-tenant, publish it with `api.configmap.IDP_DECLARATION_ENABLED="true"` (see Optional values above).
+- The Access Manager at **3.13.0 or later**.
+
+The Courier is also something this plugin calls — the on-us ownership lookup and the account claims — and the chart already models that side; set it with the keys that exist today:
+
+- `api.configmap.COURIER_URL`: the Courier's address, emitted only when set, single-tenant only — in multi-tenant each tenant's Courier comes from its `jd-spi` bundle and the variable is ignored. It must point at the Courier process running the **`admin`** role: only that role serves the ownership lookup, and a process in any other role answers `404` while its own health probe still reads up.
+- `api.secrets.COURIER_CLIENT_ID` and `api.secrets.COURIER_CLIENT_SECRET`: the Courier credentials, among the chart's Secret keys and emitted only when set. With `api.existingSecret.name`, carry them in that Secret instead.
 
 ## Install
 
@@ -164,7 +185,7 @@ Per-version notes: [0.1](docs/UPGRADE-0.1.md) · [0.2](docs/UPGRADE-0.2.md) · [
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `api.secrets.POSTGRES_PASSWORD` and `api.secrets.LICENSE_KEY` (the render fails without them); the JD, Midaz and CRM client credentials for a working install. With `api.existingSecret.name` (and `worker.existingSecret.name` when the worker runs), all of them come from that Secret.
+- Required secrets: `api.secrets.POSTGRES_PASSWORD` and `api.secrets.LICENSE_KEY` (the render fails without them; `LICENSE_KEY` is waived by `licenseFile.existingSecret`); the JD, Midaz and CRM client credentials for a working install. With `api.existingSecret.name` (and `worker.existingSecret.name` when the worker runs), all of them come from that Secret.
 - Dependency notes: `lerian-common-helm` (library chart, renders nothing); `postgresql` (Bitnami `16.3.5`) and `valkey` (Bitnami `2.4.7`), both disabled by default — the chart expects an external PostgreSQL and Valkey or Redis.
 - Production overrides: `api.image.tag`, `worker.image.tag`, `migrations.image.tag`, `api.configmap.ENVIRONMENT_NAME=production`, `api.configmap.POSTGRES_SSLMODE`, `api.configmap.PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_HOST`, `api.configmap.REDIS_HOST`, `api.existingSecret.name`, and `api.ingress.*`.
 - Source/license: the plugin is closed source and requires an Enterprise license; this chart is published from [LerianStudio/helm](https://github.com/LerianStudio/helm).

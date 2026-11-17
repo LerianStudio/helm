@@ -1,0 +1,195 @@
+suite: br-ccs delivers the env keys the app reads, in the right object
+templates:
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+  - templates/deployment.yaml
+release:
+  name: br-ccs
+  namespace: br-ccs
+tests:
+  # --- CRM / IdP M2M credentials: Secret only, and only when set -------------
+  - it: puts the CRM and IdP client credentials in the Secret when set
+    template: templates/secrets.yaml
+    set:
+      brCcs.secrets.CRM_CLIENT_ID: crm-id
+      brCcs.secrets.CRM_CLIENT_SECRET: crm-secret
+      brCcs.secrets.IDP_M2M_CLIENT_ID: idp-id
+      brCcs.secrets.IDP_M2M_CLIENT_SECRET: idp-secret
+    asserts:
+      - equal:
+          path: stringData.CRM_CLIENT_ID
+          value: crm-id
+      - equal:
+          path: stringData.CRM_CLIENT_SECRET
+          value: crm-secret
+      - equal:
+          path: stringData.IDP_M2M_CLIENT_ID
+          value: idp-id
+      - equal:
+          path: stringData.IDP_M2M_CLIENT_SECRET
+          value: idp-secret
+
+  - it: renders no CRM or IdP credential when none is set
+    template: templates/secrets.yaml
+    asserts:
+      - notExists:
+          path: stringData.CRM_CLIENT_ID
+      - notExists:
+          path: stringData.CRM_CLIENT_SECRET
+      - notExists:
+          path: stringData.IDP_M2M_CLIENT_ID
+      - notExists:
+          path: stringData.IDP_M2M_CLIENT_SECRET
+
+  - it: never puts a CRM or IdP credential in the ConfigMap
+    template: templates/configmap.yaml
+    set:
+      brCcs.secrets.CRM_CLIENT_ID: crm-id
+      brCcs.secrets.CRM_CLIENT_SECRET: crm-secret
+      brCcs.secrets.IDP_M2M_CLIENT_ID: idp-id
+      brCcs.secrets.IDP_M2M_CLIENT_SECRET: idp-secret
+    asserts:
+      - notExists:
+          path: data.CRM_CLIENT_ID
+      - notExists:
+          path: data.CRM_CLIENT_SECRET
+      - notExists:
+          path: data.IDP_M2M_CLIENT_ID
+      - notExists:
+          path: data.IDP_M2M_CLIENT_SECRET
+
+  # --- RABBITMQ_URL embeds the password: Secret, never ConfigMap -------------
+  - it: keeps RABBITMQ_URL in the Secret
+    template: templates/secrets.yaml
+    set:
+      brCcs.secrets.RABBITMQ_URL: amqp://user:pass@rabbitmq:5672/
+    asserts:
+      - equal:
+          path: stringData.RABBITMQ_URL
+          value: amqp://user:pass@rabbitmq:5672/
+
+  - it: never puts RABBITMQ_URL in the ConfigMap
+    template: templates/configmap.yaml
+    set:
+      brCcs.secrets.RABBITMQ_URL: amqp://user:pass@rabbitmq:5672/
+    asserts:
+      - notExists:
+          path: data.RABBITMQ_URL
+
+  # --- Passthrough: only when set ---------------------------------------------
+  - it: passes the app keys through when set
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.CRM_URL: https://crm.example
+      brCcs.configmap.CRM_ORGANIZATION_ID: org-1
+      brCcs.configmap.IDP_HOST: http://idp:4001
+      brCcs.configmap.REPORTER_TEMPLATE_NAME_ACCS001: ACCS001
+      brCcs.configmap.BATCH_SCHEDULER_ENABLED: false
+      brCcs.configmap.STA_EVENT_HMAC_VERIFY_ENABLED: "true"
+      brCcs.configmap.ALLOW_INSECURE_TLS: "true"
+    asserts:
+      - equal:
+          path: data.CRM_URL
+          value: https://crm.example
+      - equal:
+          path: data.CRM_ORGANIZATION_ID
+          value: org-1
+      - equal:
+          path: data.IDP_HOST
+          value: http://idp:4001
+      - equal:
+          path: data.REPORTER_TEMPLATE_NAME_ACCS001
+          value: ACCS001
+      - equal:
+          path: data.BATCH_SCHEDULER_ENABLED
+          value: "false"
+      - equal:
+          path: data.STA_EVENT_HMAC_VERIFY_ENABLED
+          value: "true"
+      - equal:
+          path: data.ALLOW_INSECURE_TLS
+          value: "true"
+
+  - it: renders no optional app key when it is unset
+    template: templates/configmap.yaml
+    asserts:
+      - notExists:
+          path: data.CRM_URL
+      - notExists:
+          path: data.IDP_HOST
+      - notExists:
+          path: data.REPORTER_TEMPLATE_NAME_ACCS001
+      - notExists:
+          path: data.BATCH_SCHEDULER_ENABLED
+
+  - it: lets extraEnvVars win over the same passthrough key
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.CRM_URL: https://from-configmap
+      brCcs.extraEnvVars.CRM_URL: https://from-extra
+    asserts:
+      - equal:
+          path: data.CRM_URL
+          value: https://from-extra
+
+  # --- REPORTER_URL without the retired REPORTER_ENABLED switch --------------
+  - it: delivers REPORTER_URL set without REPORTER_ENABLED
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.REPORTER_URL: http://reporter:4005
+    asserts:
+      - equal:
+          path: data.REPORTER_URL
+          value: http://reporter:4005
+
+  - it: lets extraEnvVars carry REPORTER_URL alone
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.REPORTER_URL: http://from-configmap
+      brCcs.extraEnvVars.REPORTER_URL: http://from-extra
+    asserts:
+      - equal:
+          path: data.REPORTER_URL
+          value: http://from-extra
+
+  # The required() fires inside the configmap render; the deployment's checksum
+  # include evaluates it first, so the failure is reported on the deployment.
+  - it: still requires REPORTER_URL when REPORTER_ENABLED is true
+    template: templates/deployment.yaml
+    set:
+      brCcs.configmap.REPORTER_ENABLED: "true"
+    asserts:
+      - failedTemplate:
+          errorPattern: "brCcs.configmap.REPORTER_URL is required when REPORTER_ENABLED=true"
+
+  # --- Checksums roll the pods ------------------------------------------------
+  - it: annotates the pod with the configmap and secret checksums
+    template: templates/deployment.yaml
+    asserts:
+      - exists:
+          path: spec.template.metadata.annotations["checksum/configmap"]
+      - exists:
+          path: spec.template.metadata.annotations["checksum/secret"]
+
+  - it: drops the secret checksum when the Secret is external
+    template: templates/deployment.yaml
+    set:
+      brCcs.useExistingSecret: true
+      brCcs.existingSecretName: br-ccs-credentials
+    asserts:
+      - exists:
+          path: spec.template.metadata.annotations["checksum/configmap"]
+      - notExists:
+          path: spec.template.metadata.annotations["checksum/secret"]
+
+  - it: keeps the operator's pod annotations next to the checksums
+    template: templates/deployment.yaml
+    set:
+      brCcs.podAnnotations:
+        team: ccs
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations.team
+          value: ccs
+      - exists:
+          path: spec.template.metadata.annotations["checksum/configmap"]

@@ -1,0 +1,81 @@
+suite: licence key or file
+templates:
+  - templates/deployment.yaml
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+  - templates/controlplane-migrations.yaml
+set:
+  postgresql.enabled: true
+  app.configmap.BTG_API_BASE_URL: https://btg.example.test
+  app.configmap.BTG_AUTH_URL: https://btg.example.test/token
+  app.configmap.MIDAZ_LEDGER_URL: http://midaz:3000
+  app.configmap.ORGANIZATION_IDS: global
+  app.secrets.PROVIDER_CLIENT_ID: x
+  app.secrets.PROVIDER_CLIENT_SECRET: x
+  app.secrets.PLUGIN_AUTH_CLIENT_ID: x
+  app.secrets.PLUGIN_AUTH_CLIENT_SECRET: x
+  app.secrets.CONSULT_AUDIT_HMAC_KEY: "0123456789abcdef0123456789abcdef"
+  app.secrets.BTG_WEBHOOK_HMAC_SECRET: "0123456789abcdef0123456789abcdef"
+  app.secrets.INTERNAL_API_KEY: "0123456789abcdef0123456789abcdef"
+  app.secrets.CREDENTIAL_ENCRYPTION_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+tests:
+  - it: refuses to render with neither LICENSE_KEY nor a licence file
+    template: templates/deployment.yaml
+    asserts:
+      - failedTemplate:
+          errorPattern: "LICENSE_KEY is REQUIRED unless app.licenseFile.existingSecret is set"
+  - it: accepts LICENSE_KEY and mounts nothing
+    template: templates/deployment.yaml
+    set: {app.secrets.LICENSE_KEY: x}
+    asserts:
+      - notExists:
+          path: spec.template.spec.volumes
+  - it: mounts the licence Secret as a directory and points LICENSE_FILE_PATH at it
+    set: {app.licenseFile.existingSecret: lic}
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content: {name: license-file, mountPath: /etc/lerian/license, readOnly: true}
+      - contains:
+          path: spec.template.spec.volumes
+          content: {name: license-file, secret: {secretName: lic, items: [{key: license, path: license}]}}
+  - it: exposes LICENSE_FILE_PATH in the ConfigMap
+    set: {app.licenseFile.existingSecret: lic}
+    template: templates/configmap.yaml
+    asserts:
+      - equal: {path: data.LICENSE_FILE_PATH, value: /etc/lerian/license/license}
+  - it: renders key mode with no licence volume when licenseFile is null (--reuse-values shape)
+    set: {app.licenseFile: null, app.secrets.LICENSE_KEY: x}
+    template: templates/deployment.yaml
+    asserts:
+      - notExists:
+          path: spec.template.spec.volumes
+  - it: key mode leaves LICENSE_FILE_PATH out of the ConfigMap when licenseFile is null
+    set: {app.licenseFile: null, app.secrets.LICENSE_KEY: x}
+    template: templates/configmap.yaml
+    asserts:
+      - notExists:
+          path: data.LICENSE_FILE_PATH
+  - it: control-plane migrator Job reads LICENSE_KEY from the app Secret (optional)
+    set:
+      app.secrets.LICENSE_KEY: x
+      app.configmap.MULTI_TENANT_ENABLED: "true"
+      app.controlplaneMigrations.enabled: true
+      postgresql.enabled: false
+      app.configmap.POSTGRES_HOST: pg.example.test
+      app.configmap.MULTI_TENANT_URL: http://tm:4000
+      app.configmap.AWS_REGION: us-east-2
+      app.configmap.WEBHOOK_PUBLIC_BASE_URL: https://w.example.test
+      app.secrets.POSTGRES_PASSWORD: p
+      app.secrets.PROVIDER_CLIENT_ID: null
+      app.secrets.PROVIDER_CLIENT_SECRET: null
+      app.secrets.MULTI_TENANT_SERVICE_API_KEY: "0123456789abcdef0123456789abcdef"
+    template: templates/controlplane-migrations.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_KEY
+            valueFrom: {secretKeyRef: {name: plugin-br-payments, key: LICENSE_KEY, optional: true}}

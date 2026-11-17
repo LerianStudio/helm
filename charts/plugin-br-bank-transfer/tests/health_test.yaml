@@ -1,0 +1,88 @@
+suite: health preset
+templates:
+  - templates/deployment.yaml
+  - templates/service.yaml
+  - templates/pdb.yaml
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+  - templates/migrations.yaml
+set:
+  bankTransfer.configmap.MIDAZ_BASE_URL: http://midaz-onboarding:3000
+  bankTransfer.configmap.CRM_BASE_URL: http://midaz-crm:4000
+  bankTransfer.configmap.FEES_BASE_URL: http://plugin-fees:4000
+  bankTransfer.configmap.JD_SANDBOX_MODE: "true"
+  bankTransfer.secrets.JD_INCOMING_RAW_XML_ENCRYPTION_KEY: sample
+  bankTransfer.secrets.RECIPIENT_DETAILS_ENCRYPTION_KEY: sample
+tests:
+  - it: serves the probes on the internal health port and derives the grace period
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content: {name: health, containerPort: 8099}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HEALTH_PORT, value: "8099"}
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: {path: /readyz, port: health}
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet
+          value: {path: /health, port: health}
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 55
+      - equal:
+          path: spec.strategy.rollingUpdate.maxUnavailable
+          value: 0
+
+  - it: gives the PodDisruptionBudget maxUnavailable 1
+    template: templates/pdb.yaml
+    asserts:
+      - equal:
+          path: spec.maxUnavailable
+          value: 1
+      - equal:
+          path: spec.selector.matchLabels
+          value:
+            app.kubernetes.io/name: bank-transfer
+            app.kubernetes.io/instance: RELEASE-NAME
+            app.kubernetes.io/component: bank-transfer
+
+  - it: leaves the health port off the Service in single-tenant mode
+    template: templates/service.yaml
+    asserts:
+      - lengthEqual:
+          path: spec.ports
+          count: 1
+
+  - it: exposes the health port on the Service in multi-tenant mode
+    template: templates/service.yaml
+    set:
+      global.multiTenant.enabled: true
+      bankTransfer.migrations.enabled: false
+      bankTransfer.configmap.MULTI_TENANT_URL: http://tm:4003
+      bankTransfer.configmap.AWS_REGION: us-east-2
+      bankTransfer.configmap.MULTI_TENANT_REDIS_HOST: valkey
+      bankTransfer.secrets.MULTI_TENANT_SERVICE_API_KEY: x
+      bankTransfer.secrets.MULTI_TENANT_REDIS_PASSWORD: x
+    asserts:
+      - contains:
+          path: spec.ports
+          content: {name: health, port: 8099, targetPort: 8099, protocol: TCP}
+
+  - it: refuses an image below the first one that serves the health port
+    template: templates/service.yaml
+    set:
+      bankTransfer.image.tag: 3.5.1
+    asserts:
+      - failedTemplate:
+          errorPattern: "below 3.6.0-beta.9"
+
+  - it: refuses a hand-written probe
+    template: templates/service.yaml
+    set:
+      bankTransfer.readinessProbe: {periodSeconds: 1}
+    asserts:
+      - failedTemplate:
+          errorPattern: "owned by the health preset"

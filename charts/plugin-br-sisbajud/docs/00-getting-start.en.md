@@ -14,7 +14,7 @@
 | Executor client pair (mTLS only) | `sisbajud.mensageria.mtlsEnabled: true` + `sisbajud.mensageria.tls.existingSecret` (keys `tls.crt`, `tls.key`), chained to the Mensageria client CA |
 | Executor M2M client in plugin-access-manager | `sisbajud.executor.m2mSubject` (the token `sub`) + `MENSAGERIA_CLIENT_ID` / `MENSAGERIA_CLIENT_SECRET` in the Secret |
 | plugin-access-manager | `global.auth.host` (the Mensageria token is minted there, even with inbound auth off) |
-| License | `LICENSE_KEY` in the Secret; `ORGANIZATION_IDS` = `global` |
+| License | `LICENSE_KEY` in the Secret; `ORGANIZATION_IDS` = `global`. Or a signed file in `sisbajud.licenseFile.existingSecret` (image on lib-license-go v5) |
 | KMS | `global.kms` — Vault Transit (`VAULT_TOKEN` or AppRole) or AWS KMS (`awsRegion` + `awsKeyMode` under `sisbajud.kms` or `global.kms`). `provided` needs `awsKeyArn` and `awsCredentialsKeyArn`, and they must differ; `managed` needs both empty. `sisbajud.vault.awsKmsTimeoutSec` (`1`..`600`) and `awsKmsRotationCheckIntervalSec` (`1`..`86400`) are optional and validated in every aws mode. AWS KMS with multi-tenant is refused. Minimum image `1.1.0-beta.1`: any non-canonical tag needs `sisbajud.kms.allowUnverifiableImageTag: true` (not read from `global.kms`). There is no in-memory provider |
 | PostgreSQL (TLS) | `global.datastores.postgres` + `POSTGRES_PASSWORD` |
 | Redis/Valkey | `global.datastores.redis` + `REDIS_PASSWORD` (`/readyz` depends on it) |

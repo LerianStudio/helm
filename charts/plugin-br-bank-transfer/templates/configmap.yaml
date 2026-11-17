@@ -12,6 +12,14 @@
    control-flow gate below see the same value. */ -}}
 {{- $mtRaw := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") -}}
 {{- $multiTenantEnabled := eq (lower (toString $mtRaw)) "true" }}
+{{- /* No template reads an UPPER_CASE key placed directly under bankTransfer.
+   It is almost always a values.yaml example uncommented one indent level too
+   shallow, which would otherwise vanish from the Secret/ConfigMap silently. */ -}}
+{{- range $key, $_ := .Values.bankTransfer }}
+{{- if regexMatch "^[A-Z][A-Z0-9_]*$" $key }}
+{{- fail (printf "bankTransfer.%s is not read by this chart: put credentials under bankTransfer.secrets and settings under bankTransfer.configmap (check the key's indentation)" $key) }}
+{{- end }}
+{{- end }}
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -209,6 +217,9 @@ data:
      set there, this key is omitted here so envFrom doesn't declare it twice. */}}
   {{- if and .Values.bankTransfer.configmap.ORGANIZATION_IDS (not (.Values.bankTransfer.secrets.ORGANIZATION_IDS | default "")) }}
   ORGANIZATION_IDS: {{ .Values.bankTransfer.configmap.ORGANIZATION_IDS | quote }}
+  {{- end }}
+  {{- if include "bank-transfer.licenseSecret" $ }}
+  LICENSE_FILE_PATH: "/etc/lerian/license/license"
   {{- end }}
 
   # =====================================================================

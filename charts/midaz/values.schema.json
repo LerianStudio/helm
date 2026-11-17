@@ -785,6 +785,7 @@
               "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT",
               "OTEL_RESOURCE_SERVICE_NAME",
               "OTEL_RESOURCE_SERVICE_VERSION",
+              "OTEL_TRUST_INBOUND_TRACE_CONTEXT",
               "PLUGIN_AUTH_ADDRESS",
               "PLUGIN_AUTH_ENABLED",
               "PLUGIN_AUTH_HOST",
@@ -875,6 +876,8 @@
               "SERVER_ADDRESS",
               "SERVER_PORT",
               "STREAMING_ENABLED",
+              "STREAMING_SASL_MECHANISM",
+              "STREAMING_SASL_USERNAME",
               "STREAMING_SCHEMA_REGISTRY_URL",
               "SWAGGER_BASE_PATH",
               "SWAGGER_DESCRIPTION",
@@ -918,6 +921,16 @@
         },
         "existingSecretName": {
           "default": ""
+        },
+        "licenseFile": {
+          "type": "object",
+          "properties": {
+            "existingSecret": {
+              "type": "string",
+              "default": "",
+              "description": "Existing Secret with a signed licence file (key `license`), mounted as a directory at /etc/lerian/license. Needs an image on lib-license-go v5."
+            }
+          }
         },
         "extraEnvVars": {
           "type": "object",
@@ -2168,6 +2181,7 @@
               "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT",
               "OTEL_RESOURCE_SERVICE_NAME",
               "OTEL_RESOURCE_SERVICE_VERSION",
+              "OTEL_TRUST_INBOUND_TRACE_CONTEXT",
               "PLUGIN_AUTH_ADDRESS",
               "PLUGIN_AUTH_ENABLED",
               "PLUGIN_AUTH_HOST",
@@ -2258,6 +2272,8 @@
               "SERVER_ADDRESS",
               "SERVER_PORT",
               "STREAMING_ENABLED",
+              "STREAMING_SASL_MECHANISM",
+              "STREAMING_SASL_USERNAME",
               "STREAMING_SCHEMA_REGISTRY_URL",
               "SWAGGER_BASE_PATH",
               "SWAGGER_DESCRIPTION",
@@ -2302,6 +2318,16 @@
         },
         "existingSecretName": {
           "default": ""
+        },
+        "licenseFile": {
+          "type": "object",
+          "properties": {
+            "existingSecret": {
+              "type": "string",
+              "default": "",
+              "description": "Existing Secret with a signed licence file (key `license`), mounted as a directory at /etc/lerian/license. Needs an image on lib-license-go v5."
+            }
+          }
         },
         "health": {
           "type": "object",

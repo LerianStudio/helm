@@ -59,9 +59,12 @@ global:
   # -- Shared observability contract (lerian-common.globalValue block `observability`).
   #    Empty by default → the template ships the defaults. Fields: otlpEndpoint
   #    (OTEL_EXPORTER_OTLP_ENDPOINT), insecureExporter (OTEL_INSECURE_EXPORTER),
-  #    deploymentEnvironment (ENV_NAME). The per-pod OTLP endpoint override is
+  #    deploymentEnvironment (ENV_NAME), allowInsecureOtel (ALLOW_INSECURE_OTEL on the
+  #    plaintext node-local hop; see the README). The per-pod OTLP endpoint override is
   #    governed separately by streamingHub.telemetry.enabled.
   observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   allowInsecureOtel: "node-local collector on the pod's own node"
   # -- Shared multi-tenant contract (lib-commons/multitenancy). `enabled` drives the
   #    UNPREFIXED MULTI_TENANT_ENABLED knob; override per component via
   #    streamingHub.configmap.MULTI_TENANT_ENABLED. Fields: url (MULTI_TENANT_URL),
@@ -227,6 +230,13 @@ streamingHub:
   # DaemonSet collector pattern; see templates/_deployment.tpl). The app knob
   # STREAMING_HUB_METRICS_ENABLED switches OTLP export; /metrics is always served on 8099.
   # ===========================================================================
+  # ALLOW_INSECURE_OTEL — with telemetry.enabled, the pod ships to the node-local
+  # collector at $(HOST_IP):4317 in plaintext, which lib-observability refuses in
+  # production unless ALLOW_INSECURE_OTEL carries a reason. The chart sets it on the
+  # container: streamingHub.configmap.ALLOW_INSECURE_OTEL, else
+  # global.observability.allowInsecureOtel, else "node-local collector on the pod's own
+  # node". "" or "false" refuses (the app then will not boot on the node-local hop in
+  # production); null is unset. See the README.
   telemetry:
     # -- Inject the per-pod OTLP endpoint override (HOST_IP downward API).
     enabled: false

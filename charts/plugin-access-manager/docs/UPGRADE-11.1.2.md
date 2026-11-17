@@ -15,6 +15,8 @@ This is a patch release that increments the chart version from 11.1.1 to 11.1.2.
 - Configuration values
 - Dependencies
 
+Apart from documentation and the changelog, the only chart file change removes the unused `files/init_data.json` seed from the chart package. No template read it; Caradhras loads its seed from its own image.
+
 **What this means for operators:**
 
 No application version or values-schema migration is introduced. However, chart metadata participates in rendered configuration checksums: with identical values, the auth and identity `checksum/config` and Caradhras `checksum/auth-config` annotations change between these releases. All three Deployment pod templates therefore change and Kubernetes schedules rolling updates. New Caradhras pods run the migration init container again, even though this chart release introduces no new application version. Plan for authentication and login availability during the rollout; do not treat this as a no-restart metadata update.

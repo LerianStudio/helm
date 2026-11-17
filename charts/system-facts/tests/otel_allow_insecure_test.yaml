@@ -248,3 +248,38 @@ tests:
       extraEnvVars:
       - name: ALLOW_INSECURE_OTEL
         value: legacy reason
+- it: a refusal in the model wins over a Secret reason
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  set:
+    system-facts:
+      secrets:
+        ALLOW_INSECURE_OTEL: secret reason
+      configmap:
+        ALLOW_INSECURE_OTEL: ''
+- it: a global value wins over a Secret refusal
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  set:
+    system-facts:
+      secrets:
+        ALLOW_INSECURE_OTEL: 'false'
+    global:
+      observability:
+        allowInsecureOtel: env-wide reason

@@ -149,7 +149,7 @@ With `system-facts.otel.enabled` on, the pod ships telemetry to the collector on
 
 `null` counts as unset. An empty string is an explicit refusal, and the app then refuses the plaintext exporter in production. The ConfigMap carries the configmap value, or else the global one, so the setting also reaches the app when the node-local collector is off and you point at an explicit plaintext endpoint.
 
-A key in `system-facts.extraEnvVars` or a non-empty `system-facts.secrets.ALLOW_INSECURE_OTEL` in the chart's own Secret is the legacy route. It still works, and the chart then adds no entry of its own. With `useExistingSecret: true` the chart cannot see the Secret, so the container entry overrides any `ALLOW_INSECURE_OTEL` held there; set `system-facts.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
+A key in `system-facts.extraEnvVars` or a non-empty `system-facts.secrets.ALLOW_INSECURE_OTEL` in the chart's own Secret is the legacy route, and the chart then adds no entry of its own. The Secret counts only while nothing in the order above is set: a configmap, knob or global value, a refusal included, keeps the chart's entry, which wins over the Secret. With `useExistingSecret: true` the chart cannot see the Secret, so the container entry overrides any `ALLOW_INSECURE_OTEL` held there; set `system-facts.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
 
 ## Optional capabilities
 

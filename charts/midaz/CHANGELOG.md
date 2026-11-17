@@ -1,5 +1,19 @@
 # Midaz Changelog
 
+## [11.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.1.2)
+
+Fixes:
+- Render `ALLOW_INSECURE_OTEL` with the collector off and document the change. (@guimoreirar)
+- Take `ALLOW_INSECURE_OTEL` from the modeled setting to ensure proper configuration. (@guimoreirar)
+- Enable the node-local OTEL hop to boot in production environments. (@guimoreirar)
+
+Improvements:
+- Clarify the safety of upgrades in the documentation. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v11.1.1...midaz-v11.1.2)
+
+---
+
 ## [11.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.1.1)
 
 Fixes:

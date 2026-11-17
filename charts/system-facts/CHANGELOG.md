@@ -1,5 +1,23 @@
 # System-facts Changelog
 
+## [1.3.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.3.2)
+
+Fixes:
+- Allow the modeled `ALLOW_INSECURE_OTEL` setting to override the chart Secret configuration. (@guimoreirar)
+- Ensure the chart-Secret `ALLOW_INSECURE_OTEL` is maintained and rendered with the collector off. (@guimoreirar)
+- Source `ALLOW_INSECURE_OTEL` from the modeled setting. (@guimoreirar)
+- Check `system-facts.secrets` instead of the unrendered configmap key. (@guimoreirar)
+
+Improvements:
+- Document `ALLOW_INSECURE_OTEL` in `values.yaml`. (@guimoreirar)
+- Include `allowInsecureOtel` in the `global.observability` example. (@guimoreirar)
+- Correct the system-facts ingress default. (@victorlazari)
+- Correct system facts upgrade safety. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.3.1...system-facts-v1.3.2)
+
+---
+
 ## [1.3.1](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.3.1)
 
 Fixes:

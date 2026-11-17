@@ -1263,7 +1263,10 @@ subchart Secrets, and the node-local OTLP endpoint. Input: dict root, component.
 {{- $telemetry := eq (include "br-sta.isTrue" (include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false"))) "true" }}
 {{- $obs := (.Values.global | default dict).observability | default dict }}
 {{- if and $telemetry (not (or (hasKey $cm "OTEL_EXPORTER_OTLP_ENDPOINT") $obs.otlpEndpoint (hasKey $x "OTEL_EXPORTER_OTLP_ENDPOINT"))) }}
-{{ include "lerian-common.otel.podEnv" (dict "port" 4317) }}
+{{- /* The operator's ALLOW_INSECURE_OTEL (common.security.allowInsecureOtel, configmap
+   or this pod's extraEnvVars) stands: the helper's own entry would override it. */}}
+{{- $operatorAllow := or (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ALLOW_INSECURE_OTEL" "params" (.Values.common.security | default dict) "field" "allowInsecureOtel" "default" "")) (hasKey $x "ALLOW_INSECURE_OTEL") }}
+{{ include "lerian-common.otel.podEnv" (dict "port" 4317 "allowInsecure" (not $operatorAllow)) }}
 {{- end }}
 {{- end -}}
 {{- end -}}

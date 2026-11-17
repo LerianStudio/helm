@@ -1,7 +1,7 @@
 dependencies:
 - name: lerian-common-helm
   repository: oci://ghcr.io/lerianstudio
-  version: 2.1.2
+  version: 2.6.3
 - name: postgresql
   repository: https://charts.bitnami.com/bitnami
   version: 16.3.5
@@ -17,5 +17,5 @@ dependencies:
 - name: redpanda
   repository: https://charts.redpanda.com
   version: 26.2.4
-digest: sha256:8a6ea3b6593bfe8e5c00b5bdf41096ef2fcf3ba3d129c9b5765c602d029f2b85
-generated: "2026-09-29T11:26:40.6789-03:00"
+digest: sha256:db4c74ba0f5a124659327a6aab32830413df9603603c13760eccc9277f7c4965
+generated: "2026-11-17T10:57:34.658529-03:00"

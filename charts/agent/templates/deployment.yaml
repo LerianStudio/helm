@@ -96,9 +96,10 @@ spec:
           {{- end }}
           {{- if eq (toString .Values.agent.configmap.ENABLE_TELEMETRY) "true" }}
           {{- if not .Values.agent.configmap.OTEL_EXPORTER_OTLP_ENDPOINT }}
-          {{- /* The operator's ALLOW_INSECURE_OTEL (agent.extraEnvVars) stands: the helper's
-             own entry would override it, or duplicate it in the container env. */}}
-          {{- $operatorAllow := false }}
+          {{- /* The operator's ALLOW_INSECURE_OTEL (agent.configmap or agent.extraEnvVars)
+             stands: the helper's own entry would override it, or duplicate it in the
+             container env. */}}
+          {{- $operatorAllow := hasKey (.Values.agent.configmap | default dict) "ALLOW_INSECURE_OTEL" }}
           {{- range .Values.agent.extraEnvVars }}{{- if eq .name "ALLOW_INSECURE_OTEL" }}{{- $operatorAllow = true }}{{- end }}{{- end }}
           {{- include "lerian-common.otel.podEnv" (dict "port" 4317 "allowInsecure" (not $operatorAllow)) | nindent 10 }}
           {{- end }}

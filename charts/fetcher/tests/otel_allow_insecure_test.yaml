@@ -1368,3 +1368,167 @@ tests:
       content:
         name: ALLOW_INSECURE_OTEL
       any: true
+- it: 'manager: ConfigMap: the global reaches the app with the node-local hop off'
+  template: templates/manager/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: env-wide reason
+- it: 'common: ConfigMap: the global is rendered once, not in the common ConfigMap'
+  template: templates/common/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+  asserts:
+  - &id001
+    notExists:
+      path: data.ALLOW_INSECURE_OTEL
+- it: 'manager: ConfigMap: a global refusal renders as the empty value'
+  template: templates/manager/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: ''
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: ''
+- it: 'manager: ConfigMap: the component configmap wins: only its value renders'
+  template: templates/manager/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    manager.configmap.ALLOW_INSECURE_OTEL: component reason
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: component reason
+- it: 'manager: ConfigMap: a common.configmap value is rendered by the common ConfigMap only'
+  template: templates/manager/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    common.configmap.ALLOW_INSECURE_OTEL: shared reason
+  asserts:
+  - *id001
+- it: 'common: ConfigMap: a common.configmap value stays in the common ConfigMap'
+  template: templates/common/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    common.configmap.ALLOW_INSECURE_OTEL: shared reason
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: shared reason
+- it: 'manager: ConfigMap: a legacy extraEnvVars key renders once, from extraEnvVars'
+  template: templates/manager/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    manager.extraEnvVars.ALLOW_INSECURE_OTEL: operator reason
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: operator reason
+- it: 'manager: ConfigMap: a null component value falls through to the global'
+  template: templates/manager/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    manager.configmap.ALLOW_INSECURE_OTEL: null
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: env-wide reason
+- it: 'manager: ConfigMap: a null common value falls through to the global'
+  template: templates/manager/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    common.configmap.ALLOW_INSECURE_OTEL: null
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: env-wide reason
+- it: 'common: ConfigMap: a null common value renders nothing in the common ConfigMap'
+  template: templates/common/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    common.configmap.ALLOW_INSECURE_OTEL: null
+  asserts:
+  - *id001
+- it: 'manager: ConfigMap: a null global renders nothing'
+  template: templates/manager/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: null
+  asserts:
+  - *id001
+- it: 'manager: ConfigMap: nothing set renders no key'
+  template: templates/manager/configmap.yaml
+  set: {}
+  asserts:
+  - *id001
+- it: 'worker: ConfigMap: the global reaches the app with the node-local hop off'
+  template: templates/worker/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: env-wide reason
+- it: 'worker: ConfigMap: a global refusal renders as the empty value'
+  template: templates/worker/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: ''
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: ''
+- it: 'worker: ConfigMap: the component configmap wins: only its value renders'
+  template: templates/worker/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    worker.configmap.ALLOW_INSECURE_OTEL: component reason
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: component reason
+- it: 'worker: ConfigMap: a common.configmap value is rendered by the common ConfigMap only'
+  template: templates/worker/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    common.configmap.ALLOW_INSECURE_OTEL: shared reason
+  asserts:
+  - *id001
+- it: 'worker: ConfigMap: a legacy extraEnvVars key renders once, from extraEnvVars'
+  template: templates/worker/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    worker.extraEnvVars.ALLOW_INSECURE_OTEL: operator reason
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: operator reason
+- it: 'worker: ConfigMap: a null component value falls through to the global'
+  template: templates/worker/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    worker.configmap.ALLOW_INSECURE_OTEL: null
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: env-wide reason
+- it: 'worker: ConfigMap: a null common value falls through to the global'
+  template: templates/worker/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    common.configmap.ALLOW_INSECURE_OTEL: null
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: env-wide reason
+- it: 'worker: ConfigMap: a null global renders nothing'
+  template: templates/worker/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: null
+  asserts:
+  - *id001
+- it: 'worker: ConfigMap: nothing set renders no key'
+  template: templates/worker/configmap.yaml
+  set: {}
+  asserts:
+  - *id001

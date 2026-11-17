@@ -27,7 +27,8 @@ data:
   {{- if and (hasKey $wExtra $k) (not (hasKey $wc $k)) (not (has $k (list "VERSION" "OTEL_RESOURCE_SERVICE_VERSION"))) }}{{- $_ := set $wc $k (index $wExtra $k) }}{{- end }}
   {{- end }}
   {{- range $key, $value := $wc }}
-  {{- if not (has $key $wcExplicit) }}
+  {{- /* A null ALLOW_INSECURE_OTEL is unset: fetcher.otelAllowInsecureConfigmap below may render the global. */}}
+  {{- if not (or (has $key $wcExplicit) (and (eq $key "ALLOW_INSECURE_OTEL") (kindIs "invalid" $value))) }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
   {{- end }}
@@ -75,4 +76,9 @@ data:
   {{ $key }}: {{ $value | quote }}
   {{- end }}
   {{- end }}
+  {{- end }}
+  {{- /* ALLOW_INSECURE_OTEL from global.observability.allowInsecureOtel, so it reaches the app
+     with the node-local hop off too; only when no configmap/extraEnvVars source renders it. */}}
+  {{- with include "fetcher.otelAllowInsecureConfigmap" (dict "context" $ "component" .Values.worker) }}
+  {{- . | nindent 2 }}
   {{- end }}

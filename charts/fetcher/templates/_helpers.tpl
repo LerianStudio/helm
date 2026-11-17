@@ -243,7 +243,8 @@ MULTI_TENANT_ENABLED: {{ $mtRaw | quote }}
       "emitPool" true "emitEnvironment" true) | nindent 0 }}
 {{- /* Escape hatch: any OTHER key the operator adds under common.configmap. */}}
 {{- range $key, $value := $cm }}
-{{- if not (has $key $explicit) }}
+{{- /* A null ALLOW_INSECURE_OTEL is unset (fetcher.otelAllowInsecureConfigmap), not "". */ -}}
+{{- if not (or (has $key $explicit) (and (eq $key "ALLOW_INSECURE_OTEL") (kindIs "invalid" $value))) }}
 {{ $key }}: {{ $value | quote }}
 {{- end }}
 {{- end }}
@@ -354,5 +355,30 @@ Inputs (dict): context (root), component (.Values.manager / .Values.worker).
 {{- if not $legacy -}}
 - name: "ALLOW_INSECURE_OTEL"
   value: {{ include "lerian-common.otel.allowInsecure" (dict "context" $ctx "configmap" $cm) | quote }}
+{{- end -}}
+{{- end }}
+
+{{/*
+fetcher.otelAllowInsecureConfigmap — renders ALLOW_INSECURE_OTEL from
+global.observability.allowInsecureOtel into a component ConfigMap, so the
+env-wide value reaches the app with the node-local hop off too (an explicit
+plaintext endpoint). Rendered only in the component ConfigMap, and only when no
+other source already renders the key: <component>.configmap and
+common.configmap pass it through themselves, and a <component>.extraEnvVars key
+renders from extraEnvVars. Null is unset at every tier.
+
+Inputs (dict): context (root), component (.Values.manager / .Values.worker).
+*/}}
+{{- define "fetcher.otelAllowInsecureConfigmap" -}}
+{{- $ctx := .context -}}
+{{- $comp := .component | default dict -}}
+{{- $obs := (($ctx.Values.global | default dict).observability) | default dict -}}
+{{- $commonCm := (($ctx.Values.common | default dict).configmap) | default dict -}}
+{{- $g := index $obs "allowInsecureOtel" -}}
+{{- if and (not (kindIs "invalid" $g))
+      (kindIs "invalid" (index ($comp.configmap | default dict) "ALLOW_INSECURE_OTEL"))
+      (kindIs "invalid" (index $commonCm "ALLOW_INSECURE_OTEL"))
+      (not (hasKey ($comp.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL")) -}}
+ALLOW_INSECURE_OTEL: {{ $g | toString | quote }}
 {{- end -}}
 {{- end }}

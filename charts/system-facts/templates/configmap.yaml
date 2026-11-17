@@ -139,6 +139,22 @@ data:
   OTEL_RESOURCE_SERVICE_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "OTEL_RESOURCE_SERVICE_NAME" "params" (index .Values "system-facts").otel "field" "serviceName" "default" "system-facts") | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ (index .Values "system-facts").image.tag | default .Chart.AppVersion | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" (index .Values "system-facts").configmap "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" (include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "params" (index .Values "system-facts").otel "field" "endpoint" "default" ""))) | quote }}
+  {{- /* ALLOW_INSECURE_OTEL: system-facts.configmap.ALLOW_INSECURE_OTEL, then
+     global.observability.allowInsecureOtel; null is unset and nothing renders when both are.
+     Rendered here so the setting reaches the app with the node-local collector off too
+     (an explicit plaintext endpoint); with it on, the Deployment's env entry carries the
+     same value. A key in system-facts.extraEnvVars renders below instead. */}}
+  {{- $otelAllowCm := ((index .Values "system-facts").configmap) | default dict }}
+  {{- $otelAllowObs := (.Values.global | default dict).observability | default dict }}
+  {{- $otelAllowLegacy := false }}
+  {{- range ((index .Values "system-facts").extraEnvVars | default list) }}{{- if eq .name "ALLOW_INSECURE_OTEL" }}{{- $otelAllowLegacy = true }}{{- end }}{{- end }}
+  {{- if not $otelAllowLegacy }}
+  {{- if not (kindIs "invalid" (index $otelAllowCm "ALLOW_INSECURE_OTEL")) }}
+  ALLOW_INSECURE_OTEL: {{ index $otelAllowCm "ALLOW_INSECURE_OTEL" | toString | quote }}
+  {{- else if not (kindIs "invalid" (index $otelAllowObs "allowInsecureOtel")) }}
+  ALLOW_INSECURE_OTEL: {{ index $otelAllowObs "allowInsecureOtel" | toString | quote }}
+  {{- end }}
+  {{- end }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" (index .Values "system-facts").configmap "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" (include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "params" (index .Values "system-facts").otel "field" "deploymentEnvironment" "default" "production"))) | quote }}
 
   # =============================================================================

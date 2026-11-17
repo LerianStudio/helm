@@ -29,7 +29,8 @@ global:
   #     redis: { host: "my-elasticache.example.com:6379" }
   datastores: {}
   # -- Env-wide telemetry. Consumed by lerian-common.otel.env (block
-  # "observability"). Fields: enabled, otlpEndpoint, deploymentEnvironment.
+  # "observability"). Fields: enabled, otlpEndpoint, deploymentEnvironment,
+  # allowInsecureOtel (ALLOW_INSECURE_OTEL on the plaintext node-local hop; see the README).
   # (configmap.ENABLE_TELEMETRY / OTEL_EXPORTER_OTLP_ENDPOINT /
   # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT override; falls back to
   # boilerplate.otel.* when neither this nor a native key is set.) Per-service

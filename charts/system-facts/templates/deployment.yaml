@@ -76,9 +76,12 @@ spec:
           {{- if $otelEnabled }}
           {{- /* ALLOW_INSECURE_OTEL is a modeled setting: system-facts.configmap.ALLOW_INSECURE_OTEL, then
              global.observability.allowInsecureOtel, then the node-local reason; lerian-common
-             resolves it and emits the one env entry. A key in system-facts.extraEnvVars (the
-             legacy route) still stands, so the helper adds no duplicate then. */}}
-          {{- $legacyAllow := false }}
+             resolves it and emits the one env entry. A key in system-facts.extraEnvVars or a
+             non-empty system-facts.secrets value (the legacy routes) still stands, so the helper
+             adds no duplicate then.
+             An existing Secret (useExistingSecret) is not visible to the chart, so a value
+             there is overridden by this entry; set system-facts.configmap.ALLOW_INSECURE_OTEL instead. */}}
+          {{- $legacyAllow := (and (not (index .Values "system-facts").useExistingSecret) (ne (toString (index ((index .Values "system-facts").secrets | default dict) "ALLOW_INSECURE_OTEL" | default "")) "")) }}
           {{- range ((index .Values "system-facts").extraEnvVars | default list) }}{{- if eq .name "ALLOW_INSECURE_OTEL" }}{{- $legacyAllow = true }}{{- end }}{{- end }}
           {{- include "lerian-common.otel.podEnv" (dict "context" $ "configmap" (index .Values "system-facts").configmap "port" 4317 "scheme" "http://" "allowInsecure" (not $legacyAllow)) | nindent 10 }}
           {{- end }}

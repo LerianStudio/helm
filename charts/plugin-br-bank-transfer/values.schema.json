@@ -53,7 +53,8 @@
           "additionalProperties": false,
           "properties": {
             "enabled": {},
-            "otlpEndpoint": {}
+            "otlpEndpoint": {},
+            "allowInsecureOtel": {}
           },
           "description": "Env-wide telemetry gate. Consumed by lerian-common.globalValue (block \"observability\")."
         },

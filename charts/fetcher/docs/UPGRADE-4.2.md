@@ -61,8 +61,10 @@ Fetch the exact public chart package with your normal approved Helm registry con
 helm pull oci://registry-1.docker.io/lerianstudio/fetcher-helm --version 4.2.0 --destination fetcher-upgrade-private
 helm lint fetcher-upgrade-private/fetcher-helm-4.2.0.tgz -f fetcher-upgrade-private/intended-values.yaml
 helm template fetcher fetcher-upgrade-private/fetcher-helm-4.2.0.tgz -n midaz-plugins -f fetcher-upgrade-private/intended-values.yaml > fetcher-upgrade-private/preview.yaml
-helm upgrade fetcher fetcher-upgrade-private/fetcher-helm-4.2.0.tgz -n midaz-plugins --reset-values -f fetcher-upgrade-private/intended-values.yaml --dry-run > fetcher-upgrade-private/upgrade-dry-run.txt
+helm upgrade fetcher fetcher-upgrade-private/fetcher-helm-4.2.0.tgz -n midaz-plugins --reset-values -f fetcher-upgrade-private/intended-values.yaml --dry-run=server > fetcher-upgrade-private/upgrade-dry-run.txt
 ```
+
+With `rabbitmq.enabled: true` and `manager.useExistingSecret: true`, the chart reads `RABBITMQ_DEFAULT_PASS` from that Secret at render time. `helm template` and a client-side `--dry-run` cannot read it, so they refuse the render; skip the `helm template` line and rely on `--dry-run=server` for that configuration.
 
 Keep render/dry-run output private because it may include Secret data. Compare workload names, selectors, PVC names/mounts, external Secret references and all image tags with the current manifest. A successful render does not validate credentials, application startup, licensing, data recovery or a live upgrade. Do not proceed if any persistent resource would be replaced unexpectedly.
 

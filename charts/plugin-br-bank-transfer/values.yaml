@@ -27,9 +27,13 @@ global:
   multiTenant: {}
   # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
   # "observability"). Fields: enabled, otlpEndpoint (unset = the node-local
-  # collector at $(HOST_IP):4317). (configmap.ENABLE_TELEMETRY / OTEL_EXPORTER_OTLP_ENDPOINT override.)
+  # collector at $(HOST_IP):4317), allowInsecureOtel (ALLOW_INSECURE_OTEL on the plaintext node-local hop; see the README).
+  # (configmap.ENABLE_TELEMETRY / OTEL_EXPORTER_OTLP_ENDPOINT / ALLOW_INSECURE_OTEL override.)
   # Example: observability: { enabled: true }
   observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   allowInsecureOtel: "node-local collector on the pod's own node"
   # -- Env-wide auth (plugin-access-manager). Consumed by lerian-common.globalValue
   # (block "auth"). Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
   # Example: auth: { host: "http://plugin-access-manager-auth:4000" }
@@ -473,6 +477,16 @@ bankTransfer:
     # templates/configmap.yaml. OTEL_EXPORTER_OTLP_ENDPOINT follows
     # global.observability.otlpEndpoint. The app derives service name, version
     # and environment itself.
+    #
+    # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the pod ships
+    # to the node-local collector at $(HOST_IP):4317 in plaintext, which
+    # lib-observability refuses in production unless this carries a reason. The
+    # chart sets it on the container: this key, else
+    # global.observability.allowInsecureOtel, else "node-local collector on the
+    # pod's own node". "" or "false" refuses (the app then will not boot on the
+    # node-local hop in production); null is unset. Also rendered here for an
+    # explicit plaintext endpoint, where the chart sets no default.
+    # ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
     # =================================================================
 
     # =================================================================

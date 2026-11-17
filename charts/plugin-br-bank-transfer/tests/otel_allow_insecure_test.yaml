@@ -1,0 +1,197 @@
+suite: node-local OTEL hop in production
+templates:
+  - templates/deployment.yaml
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+  - templates/migrations.yaml
+set:
+  bankTransfer.configmap.MIDAZ_BASE_URL: http://midaz-onboarding:3000
+  bankTransfer.configmap.CRM_BASE_URL: http://midaz-crm:4000
+  bankTransfer.configmap.FEES_BASE_URL: http://plugin-fees:4000
+  bankTransfer.configmap.JD_SANDBOX_MODE: "true"
+  bankTransfer.secrets.JD_INCOMING_RAW_XML_ENCRYPTION_KEY: sample
+  bankTransfer.secrets.RECIPIENT_DETAILS_ENCRYPTION_KEY: sample
+  global.observability.enabled: true
+tests:
+  - it: the plaintext node-local endpoint carries ALLOW_INSECURE_OTEL
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: an operator value in extraEnvVars stands
+    template: templates/deployment.yaml
+    set:
+      bankTransfer.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: an explicit endpoint gets neither the node hop nor the variable
+    template: templates/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: https://otel.example.com:4317
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: telemetry off emits nothing
+    template: templates/deployment.yaml
+    set:
+      global.observability.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: global.observability.allowInsecureOtel sets the value env-wide
+    template: templates/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: the component configmap wins over the global
+    template: templates/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      bankTransfer.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "component reason"}
+
+  - it: an explicit refusal stands as the one entry
+    template: templates/deployment.yaml
+    set:
+      bankTransfer.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+
+  - it: a null component value is unset and falls through to the global
+    template: templates/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: env-wide reason
+      bankTransfer.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+    - contains:
+        path: spec.template.spec.containers[0].env
+        content:
+          name: ALLOW_INSECURE_OTEL
+          value: env-wide reason
+    - notContains:
+        path: spec.template.spec.containers[0].env
+        content:
+          name: ALLOW_INSECURE_OTEL
+          value: ''
+
+  - it: a null global is unset and leaves the node-local reason
+    template: templates/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+    - contains:
+        path: spec.template.spec.containers[0].env
+        content:
+          name: ALLOW_INSECURE_OTEL
+          value: node-local collector on the pod's own node
+
+  - it: 'bankTransfer: the ConfigMap renders configmap.ALLOW_INSECURE_OTEL (reaches the app with the collector off)'
+    template: templates/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: component reason
+    set:
+      bankTransfer:
+        configmap:
+          ALLOW_INSECURE_OTEL: component reason
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'bankTransfer: the ConfigMap takes global.observability.allowInsecureOtel when the component is unset'
+    template: templates/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: env-wide reason
+    set:
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'bankTransfer: a null component value falls through to the global in the ConfigMap'
+    template: templates/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: env-wide reason
+    set:
+      bankTransfer:
+        configmap:
+          ALLOW_INSECURE_OTEL: null
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'bankTransfer: an explicit refusal renders as the empty value'
+    template: templates/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: ''
+    set:
+      bankTransfer:
+        configmap:
+          ALLOW_INSECURE_OTEL: ''
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'bankTransfer: nothing renders in the ConfigMap when neither is set'
+    template: templates/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - notExists:
+        path: data.ALLOW_INSECURE_OTEL
+
+  - it: 'bankTransfer: a legacy extraEnvVars entry renders once, from extraEnvVars'
+    template: templates/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: legacy reason
+    set:
+      bankTransfer:
+        configmap:
+          ALLOW_INSECURE_OTEL: component reason
+        extraEnvVars:
+          ALLOW_INSECURE_OTEL: legacy reason

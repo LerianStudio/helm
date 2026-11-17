@@ -138,6 +138,14 @@ spec:
           {{- if not (include "lerian-common.globalValue" (dict "context" $ "configmap" $otelCm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "")) }}
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
+          {{- /* ALLOW_INSECURE_OTEL is a modeled setting: bankTransfer.configmap.ALLOW_INSECURE_OTEL, then
+             global.observability.allowInsecureOtel, then the node-local reason; lerian-common
+             resolves it and emits the one env entry. A key in bankTransfer.extraEnvVars (the
+             legacy route) still stands, so the helper adds no duplicate then. */}}
+          {{- if not (hasKey (.Values.bankTransfer.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL") }}
+          - name: "ALLOW_INSECURE_OTEL"
+            value: {{ include "lerian-common.otel.allowInsecure" (dict "context" $ "configmap" $otelCm) | quote }}
+          {{- end }}
           {{- end }}
           - name: "OTEL_RESOURCE_ATTRIBUTES"
             value: "k8s.pod.ip=$(POD_IP)"

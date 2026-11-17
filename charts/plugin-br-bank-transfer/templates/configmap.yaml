@@ -73,6 +73,18 @@ data:
   # deployments that carry real client data — production is already covered by
   # the app's own ENVIRONMENT_NAME=production boot guard.
   REQUIRE_UPSTREAM_HTTPS: {{ .Values.bankTransfer.configmap.REQUIRE_UPSTREAM_HTTPS | default "false" | quote }}
+  # -- Partner antifraud (app v3.7.0). ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: exact hosts
+  # (comma-separated) a tenant route may reach over http or a private address, e.g. an
+  # in-cluster Flowker; leave it unset on Lerian Cloud. ANTIFRAUD_SECRETS_BACKEND: aws or
+  # vault, no app default; unset means no backend, so an enabled flow denies with
+  # INVALID_CONFIG. Both are rendered only when set; routes and credentials are not
+  # configured here (the app reads the credentials from the secret manager only).
+  {{- with .Values.bankTransfer.configmap.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS }}
+  ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.bankTransfer.configmap.ANTIFRAUD_SECRETS_BACKEND }}
+  ANTIFRAUD_SECRETS_BACKEND: {{ . | quote }}
+  {{- end }}
 
   # =====================================================================
   # MULTI-TENANCY
@@ -195,6 +207,12 @@ data:
   # =====================================================================
   PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "true") | quote }}
   PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000") | quote }}
+  {{- /* lib-auth authorization decision cache (app v3.7.0), a Go duration. Rendered only
+     when set: lib-auth's default is no cache. Above 0 it caches ALLOW and DENY, so a
+     partner suspended or narrowed reaches the pod only after the TTL. */}}
+  {{- with .Values.bankTransfer.configmap.AUTH_CACHE_TTL }}
+  AUTH_CACHE_TTL: {{ . | quote }}
+  {{- end }}
 
   # =====================================================================
   # ACCESS MANAGER PERMISSION DECLARATION (RI) — lerian-common.idp.env.

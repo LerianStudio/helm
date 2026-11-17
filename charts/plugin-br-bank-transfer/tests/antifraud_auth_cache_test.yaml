@@ -1,0 +1,44 @@
+suite: app 3.7.0 antifraud and auth cache keys
+templates:
+  - templates/configmap.yaml
+set:
+  bankTransfer.configmap.MIDAZ_BASE_URL: http://midaz-onboarding:3000
+  bankTransfer.configmap.CRM_BASE_URL: http://midaz-crm:4000
+  bankTransfer.configmap.FEES_BASE_URL: http://plugin-fees:4000
+  bankTransfer.configmap.JD_SANDBOX_MODE: "true"
+tests:
+  - it: renders the keys when set
+    set:
+      bankTransfer.configmap.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: flowker.flowker.svc.cluster.local
+      bankTransfer.configmap.ANTIFRAUD_SECRETS_BACKEND: aws
+      bankTransfer.configmap.AUTH_CACHE_TTL: 30s
+    asserts:
+      - equal:
+          path: data.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS
+          value: flowker.flowker.svc.cluster.local
+      - equal:
+          path: data.ANTIFRAUD_SECRETS_BACKEND
+          value: aws
+      - equal:
+          path: data.AUTH_CACHE_TTL
+          value: 30s
+  - it: leaves them out when unset, so the app defaults apply
+    asserts:
+      - notExists:
+          path: data.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS
+      - notExists:
+          path: data.ANTIFRAUD_SECRETS_BACKEND
+      - notExists:
+          path: data.AUTH_CACHE_TTL
+  - it: treats empty values as unset
+    set:
+      bankTransfer.configmap.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: ""
+      bankTransfer.configmap.ANTIFRAUD_SECRETS_BACKEND: ""
+      bankTransfer.configmap.AUTH_CACHE_TTL: ""
+    asserts:
+      - notExists:
+          path: data.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS
+      - notExists:
+          path: data.ANTIFRAUD_SECRETS_BACKEND
+      - notExists:
+          path: data.AUTH_CACHE_TTL

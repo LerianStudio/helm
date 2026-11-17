@@ -166,6 +166,8 @@ licenseFile:
 
 3. Preview and upgrade using the commands below. **Do not remove `LICENSE_KEY`** from values or the external Secret with the default images. They do not select a file because `LICENSE_FILE_PATH` is present.
 
+Chart `1.2.0` deploys pre-release application `1.2.0-beta.6`, whose bootstrap builds the licence client from `LICENSE_FILE_PATH` when it is set and uses `LICENSE_KEY` only otherwise. A Secret staged here becomes the active licence source on that upgrade; keep it valid, or leave `licenseFile.existingSecret` empty until then.
+
 The file Secret must exist before new pods start. Missing Secrets or a missing `license` key can prevent startup. Maintain and rotate the Secret externally. Projection updates are eventual; this guide makes no application reload guarantee and supplies no unverified replacement images.
 
 ## Preview changes before upgrading

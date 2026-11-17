@@ -70,11 +70,14 @@ global:
   # required in every environment. Default: production.
   # Example: env: { name: "development" }
   env: {}
-  # -- Env-wide observability: enabled | otlpEndpoint | deploymentEnvironment.
+  # -- Env-wide observability: enabled | otlpEndpoint | deploymentEnvironment | allowInsecureOtel.
   # With enabled=true and no otlpEndpoint, the pods ship to the node-local
   # collector at http://$(HOST_IP):4317.
   # Example: observability: { enabled: true }
   observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   allowInsecureOtel: "node-local collector on the pod's own node"
   # -- Env-wide auth (plugin-access-manager): enabled | host -> PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST.
   # The app refuses a blank switch and accepts PLUGIN_AUTH_ENABLED=false only in a
   # development-class environment, so the chart defaults it to "true" everywhere
@@ -166,6 +169,14 @@ common:
   # -- allowedOrigins, allowedMethods, allowedHeaders, exposeHeaders, allowCredentials.
   # Production MUST set allowedOrigins to the real UI origins.
   cors: {}
+  # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the pod ships to the
+  # node-local collector at $(HOST_IP):4317 in plaintext, which lib-observability
+  # refuses in production unless ALLOW_INSECURE_OTEL carries a reason. The chart sets it
+  # on the container: worker.configmap (worker pod), else
+  # common.configmap.ALLOW_INSECURE_OTEL, else security.allowInsecureOtel, else
+  # global.observability.allowInsecureOtel, else "node-local collector on the pod's own
+  # node". "" or "false" refuses (the app then will not boot on the node-local hop in
+  # production); null is unset. See the README.
   # -- lib-commons security toggles: allowInsecureTls (defaults to "true" only when
   # a bundled plaintext datastore is enabled), allowCorsWildcard, allowInsecureOtel.
   security: {}

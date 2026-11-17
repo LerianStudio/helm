@@ -5,7 +5,7 @@
 
 This patch changes delivery of the `app-lerian` client credential. Chart `appVersion` remains `3.17.0`; the default Caradhras server remains `2.1.0`. It does not rotate the credential held in the existing Caradhras database.
 
-Schedule a maintenance window: auth, identity and Caradhras pod templates change across these chart versions, including their chart-version labels. Preserve any intentional server, migrator and application image pins in your intended configuration; do not combine this chart upgrade with an unreviewed application upgrade.
+Schedule a maintenance window: auth, identity and Caradhras pod templates change across these chart versions (new client-secret references and checksum annotations). Preserve any intentional server, migrator and application image pins in your intended configuration; do not combine this chart upgrade with an unreviewed application upgrade.
 
 Before proceeding, have a consistent private backup of the Caradhras database, the current release values and manifests, and all referenced Secrets through your approved secret-backup system. Verify the database restore procedure and retain the current release revision, image references and Secret ownership information. Helm rollback does not restore database contents or external Secrets. Do not delete PVCs, reset the database, or uninstall as an upgrade workaround.
 
@@ -88,24 +88,26 @@ Now edit `$VALUES` privately as described above and verify that it is the comple
 Use **the same complete intended file** and reset semantics for every preview and upgrade. `--reset-values` is deliberate: removed legacy overrides must not be silently reused. It also discards old overrides you forgot to include, so a short migration fragment is unsafe.
 
 ```bash
-helm template "$RELEASE" oci://registry-1.docker.io/lerianstudio/plugin-access-manager \
+helm template "$RELEASE" oci://ghcr.io/lerianstudio/plugin-access-manager \
   --version 11.2.1 -n "$NAMESPACE" --is-upgrade \
   -f "$VALUES" > "$PRIVATE_DIR/target-manifest.yaml"
 
 # Optional, if the approved helm-diff plugin is already installed:
-helm diff upgrade "$RELEASE" oci://registry-1.docker.io/lerianstudio/plugin-access-manager \
+helm diff upgrade "$RELEASE" oci://ghcr.io/lerianstudio/plugin-access-manager \
   --version 11.2.1 -n "$NAMESPACE" --reset-values -f "$VALUES" \
   > "$PRIVATE_DIR/upgrade.diff"
 ```
 
 `helm template` has no stored release values to reset; it uses target defaults plus this file and cannot prove live lookup/adoption. Inspect private output for the expected Secret names/keys, images, persistent-storage bindings, ingress/configuration and all three workloads' credential references. Do not publish diffs or manifests; they may contain encoded credentials. Rendering an existing-Secret reference cannot prove database agreement, startup readiness, secret existence or compatibility-copy consumers.
 
+With the bundled database enabled, the offline `--is-upgrade` render fails with `PASSWORDS ERROR` unless the intended values carry the current `auth-database.auth.password`, even when the database Secret is referenced. Supply it only in that private file, never through `--set` or decoded-secret output.
+
 ## Upgrade and verify
 
 After private review and approved backup/recovery readiness:
 
 ```bash
-helm upgrade "$RELEASE" oci://registry-1.docker.io/lerianstudio/plugin-access-manager \
+helm upgrade "$RELEASE" oci://ghcr.io/lerianstudio/plugin-access-manager \
   --version 11.2.1 -n "$NAMESPACE" --reset-values -f "$VALUES" \
   > "$PRIVATE_DIR/upgrade-result.txt"
 ```

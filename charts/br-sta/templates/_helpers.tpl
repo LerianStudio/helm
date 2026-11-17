@@ -1268,10 +1268,14 @@ subchart Secrets, and the node-local OTLP endpoint. Input: dict root, component.
    global.observability.allowInsecureOtel, then the node-local reason; lerian-common
    resolves it and emits the one env entry. A key in this pod's extraEnvVars (the
    legacy route) still stands, so the helper adds no duplicate then. */}}
-{{- $otelCm := merge (dict) (ternary (.Values.worker.configmap | default dict) dict (eq $component "worker")) $cm }}
-{{- $otelSec := .Values.common.security | default dict }}
-{{- if and (not (hasKey $otelCm "ALLOW_INSECURE_OTEL")) (hasKey $otelSec "allowInsecureOtel") (not (kindIs "invalid" $otelSec.allowInsecureOtel)) }}
-{{- $_ := set $otelCm "ALLOW_INSECURE_OTEL" $otelSec.allowInsecureOtel }}
+{{- /* Chosen by presence, not merged: sprig merge fills an empty value from the next
+   map, which would turn a worker refusal ("") into the common value. null is unset. */}}
+{{- $otelCm := dict }}
+{{- $otelSources := list (dict "map" (ternary (.Values.worker.configmap | default dict) dict (eq $component "worker")) "key" "ALLOW_INSECURE_OTEL") (dict "map" $cm "key" "ALLOW_INSECURE_OTEL") (dict "map" (.Values.common.security | default dict) "key" "allowInsecureOtel") }}
+{{- range $otelSources }}
+{{- if and (not (hasKey $otelCm "ALLOW_INSECURE_OTEL")) (hasKey .map .key) (not (kindIs "invalid" (index .map .key))) }}
+{{- $_ := set $otelCm "ALLOW_INSECURE_OTEL" (index .map .key) }}
+{{- end }}
 {{- end }}
 {{ include "lerian-common.otel.podEnv" (dict "context" . "configmap" $otelCm "port" 4317 "allowInsecure" (not (hasKey $x "ALLOW_INSECURE_OTEL"))) }}
 {{- end }}

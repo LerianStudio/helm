@@ -227,3 +227,89 @@ tests:
       extraEnvVars:
       - name: ALLOW_INSECURE_OTEL
         value: legacy reason
+- it: a worker refusal is not filled from common
+  template: templates/worker/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  set:
+    common:
+      configmap:
+        ALLOW_INSECURE_OTEL: common reason
+    worker:
+      configmap:
+        ALLOW_INSECURE_OTEL: ''
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: common reason
+- it: a worker refusal is not filled from the knob
+  template: templates/worker/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  set:
+    common:
+      security:
+        allowInsecureOtel: knob reason
+    worker:
+      configmap:
+        ALLOW_INSECURE_OTEL: ''
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: knob reason
+- it: a null worker key falls through to common
+  template: templates/worker/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  set:
+    common:
+      configmap:
+        ALLOW_INSECURE_OTEL: common reason
+    worker:
+      configmap:
+        ALLOW_INSECURE_OTEL: null
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: common reason
+- it: a common refusal is not filled from the knob
+  template: templates/worker/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  set:
+    common:
+      configmap:
+        ALLOW_INSECURE_OTEL: ''
+      security:
+        allowInsecureOtel: knob reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: knob reason

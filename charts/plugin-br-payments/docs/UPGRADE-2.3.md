@@ -13,7 +13,7 @@
 
 ## Overview
 
-This guide covers the `plugin-br-payments` chart upgrade from `2.2.2` to `2.3.0`. The application version remains `1.2.0`; the chart bump adds optional Secret-file mounting and environment wiring. This is chart-level preparation, not a working file-only licensing migration for the shipped application. Application `1.2.0` uses `lib-license-go/v4 v4.2.2`, requires a non-empty `LICENSE_KEY`, and does not consume `LICENSE_FILE_PATH`. Keep the existing key with this image. No compatible replacement image is identified by this guide.
+This guide covers the `plugin-br-payments` chart upgrade from `2.2.2` to `2.3.0`. The application version remains `1.2.0`; the chart bump adds optional Secret-file mounting and environment wiring. This is chart-level preparation, not a working file-only licensing migration for the shipped application. Application `1.2.0` uses `lib-license-go/v4 v4.2.2`, requires a non-empty `LICENSE_KEY`, and does not consume `LICENSE_FILE_PATH`. Keep the existing key with this image. The first chart whose default image reads the file is `2.4.0` (application `1.3.0`, `lib-license-go/v5 v5.3.0`); when `LICENSE_FILE_PATH` is set, that application uses the file and ignores `LICENSE_KEY`.
 
 No licence-related values migration is required for existing key-based deployments. Preserve all existing operator values and the key source. Even with identical values, upgrading from `2.2.2` to `2.3.0` changes the Deployment pod-template checksums and triggers a rolling restart; schedule and monitor it. The application version does not change.
 
@@ -196,7 +196,7 @@ The post-install notes describe the relaxed chart validation, not the actual lic
 - app.secrets.LICENSE_KEY               (required in every environment unless app.licenseFile.existingSecret mounts a signed licence file)
 ```
 
-> **Important:** A successful render with a file Secret and no key is not a successful application startup. The shipped `1.2.0` image requires `LICENSE_KEY`; the historical notes and validation snippets above do not override that requirement. File-only migration is blocked until an exact compatible image and its licensing behavior have been independently verified.
+> **Important:** A successful render with a file Secret and no key is not a successful application startup. The shipped `1.2.0` image requires `LICENSE_KEY`; the historical notes and validation snippets above do not override that requirement. File-only licensing starts with chart `2.4.0` (application `1.3.0`), not with this chart.
 > **Note:** The Secret referenced by `app.licenseFile.existingSecret` must contain a key named `license` with the signed licence file content. The chart does not create this Secret; operators must create it before upgrading.
 
 ## Configuration Reference
@@ -249,7 +249,7 @@ Confirm application readiness and licence validation through your normal applica
 
 ### File-only migration: blocked for the shipped default image
 
-Do not remove `LICENSE_KEY` or perform a file-only migration with application `1.2.0`. This guide does not name a compatible replacement image and therefore does not provide an executable file-only migration recipe.
+Do not remove `LICENSE_KEY` or perform a file-only migration with application `1.2.0`. File-only licensing needs chart `2.4.0` (application `1.3.0`) or later; this guide does not provide a file-only migration recipe for `2.3.0`.
 
 For reference only, the new chart field is:
 
@@ -261,7 +261,7 @@ app:
 
 This is a **partial configuration reference**, not a complete upgrade overlay. The named Secret must already exist in the release namespace and contain the key `license` before any Deployment or hook Job uses it; the chart does not create it. The mount is read-only at `/etc/lerian/license`, and the chart supplies `LICENSE_FILE_PATH=/etc/lerian/license/license`. Kubernetes projection does not prove the binary reads or reloads it. With application `1.2.0`, the key remains mandatory even if both sources are delivered.
 
-If an independently verified compatible image is introduced later, verify file support, licence-source precedence, renewal/reload behavior, and the migration executable separately before designing a migration. Do not infer them from a library major version or from these templates alone.
+With application `1.3.0` (chart `2.4.0`), a non-empty `LICENSE_FILE_PATH` takes precedence: the service and the control-plane migrator build the licence client from the file and do not use `LICENSE_KEY`. A Secret staged on `2.3.0` therefore becomes the active licence source on that upgrade; it must hold a valid signed file before you move to `2.4.0`, or leave `app.licenseFile.existingSecret` empty until then.
 
 Inspect wiring without assuming `ls` or a shell exists in the distroless app image:
 

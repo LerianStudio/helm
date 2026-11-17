@@ -679,9 +679,11 @@ null is unset; "" / "false" is a refusal and is emitted as is.
 nodeLocal=false: the endpoint is not the chart's node-local hop (an operator
 endpoint, an operator-supplied HOST_IP, or telemetry off), so the default reason
 never applies; the modeled value reaches the app through the ConfigMap. The
-entry is emitted only when the model is set AND the chart-rendered Secret carries
-ALLOW_INSECURE_OTEL: the Secret is imported after the ConfigMap and would beat
-the model, so an explicit env entry keeps "the model wins over the Secret".
+entry is emitted only when the model is set AND a Secret may carry
+ALLOW_INSECURE_OTEL: useExistingSecret (the chart cannot see it), or the key is
+present in <component>.secrets (any value, "" included, since secrets.yaml renders
+it). The Secret is imported after the ConfigMap and would beat the model, so an
+explicit env entry keeps "the model wins over the Secret".
 
 Legacy routes still stand, and then no entry is emitted (a duplicate env name
 breaks the apply):
@@ -703,13 +705,15 @@ Inputs (dict): context (root), values (the component block), configmap (its
    renders empty, a bool false renders "false", 0 renders "0". */ -}}
 {{- $secretVal := index ($values.secrets | default dict) "ALLOW_INSECURE_OTEL" -}}
 {{- $secretSet := and (not $values.useExistingSecret) (not (kindIs "invalid" $secretVal)) (ne (toString $secretVal) "") -}}
+{{- /* Off the node-local hop: could a Secret shadow the ConfigMap's modeled value? */ -}}
+{{- $secretMayCarry := or $values.useExistingSecret (hasKey ($values.secrets | default dict) "ALLOW_INSECURE_OTEL") -}}
 {{- $extra := hasKey ($values.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL" -}}
 {{- $emit := false -}}
 {{- if not $extra -}}
 {{- if .nodeLocal -}}
 {{- $emit = not (and $secretSet (not $modelSet)) -}}
 {{- else -}}
-{{- $emit = and $modelSet $secretSet -}}
+{{- $emit = and $modelSet $secretMayCarry -}}
 {{- end -}}
 {{- end -}}
 {{- if $emit -}}

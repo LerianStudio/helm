@@ -70,6 +70,15 @@ var allowlistedCredentialDefaults = map[string]bool{
 	"reporter:rabbitmq.loadDefinition.passwordHash": true,
 }
 
+// allowlistedConfigMapKeys exempts ConfigMap keys whose name reads as a credential but
+// whose value is not one. Keep this list minimal and document the rationale per entry.
+// Key format: "<chartName>:<ConfigMap data key>".
+var allowlistedConfigMapKeys = map[string]bool{
+	// Selects the secret manager the antifraud credentials are read from ("aws" or
+	// "vault"); the credentials themselves never pass through the chart or env.
+	"plugin-br-bank-transfer:ANTIFRAUD_SECRETS_BACKEND": true,
+}
+
 type chartYAML struct {
 	Type         string            `yaml:"type"`
 	Annotations  map[string]string `yaml:"annotations"`
@@ -483,7 +492,7 @@ func scanConfigMapTemplates(root, chartDir, chartName string) []violation {
 		}
 
 		for key, value := range configMapDataKeys(string(data)) {
-			if !isTemplateSecretKey(key) {
+			if !isTemplateSecretKey(key) || allowlistedConfigMapKeys[chartName+":"+key] {
 				continue
 			}
 			// Skip config flags authored on a secret-shaped key: a value whose
@@ -796,15 +805,6 @@ func isTemplateSecretKey(key string) bool {
 		strings.HasSuffix(normalized, "secretkeyname") ||
 		strings.HasSuffix(normalized, "passwordkey") ||
 		normalized == "automountserviceaccounttoken" {
-		return false
-	}
-
-	// Selectors naming which secret manager the app reads (ANTIFRAUD_SECRETS_BACKEND:
-	// aws|vault, SECRET_STORE_PROVIDER), not a secret value.
-	if strings.Contains(normalized, "secret") &&
-		(strings.HasSuffix(normalized, "backend") ||
-			strings.HasSuffix(normalized, "store") ||
-			strings.HasSuffix(normalized, "provider")) {
 		return false
 	}
 

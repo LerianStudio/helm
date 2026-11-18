@@ -497,6 +497,18 @@ Two things this precedence does **not** mean:
 
 The chart reserves the pod annotation carrying the ConfigMap/Secret checksum, which is what rolls the pods when configuration changes. Overriding it would stop configuration updates from restarting pods, so the chart refuses it.
 
+## Plaintext OTEL to the node-local collector (`ALLOW_INSECURE_OTEL`)
+
+When telemetry is on and no endpoint is set (see **OTLP endpoint** above), each Deployment ships telemetry to the collector on its own node at `$(HOST_IP):4317`, in plaintext. lib-observability refuses a plaintext exporter in production unless `ALLOW_INSECURE_OTEL` carries a reason, so wherever the chart itself injects `HOST_IP` (from `status.hostIP`) and that node-local endpoint, it also sets `ALLOW_INSECURE_OTEL` on the container. This applies to all 14 workloads. The value resolves in this order:
+
+1. `<component>.configmap.ALLOW_INSECURE_OTEL`
+2. `global.observability.allowInsecureOtel`, one value for the whole environment
+3. the default reason, `node-local collector on the pod's own node`
+
+`null` counts as unset. An empty string or `"false"` is an explicit refusal, and the app then refuses the plaintext exporter in production. When you set your own endpoint (`<component>.configmap.OTEL_EXPORTER_OTLP_ENDPOINT`, `global.observability.otlpEndpoint`, or `OTEL_EXPORTER_OTLP_ENDPOINT` in `extraEnvVars`), or supply `HOST_IP` through `extraEnvVars` (the endpoint then points wherever you decided, so it is not the node-local hop), the chart sets no default reason on the container. The ConfigMap still carries the setting, so it reaches the app with an explicit plaintext endpoint too: `<component>.configmap.ALLOW_INSECURE_OTEL` when set, or else `global.observability.allowInsecureOtel`, and no key when both are unset (a `null` component value falls through to the global). A key in `<component>.extraEnvVars` keeps it out of the ConfigMap, since that entry already sets it.
+
+A key in `<component>.extraEnvVars` or a non-empty `<component>.secrets.ALLOW_INSECURE_OTEL` in the chart's own Secret is the legacy route, and the chart then adds no entry of its own. Any value the Secret renders non-empty counts, a YAML `false` or `0` included (it renders as `"false"` / `"0"`). The Secret counts only while nothing in the order above is set: a configmap or global value, a refusal included, wins over the Secret. On the node-local hop that is the chart's entry. With your own endpoint or `HOST_IP` (or telemetry off), the chart adds a container entry carrying the configmap or global value whenever a Secret may hold the key: `useExistingSecret: true`, or `ALLOW_INSECURE_OTEL` present in `<component>.secrets` (an empty value included, since the Secret renders it). The Secret is imported after the ConfigMap and would otherwise win. With `useExistingSecret: true` the chart cannot see the Secret, so on the node-local hop the container entry (the modeled value or the default reason), and off it the modeled value when set, overrides any `ALLOW_INSECURE_OTEL` held there; set `<component>.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
+
 ## Authentication
 
 `PLUGIN_AUTH_ENABLED=true` with a resolvable `PLUGIN_AUTH_HOST` mounts per-route authorization on the business and machine-to-machine routes of the workloads that carry it. In single-tenant mode a domain application takes the toggle from the store its Systemplane workload seeds, so set both keys on that Systemplane workload too ([Single-tenant configuration](#single-tenant-configuration)). It does not cover probes, OpenAPI routes, or the provider mock — those need network-level controls from your platform.

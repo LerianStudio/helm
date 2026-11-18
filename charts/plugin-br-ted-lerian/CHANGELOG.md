@@ -1,5 +1,24 @@
 # Plugin-br-ted-lerian Changelog
 
+## [1.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.2.1)
+
+Features:
+
+- Show `allowInsecureOtel` in the `global.observability` example within the documentation. (@guimoreirar)
+- Document `ALLOW_INSECURE_OTEL` in `values.yaml`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the modeled `ALLOW_INSECURE_OTEL` setting takes precedence over the chart Secret. (@guimoreirar)
+- Maintain a chart-Secret `ALLOW_INSECURE_OTEL` and render it with the collector off. (@guimoreirar)
+- Source `ALLOW_INSECURE_OTEL` from the modeled setting. (@guimoreirar)
+- Correctly check `plugin-br-ted-lerian.secrets` instead of the unrendered configmap key. (@guimoreirar)
+- Allow the node-local OTEL hop to boot in production. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.2.0...plugin-br-ted-lerian-v1.2.1)
+
+---
+
 ## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.2.0)
 
 Features:

@@ -1,5 +1,20 @@
 # Product-console Changelog
 
+## [4.5.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.5.6)
+
+Features:
+- Add Helm upgrade guide for `product-console` `v4.5.5`. (@victorlazari)
+
+Fixes:
+- Update `product-console` to `@3.6.0`. (@lerian-studio)
+
+Improvements:
+- Clarify upgrade safety in the documentation. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.5.5...product-console-v4.5.6)
+
+---
+
 ## [4.5.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.5.5)
 
 Fixes:

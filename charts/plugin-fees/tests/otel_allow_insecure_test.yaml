@@ -101,7 +101,7 @@ tests:
           path: spec.template.spec.containers[0].env
           content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
 
-  - it: a "false" refusal is emitted as is
+  - it: a "false" value stops the chain and is emitted as is
     template: templates/fees/deployment.yaml
     set:
       global.observability.allowInsecureOtel: "false"

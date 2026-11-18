@@ -216,8 +216,10 @@ fees:
     # production. With otel-collector-lerian.enabled the chart points the app at the
     # node-local collector ($(HOST_IP):4317, plaintext) and sets this on the container,
     # resolved as fees.configmap.ALLOW_INSECURE_OTEL > global.observability.allowInsecureOtel
-    # > "node-local collector on the pod's own node". null is unset; "" or "false" is an
-    # explicit refusal (the app then refuses the plaintext exporter in production).
+    # > "node-local collector on the pod's own node". null is unset; "" is an explicit
+    # refusal (the app then refuses the plaintext exporter in production). "false" also
+    # stops the chain, but lib-observability v1.1.0 only refuses an empty value, so the
+    # app reads it as a reason and allows the exporter: use "" to refuse.
     # A key in fees.extraEnvVars (legacy) still stands and the chart adds no entry then.
     # ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
     # -- ENV_NAME is NOT pinned — consumed by lerian-common.globalValue (block

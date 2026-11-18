@@ -119,7 +119,7 @@ With `otel-collector-lerian.enabled` (the default), the pod ships telemetry to t
 2. `global.observability.allowInsecureOtel`, one value for the whole environment
 3. the default reason, `node-local collector on the pod's own node`
 
-`null` counts as unset. An empty string (or `"false"`) is an explicit refusal: the chart emits it as is, and the app then refuses the plaintext exporter in production. The ConfigMap carries the configmap value, or else the global one, so the setting also reaches the app when the node-local collector is off and you point at an explicit plaintext endpoint.
+`null` counts as unset. An empty string is an explicit refusal: the chart emits it as is, and the app then refuses the plaintext exporter in production. Use `""` to refuse: this app runs lib-observability v1.1.0, which only refuses an empty value, so `"false"` still stops the chart's chain but reaches the app as a reason and lets the plaintext exporter through. The ConfigMap carries the configmap value, or else the global one, so the setting also reaches the app when the node-local collector is off and you point at an explicit plaintext endpoint.
 
 A key in `fees.extraEnvVars` is the legacy route. It still works, and the chart then adds no entry of its own. The chart's Secret renders a fixed key list, so `fees.secrets` is not a route for this key. With `useExistingSecret: true` the chart cannot see the Secret, so the container entry overrides any `ALLOW_INSECURE_OTEL` held there; set `fees.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
 

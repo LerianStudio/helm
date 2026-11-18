@@ -178,8 +178,9 @@ lerian-common-helm 1.4.0). Resolution:
   brCcs.configmap.ALLOW_INSECURE_OTEL
   > global.observability.allowInsecureOtel
   > "node-local collector on the pod's own node"
-A key set to null is unset; "" (or "false") is an explicit refusal and stops the
-chain. Inputs: context (root), configmap (the component configmap map).
+A key set to null is unset; "" is an explicit refusal and stops the chain. "false"
+also stops it, but lib-observability v1.1.0 only refuses an empty value, so the app
+reads "false" as a reason. Inputs: context (root), configmap (the component configmap map).
 */}}
 {{- define "br-ccs.otel.allowInsecure" -}}
 {{- $cm := .configmap | default dict -}}

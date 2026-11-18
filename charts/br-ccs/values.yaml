@@ -330,8 +330,10 @@ brCcs:
   # reason. The chart sets it on the container, resolved in this order:
   #   brCcs.configmap.ALLOW_INSECURE_OTEL > global.observability.allowInsecureOtel
   #   > "node-local collector on the pod's own node".
-  # null = unset (falls through); "" or "false" = explicit refusal (stops the
-  # chain; the app then refuses the plaintext exporter in production). A key in
+  # null = unset (falls through); "" = explicit refusal (stops the chain; the app
+  # then refuses the plaintext exporter in production). "false" also stops the
+  # chain, but lib-observability v1.1.0 only refuses an empty value, so the app
+  # reads it as a reason and allows the exporter: use "" to refuse. A key in
   # brCcs.extraEnvVars stands instead and the chart adds no entry of its own.
   # configmap:
   #   ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"

@@ -1,5 +1,18 @@
 # Plugin-br-payments Changelog
 
+## [2.7.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.7.1)
+
+Fixes:
+- Update `plugin-br-payments` to `@1.5.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-payments` `v2.3.0`. (@victorlazari)
+- Document sandbox simulation under `ENV_NAME=production` in `plugin-br-payments`. (@arthurkz)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.7.0...plugin-br-payments-v2.7.1)
+
+---
+
 ## [2.7.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.7.0)
 
 Features:

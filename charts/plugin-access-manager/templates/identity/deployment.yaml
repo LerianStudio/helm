@@ -59,6 +59,7 @@ spec:
                   fieldPath: status.hostIP
             - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
               value: "$(HOST_IP):4317"
+            {{- with (include "plugin-access-manager.allowInsecureOtelEnv" (dict "context" $ "component" "identity") | trim) }}{{ . | nindent 12 }}{{ end }}
           {{- end }}
           {{- if .Values.auth.initUser.enabled }}
             - name: ADMIN_PASSWORD

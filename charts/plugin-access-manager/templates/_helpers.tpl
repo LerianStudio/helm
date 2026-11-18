@@ -1127,3 +1127,46 @@ licenseFile.existingSecret is mounted as a directory (never subPath) at /etc/ler
         path: license
 {{- end }}
 {{- end -}}
+
+{{/*
+ALLOW_INSECURE_OTEL on the plaintext node-local OTEL hop (auth, identity, caradhras).
+With otel-collector-lerian.enabled the container ships to $(HOST_IP):4317 in
+plaintext, which lib-observability refuses in production unless
+ALLOW_INSECURE_OTEL carries a reason. The value is the modeled setting resolved
+by lerian-common.otel.allowInsecure: <component>.configmap.ALLOW_INSECURE_OTEL,
+else global.observability.allowInsecureOtel, else the node-local default
+(null = unset; "" / "false" is a refusal, emitted as is). A key in
+<component>.extraEnvVars is the legacy route: the chart then adds no entry
+(the container env would override it). The Secrets render explicit key lists
+only, so there is no Secret route.
+Input: dict "context" $ "component" "<auth|identity|caradhras>".
+*/}}
+{{- define "plugin-access-manager.allowInsecureOtelEnv" -}}
+{{- $values := index .context.Values .component | default dict -}}
+{{- if not (hasKey ($values.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL") }}
+- name: "ALLOW_INSECURE_OTEL"
+  value: {{ include "lerian-common.otel.allowInsecure" (dict "context" .context "configmap" ($values.configmap | default dict)) | quote }}
+{{- end }}
+{{- end -}}
+
+{{/*
+ConfigMap line for ALLOW_INSECURE_OTEL, so the setting reaches the app when the
+node-local collector is off and the operator points at an explicit plaintext
+endpoint: <component>.configmap value (non-null), else
+global.observability.allowInsecureOtel (non-null), else nothing (no default:
+the chart only defaults it on the hop it builds itself). Skipped when the
+legacy <component>.extraEnvVars key exists, which renders it instead.
+Input: dict "context" $ "component" "<auth|identity|caradhras>".
+*/}}
+{{- define "plugin-access-manager.allowInsecureOtelConfigmap" -}}
+{{- $values := index .context.Values .component | default dict -}}
+{{- $cm := $values.configmap | default dict -}}
+{{- $obs := (.context.Values.global | default dict).observability | default dict -}}
+{{- if not (hasKey ($values.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL") -}}
+{{- if and (hasKey $cm "ALLOW_INSECURE_OTEL") (not (kindIs "invalid" (index $cm "ALLOW_INSECURE_OTEL"))) }}
+ALLOW_INSECURE_OTEL: {{ index $cm "ALLOW_INSECURE_OTEL" | toString | quote }}
+{{- else if and (hasKey $obs "allowInsecureOtel") (not (kindIs "invalid" (index $obs "allowInsecureOtel"))) }}
+ALLOW_INSECURE_OTEL: {{ index $obs "allowInsecureOtel" | toString | quote }}
+{{- end }}
+{{- end -}}
+{{- end -}}

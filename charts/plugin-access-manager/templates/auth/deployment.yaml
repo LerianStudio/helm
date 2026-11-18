@@ -58,6 +58,7 @@ spec:
                   fieldPath: status.hostIP
             - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
               value: "$(HOST_IP):4317"
+            {{- with (include "plugin-access-manager.allowInsecureOtelEnv" (dict "context" $ "component" "auth") | trim) }}{{ . | nindent 12 }}{{ end }}
           {{- end }}
           {{- with (include "plugin-access-manager.licenseFileMount" .Values.auth | trim) }}
           volumeMounts:

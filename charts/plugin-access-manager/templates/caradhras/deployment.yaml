@@ -221,6 +221,7 @@ spec:
                 fieldPath: status.hostIP
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
+          {{- with (include "plugin-access-manager.allowInsecureOtelEnv" (dict "context" $ "component" "caradhras") | trim) }}{{ . | nindent 10 }}{{ end }}
           {{ end }}
           {{- with (include "plugin-caradhras.licenseFileMount" $ | trim) }}
           volumeMounts:

@@ -34,9 +34,14 @@ global:
   # Example: serviceDiscovery: { address: "consul.internal:8500", tls: "true" }
   serviceDiscovery: {}
   # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
-  # "observability"). Fields: enabled. (configmap.ENABLE_TELEMETRY overrides.)
+  # "observability"). Fields: enabled, allowInsecureOtel (ALLOW_INSECURE_OTEL on
+  # the plaintext node-local hop; see the README). (configmap.ENABLE_TELEMETRY /
+  # ALLOW_INSECURE_OTEL override.)
   # Example: observability: { enabled: true }
   observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   allowInsecureOtel: "node-local collector on the pod's own node"
   # -- Env-wide pod scheduling. `spread` is the topologySpreadConstraints preset
   # (lerian-common.topologySpreadConstraints) applied to every Deployment of this
   # chart (auth, identity, caradhras, and caradhras.ui when enabled). Each
@@ -234,6 +239,15 @@ identity:
   # @default -- templates/identity/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
+    # ALLOW_INSECURE_OTEL — with otel-collector-lerian.enabled, the identity pod ships to
+    # the node-local collector at $(HOST_IP):4317 in plaintext, which
+    # lib-observability refuses in production unless this carries a reason. The
+    # chart sets it on the container: identity.configmap.ALLOW_INSECURE_OTEL, else
+    # global.observability.allowInsecureOtel, else "node-local collector on the
+    # pod's own node". "" or "false" refuses (the app then will not boot on the
+    # node-local hop in production); null is unset. Also rendered in the ConfigMap
+    # for an explicit plaintext endpoint, where the chart sets no default.
+    # ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
     # SSO probe and self-service flags (default "false" in templates/identity/configmap.yaml):
     # PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE: "false"  # only for an IdP with no TLS
     # PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS: "false"    # BYOC/on-prem IdP on RFC1918 only
@@ -402,6 +416,15 @@ auth:
   # @default -- templates/auth/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
+    # ALLOW_INSECURE_OTEL — with otel-collector-lerian.enabled, the auth pod ships to
+    # the node-local collector at $(HOST_IP):4317 in plaintext, which
+    # lib-observability refuses in production unless this carries a reason. The
+    # chart sets it on the container: auth.configmap.ALLOW_INSECURE_OTEL, else
+    # global.observability.allowInsecureOtel, else "node-local collector on the
+    # pod's own node". "" or "false" refuses (the app then will not boot on the
+    # node-local hop in production); null is unset. Also rendered in the ConfigMap
+    # for an explicit plaintext endpoint, where the chart sets no default.
+    # ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
     # DB connection (host/port/user/ssl) is resolved via the postgres datastore mask
     # (global.datastores.postgres / dedicated .Values.datastores). Defaults live in
     # templates/auth/configmap.yaml so a shared/managed profile can override them —
@@ -486,6 +509,15 @@ caradhras:
   # caradhras reads them with conf.GetConfigString, which looks up the exact
   # key in the environment. The auth/identity REDIS_* names are NOT read here.
   configmap:
+    # ALLOW_INSECURE_OTEL — with otel-collector-lerian.enabled, the caradhras pod ships to
+    # the node-local collector at $(HOST_IP):4317 in plaintext, which
+    # lib-observability refuses in production unless this carries a reason. The
+    # chart sets it on the container: caradhras.configmap.ALLOW_INSECURE_OTEL, else
+    # global.observability.allowInsecureOtel, else "node-local collector on the
+    # pod's own node". "" or "false" refuses (the app then will not boot on the
+    # node-local hop in production); null is unset. Also rendered in the ConfigMap
+    # for an explicit plaintext endpoint, where the chart sets no default.
+    # ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
     # -- Shared session store for a Redis that needs NO AUTH, `host:port` with
     # no space. Empty (the default) keeps login sessions in a file on each pod's
     # own filesystem, which only works with a single pod: above one replica a

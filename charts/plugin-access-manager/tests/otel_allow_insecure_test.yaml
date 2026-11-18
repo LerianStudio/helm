@@ -1,0 +1,620 @@
+suite: node-local OTEL hop in production
+templates:
+  - templates/auth/deployment.yaml
+  - templates/auth/configmap.yaml
+  - templates/identity/deployment.yaml
+  - templates/identity/configmap.yaml
+  - templates/caradhras/deployment.yaml
+  - templates/caradhras/configmap.yaml
+  - templates/auth/secrets.yaml
+  - templates/identity/secrets.yaml
+  - templates/caradhras/secrets.yaml
+  - templates/caradhras/app-client-secret.yaml
+  - templates/auth-database/secrets.yaml
+  - templates/auth/init_user.yaml
+release:
+  name: pam
+  namespace: pam
+set:
+  identity.secrets.LICENSE_KEY: x
+  auth.secrets.AUTHORIZER_CLIENT_SECRET: x
+  auth.secrets.LICENSE_KEY: x
+  caradhras.secrets.LICENSE_KEY: x
+tests:
+
+  - it: 'auth: the plaintext node-local endpoint carries ALLOW_INSECURE_OTEL'
+    template: templates/auth/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'auth: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/auth/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'auth: the component configmap wins over the global'
+    template: templates/auth/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      auth.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "component reason"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'auth: an explicit refusal stands as the one entry'
+    template: templates/auth/deployment.yaml
+    set:
+      auth.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'auth: a false refusal is emitted as is'
+    template: templates/auth/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "false"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "false"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'auth: a null component value is unset and falls through to the global'
+    template: templates/auth/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      auth.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'auth: a null global is unset and leaves the node-local reason'
+    template: templates/auth/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'auth: an operator value in extraEnvVars stands (no chart entry)'
+    template: templates/auth/deployment.yaml
+    set:
+      auth.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: 'auth: the collector off emits neither the node hop nor the variable'
+    template: templates/auth/deployment.yaml
+    set:
+      otel-collector-lerian.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: 'auth: the ConfigMap renders configmap.ALLOW_INSECURE_OTEL'
+    template: templates/auth/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      auth.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: component reason
+
+  - it: 'auth: the ConfigMap takes global.observability.allowInsecureOtel when the component is unset'
+    template: templates/auth/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: env-wide reason
+
+  - it: 'auth: a null component value falls through to the global in the ConfigMap'
+    template: templates/auth/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      auth.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: env-wide reason
+
+  - it: 'auth: a refusal renders in the ConfigMap as is'
+    template: templates/auth/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    set:
+      auth.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ""
+
+  - it: 'auth: the ConfigMap carries nothing when both are unset'
+    template: templates/auth/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+
+  - it: 'auth: the legacy extraEnvVars key renders it in the ConfigMap instead'
+    template: templates/auth/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      auth.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: operator reason
+
+  - it: 'identity: the plaintext node-local endpoint carries ALLOW_INSECURE_OTEL'
+    template: templates/identity/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'identity: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/identity/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'identity: the component configmap wins over the global'
+    template: templates/identity/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      identity.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "component reason"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'identity: an explicit refusal stands as the one entry'
+    template: templates/identity/deployment.yaml
+    set:
+      identity.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'identity: a false refusal is emitted as is'
+    template: templates/identity/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "false"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "false"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'identity: a null component value is unset and falls through to the global'
+    template: templates/identity/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      identity.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'identity: a null global is unset and leaves the node-local reason'
+    template: templates/identity/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'identity: an operator value in extraEnvVars stands (no chart entry)'
+    template: templates/identity/deployment.yaml
+    set:
+      identity.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: 'identity: the collector off emits neither the node hop nor the variable'
+    template: templates/identity/deployment.yaml
+    set:
+      otel-collector-lerian.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: 'identity: the ConfigMap renders configmap.ALLOW_INSECURE_OTEL'
+    template: templates/identity/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      identity.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: component reason
+
+  - it: 'identity: the ConfigMap takes global.observability.allowInsecureOtel when the component is unset'
+    template: templates/identity/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: env-wide reason
+
+  - it: 'identity: a null component value falls through to the global in the ConfigMap'
+    template: templates/identity/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      identity.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: env-wide reason
+
+  - it: 'identity: a refusal renders in the ConfigMap as is'
+    template: templates/identity/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    set:
+      identity.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ""
+
+  - it: 'identity: the ConfigMap carries nothing when both are unset'
+    template: templates/identity/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+
+  - it: 'identity: the legacy extraEnvVars key renders it in the ConfigMap instead'
+    template: templates/identity/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      identity.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: operator reason
+
+  - it: 'caradhras: the plaintext node-local endpoint carries ALLOW_INSECURE_OTEL'
+    template: templates/caradhras/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'caradhras: global.observability.allowInsecureOtel sets the value env-wide'
+    template: templates/caradhras/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'caradhras: the component configmap wins over the global'
+    template: templates/caradhras/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      caradhras.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "component reason"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'caradhras: an explicit refusal stands as the one entry'
+    template: templates/caradhras/deployment.yaml
+    set:
+      caradhras.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'caradhras: a false refusal is emitted as is'
+    template: templates/caradhras/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "false"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "false"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'caradhras: a null component value is unset and falls through to the global'
+    template: templates/caradhras/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      caradhras.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'caradhras: a null global is unset and leaves the node-local reason'
+    template: templates/caradhras/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+          count: 1
+
+  - it: 'caradhras: an operator value in extraEnvVars stands (no chart entry)'
+    template: templates/caradhras/deployment.yaml
+    set:
+      caradhras.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: 'caradhras: the collector off emits neither the node hop nor the variable'
+    template: templates/caradhras/deployment.yaml
+    set:
+      otel-collector-lerian.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: 'caradhras: the ConfigMap renders configmap.ALLOW_INSECURE_OTEL'
+    template: templates/caradhras/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      caradhras.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: component reason
+
+  - it: 'caradhras: the ConfigMap takes global.observability.allowInsecureOtel when the component is unset'
+    template: templates/caradhras/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: env-wide reason
+
+  - it: 'caradhras: a null component value falls through to the global in the ConfigMap'
+    template: templates/caradhras/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      caradhras.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: env-wide reason
+
+  - it: 'caradhras: a refusal renders in the ConfigMap as is'
+    template: templates/caradhras/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    set:
+      caradhras.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ""
+
+  - it: 'caradhras: the ConfigMap carries nothing when both are unset'
+    template: templates/caradhras/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+
+  - it: 'caradhras: the legacy extraEnvVars key renders it in the ConfigMap instead'
+    template: templates/caradhras/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      caradhras.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: operator reason

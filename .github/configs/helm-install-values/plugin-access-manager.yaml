@@ -6,11 +6,20 @@
 # Both images then refuse to boot without a license the gateway accepts
 # (LCS-1007); both present the application "plugin-access-manager", so one CI
 # license placeholder (README) serves the two.
+# The HPAs keep auth at 3 x 500m and identity at 2 replicas, next to the bundled
+# Postgres (1 vCPU) and Valkey on the single-node kind cluster: the third auth pod
+# stayed Pending on "Insufficient cpu". One replica of each proves the gate.
 auth:
+  replicaCount: 1
+  autoscaling:
+    minReplicas: 1
   secrets:
     ORGANIZATION_IDS: "global"
     LICENSE_KEY: "IT_LICENSE_KEY"
 identity:
+  replicaCount: 1
+  autoscaling:
+    minReplicas: 1
   secrets:
     ORGANIZATION_IDS: "global"
     LICENSE_KEY: "IT_LICENSE_KEY"

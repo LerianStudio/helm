@@ -18,9 +18,10 @@
 
 Check these points first. Each one can stop the upgrade.
 
-1. **Remove the values the health preset owns.** With the 4.5.0 image, the chart refuses to render if any of these keys is set on `ledger` or `tracer`: `pdb.minAvailable`, `pdb.maxUnavailable`, `deploymentUpdate`, `livenessProbe`, `readinessProbe`, `startupProbe`, `terminationGracePeriodSeconds`. Chart 11.1.2 accepted them. See [section 2](#2-health-preset-turned-on-by-the-450-image).
-2. **Plan for the index reconcile hook.** A new `pre-upgrade` hook builds indexes on the ledger `transaction` table before the new pods start. On a large table, it can take longer than the Helm default `--timeout` of 5 minutes. See [section 3](#3-ledger-partition-runner-and-index-reconcile-hook).
-3. **Back up the databases.** The 4.5.0 migration Jobs apply 33 new ledger transaction-database migrations (`000050` to `000082`) and 22 new tracer migrations (`000034` to `000055`). A rollback to chart 11.1.2 puts the 4.4.3 images back on the migrated schema; that combination was not tested.
+1. **Export the release values to a file.** The steps below change your values, and the upgrade command takes the file with `-f`. See [Command to upgrade](#command-to-upgrade).
+2. **Remove the values the health preset owns.** With the 4.5.0 image, the chart refuses to render if any of these keys is set on `ledger` or `tracer`: `pdb.minAvailable`, `pdb.maxUnavailable`, `deploymentUpdate`, `livenessProbe`, `readinessProbe`, `startupProbe`, `terminationGracePeriodSeconds`. Chart 11.1.2 accepted them. See [section 2](#2-health-preset-turned-on-by-the-450-image).
+3. **Plan for the index reconcile hook.** A new `pre-upgrade` hook builds indexes on the ledger `transaction` table before the new pods start. On a large table, it can take longer than the Helm default `--timeout` of 5 minutes. See [section 3](#3-ledger-partition-runner-and-index-reconcile-hook).
+4. **Back up the databases.** The 4.5.0 migration Jobs apply 33 new ledger transaction-database migrations (`000050` to `000082`) and 22 new tracer migrations (`000034` to `000055`). A rollback to chart 11.1.2 puts the 4.4.3 images back on the migrated schema; that combination was not tested.
 
 ## Features
 
@@ -67,7 +68,7 @@ If a NetworkPolicy, service mesh or monitoring tool in your cluster names the pr
 
 #### Values the preset refuses
 
-The chart fails the render on these keys. Remove them from your values before the upgrade:
+The chart fails the render on these keys. Remove them from `values-11.2.yaml`, the file you export in [Command to upgrade](#command-to-upgrade):
 
 | Key (on `ledger` or `tracer`) | Error |
 |-------------------------------|-------|
@@ -75,13 +76,7 @@ The chart fails the render on these keys. Remove them from your values before th
 | `deploymentUpdate` | `midaz: ledger.deploymentUpdate is owned by the health preset (RollingUpdate); remove it` |
 | `livenessProbe`, `readinessProbe`, `startupProbe`, `terminationGracePeriodSeconds` | `lerian-common.health: ledger: livenessProbe is owned by the health preset; remove it` |
 
-`pdb.enabled` and `pdb.annotations` stay valid. To find the keys, read the values you supplied:
-
-```bash
-helm get values midaz -n midaz -o yaml
-```
-
-> **Note:** `helm get values` shows only user-supplied values. A key that is absent there comes from the chart defaults and does not block the upgrade.
+`pdb.enabled` and `pdb.annotations` stay valid. `helm get values` shows only user-supplied values, so a key that is absent from the exported file comes from the chart defaults and does not block the upgrade.
 
 ### 3. Ledger partition runner and index reconcile hook
 
@@ -111,9 +106,9 @@ The 4.5.0 migrations register `idx_transaction_organization_ledger_id_live` on t
 - Helm waits for each hook Job up to `--timeout`, 5 minutes by default. If the Job still runs at that point, `helm upgrade` fails. The migrations are already applied and the pods are still on 4.4.3.
 - Kubernetes stops the Job after `activeDeadlineSeconds` (1800 s). An interrupted build leaves an invalid index, which the next pass rebuilds with `REINDEX INDEX CONCURRENTLY`.
 
-The build time on a large table was not measured. If your `transaction` table is large, choose one option:
+The build time on a large table was not measured. If your `transaction` table is large, choose one option and add its block to `values-11.2.yaml`:
 
-- Set `--timeout` above the Job deadline, for example `--timeout 35m`. Raise the deadline if needed:
+- Set `--timeout` above the Job deadline, for example `--timeout 35m`. Raise the deadline if needed, and raise `--timeout` with it:
 
   ```yaml
   ledger:
@@ -166,8 +161,10 @@ With `"true"`, the service trusts the inbound trace context: the caller chooses 
 
 ## Preview changes before upgrading
 
+Run the preview with the same values file as the upgrade (see [Command to upgrade](#command-to-upgrade)):
+
 ```bash
-helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n midaz --version 11.2.0
+helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n midaz --version 11.2.0 -f values-11.2.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -176,9 +173,22 @@ A render error with `is owned by the health preset` means a key from [section 2]
 
 ## Command to upgrade
 
-```bash
-helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n midaz --version 11.2.0 --timeout 35m
-```
+> **Important:** Pass your values with `-f`. Any `-f` or `--set` turns off the reuse of the release values, so a file that holds only a new block sends passwords, hosts and every other key back to the chart defaults. Without `-f` or `--set`, Helm reuses the previous values unchanged, and the edits from sections 2 and 3 do not reach the release.
+
+1. Export the values of the current release. The file holds secrets: keep it out of Git and delete it after the upgrade.
+
+   ```bash
+   helm get values midaz -n midaz -o yaml > values-11.2.yaml
+   ```
+
+2. Edit `values-11.2.yaml`: remove the keys from [section 2](#values-the-preset-refuses) and add the `ledger.partition` block from [section 3](#large-ledgers) if you need one.
+3. Upgrade with the edited file:
+
+   ```bash
+   helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n midaz --version 11.2.0 -f values-11.2.yaml --timeout 35m
+   ```
 
 `--timeout 35m` lets Helm wait for the reconcile hook up to its 1800 s deadline. Adjust it if you change `ledger.partition.reconcile.activeDeadlineSeconds`.
+
+> **Warning:** Do not add `--reuse-values`. It renders with the 11.1.2 chart defaults, so `ledger.image.tag` and the other defaults stay on `4.4.3`.
 <!-- {% endraw %} -->

@@ -139,8 +139,9 @@ global:
       username: "pixswitch"
       password: ""
 
-# -- Antifraud partner settings shared by the SPI workloads. Leave both empty on
-# Lerian Cloud. A component's own configmap.<KEY> wins over this block.
+# -- Antifraud partner settings shared by the SPI workloads. Leave allowedPrivateHosts
+# empty on Lerian Cloud; Lerian Cloud sets secretsBackend to aws through GitOps.
+# A component's own configmap.<KEY> wins over this block.
 antifraud:
   # -- ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: comma-separated private hosts the partner
   # route may target. Sent to spi (checks it on every call) and spiSystemplane

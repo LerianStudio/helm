@@ -70,7 +70,6 @@ data:
      then Chart.AppVersion. */}}
   {{- $compTag := default $.Chart.AppVersion $values.image.tag }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ $cm.OTEL_RESOURCE_SERVICE_VERSION | default $compTag | quote }}
-  {{- /* antifraud partner: global antifraud.* block; configmap.<KEY> wins. */}}
   {{- with include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ANTIFRAUD_ALLOWED_PRIVATE_HOSTS" "params" $.Values.antifraud "field" "allowedPrivateHosts" "default" "") }}
   ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: {{ . | quote }}
   {{- end }}

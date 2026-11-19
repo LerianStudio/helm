@@ -499,14 +499,14 @@ The chart reserves the pod annotation carrying the ConfigMap/Secret checksum, wh
 
 ## Antifraud partner
 
-One block sets the antifraud values both SPI workloads need. Set them here, once.
+One block sets the antifraud values the SPI workloads need. The allowlist reaches `spi` and `spiSystemplane`; the backend reaches `spi` only. Set them here, once.
 
 | Value | Env | Workloads | Meaning |
 |---|---|---|---|
 | `antifraud.allowedPrivateHosts` | `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` | `spi`, `spiSystemplane` | Comma-separated private hosts a partner route may target. `spi` checks it on every call; `spiSystemplane` checks it when a route is written. |
 | `antifraud.secretsBackend` | `ANTIFRAUD_SECRETS_BACKEND` | `spi` | `aws` or `vault`: where the partner credential is read from. Only `spi` reads it. Empty denies every enabled flow. |
 
-- An empty value renders nothing. Leave both empty on Lerian Cloud.
+- An empty value renders nothing. Leave the allowlist empty on Lerian Cloud; Lerian Cloud sets `secretsBackend` to `aws` through GitOps.
 - A component's own `configmap.ANTIFRAUD_*` still wins over the block. Set the allowlist only in the block, or the two workloads can disagree.
 - `aws` uses the pod's AWS identity (IRSA, through `spi.serviceAccount.annotations`). `vault` needs `VAULT_ADDR` in `spi.configmap` and `VAULT_TOKEN` in `spi.secrets`.
 - `ANTIFRAUD_OUT_REVIEW_ALLOWED` is read by `spi` only: set it in `spi.configmap`.

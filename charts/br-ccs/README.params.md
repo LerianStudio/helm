@@ -31,7 +31,7 @@
 | `global.externalRabbitmqDefinitions.brCcsCredentials` | string | `{}` | Credentials for the br-ccs user created by the job |
 | `global.externalRabbitmqDefinitions.brCcsCredentials.useExistingSecret.name` | string | `""` | Name of existing secret containing RABBITMQ_BR_CCS_PASS key |
 | `global.externalRabbitmqDefinitions.brCcsCredentials.password` | string | `""` | Password for the br-ccs user (ignored if useExistingSecret.name is set) |
-| `global.observability` | string | `{}` | Env-wide observability, consumed by lerian-common.otel.env. Declare once at the umbrella level; a component brCcs.configmap.<KEY> still overrides per-service. Precedence: brCcs.configmap.<KEY> > global.observability.<field> > chart default. |
+| `global.observability` | string | `{}` | Env-wide observability, consumed by lerian-common.otel.env. Declare once at the umbrella level; a component brCcs.configmap.<KEY> still overrides per-service. Precedence: brCcs.configmap.<KEY> > global.observability.<field> > chart default. Fields: enabled, otlpEndpoint, deploymentEnvironment, allowInsecureOtel (ALLOW_INSECURE_OTEL reason for the plaintext node-local collector hop). |
 | `global.observability.enabled` | bool | `false` | Enable telemetry export (ENABLE_TELEMETRY). Unset → chart default "false". |
 | `global.observability.otlpEndpoint` | string | `""` | OTLP collector endpoint (OTEL_EXPORTER_OTLP_ENDPOINT). Unset → chart default "". |
 | `global.observability.deploymentEnvironment` | string | `"production"` | Deployment environment tag (OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT). Unset → "production". |

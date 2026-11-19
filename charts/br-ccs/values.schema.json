@@ -699,7 +699,8 @@
               "SYSTEMPLANE_ENABLED",
               "TLS_TERMINATED_UPSTREAM",
               "TRUSTED_PROXIES",
-              "VERSION"
+              "VERSION",
+              "ALLOW_INSECURE_OTEL"
             ]
           }
         },

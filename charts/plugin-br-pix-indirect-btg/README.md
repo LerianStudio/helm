@@ -484,3 +484,21 @@ The chart does not install a collector. With `otel-collector-lerian.enabled: tru
 otel-collector-lerian:
   enabled: false
 ```
+
+### Plaintext OTEL to the node-local collector (`ALLOW_INSECURE_OTEL`)
+
+With `otel-collector-lerian.enabled: true`, each component (`pix`, `inbound`, `outbound`, `reconciliation`, `schedule`) ships telemetry to the collector on its own node at `$(HOST_IP):4317`, in plaintext. lib-observability refuses a plaintext exporter in production unless `ALLOW_INSECURE_OTEL` carries a reason, so the chart sets that variable on each container. The value resolves in this order:
+
+1. `<component>.configmap.ALLOW_INSECURE_OTEL` (for example `pix.configmap.ALLOW_INSECURE_OTEL`)
+2. `global.observability.allowInsecureOtel`, one value for the whole environment
+3. the default reason, `node-local collector on the pod's own node`
+
+`null` counts as unset. An empty string or `"false"` is an explicit refusal, and the app then refuses the plaintext exporter in production. The component ConfigMap carries the configmap value, or else the global one, so the setting also reaches the app when the node-local collector is off and you point at an explicit plaintext endpoint.
+
+A key in `<component>.extraEnvVars` is the legacy route, and the chart then adds no entry of its own. The chart's Secrets render a fixed key list, so `<component>.secrets.ALLOW_INSECURE_OTEL` is not a route. With `useExistingSecrets: true` the chart cannot see the Secret, so the container entry overrides any `ALLOW_INSECURE_OTEL` held there; set `<component>.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
+
+```yaml
+global:
+  observability:
+    allowInsecureOtel: "node-local collector on the pod's own node"
+```

@@ -1,5 +1,19 @@
 # Plugin-br-pix-lerian Changelog
 
+## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.2.0)
+
+Features:
+- Expose the antifraud allowlist and backend for better configurability. (@fredcamaral)
+
+Fixes:
+- Correct the Lerian Cloud antifraud backend note to improve documentation accuracy. (@fredcamaral)
+- Update the health Service port example and library note for clarity. (@gandalf-at-lerian)
+- Improve upgrade safety documentation to prevent potential issues during updates. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.1.0...plugin-br-pix-lerian-v2.2.0)
+
+---
+
 ## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.1.0)
 
 Features:

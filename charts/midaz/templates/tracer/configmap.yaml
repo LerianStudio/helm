@@ -212,6 +212,7 @@ data:
         "clientId" (include "midaz-tracer.fullname" .)
         "cloudeventsSource" "tracer") | nindent 2 }}
 
+  STREAMING_TENANT_KAFKA: {{ .Values.tracer.configmap.STREAMING_TENANT_KAFKA | default "false" | quote }}
   # Extra Env Vars
   {{- with .Values.tracer.extraEnvVars }}
   {{- range $key, $value := . }}

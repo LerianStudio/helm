@@ -6,7 +6,9 @@ release:
   name: midaz
   namespace: midaz
 tests:
-  - it: renders neither workload on the default 4.4.0 tag
+  - it: renders neither workload on a 4.4 tag
+    set:
+      ledger.image.tag: 4.4.3
     asserts:
       - hasDocuments:
           count: 0

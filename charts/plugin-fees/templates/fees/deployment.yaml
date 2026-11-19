@@ -73,6 +73,15 @@ spec:
                 fieldPath: status.hostIP
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
+          {{- /* ALLOW_INSECURE_OTEL is a modeled setting: fees.configmap.ALLOW_INSECURE_OTEL, then
+             global.observability.allowInsecureOtel, then the node-local reason; lerian-common
+             resolves it and emits the one env entry. A key in fees.extraEnvVars (the legacy
+             route, rendered into the ConfigMap) still stands, so no entry is added then. The
+             Secret renders a fixed key list, so there is no Secret route. */}}
+          {{- if not (hasKey (.Values.fees.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL") }}
+          - name: "ALLOW_INSECURE_OTEL"
+            value: {{ include "lerian-common.otel.allowInsecure" (dict "context" $ "configmap" (.Values.fees.configmap | default dict)) | quote }}
+          {{- end }}
           {{- end }}
           {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
           - name: AWS_EC2_METADATA_SERVICE_ENDPOINT

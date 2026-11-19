@@ -18,11 +18,14 @@ global:
   # Example: multiTenant: { enabled: true }
   multiTenant: {}
   # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
-  # "observability"). Fields: enabled, otlpEndpoint, deploymentEnvironment.
-  # (configmap.ENABLE_TELEMETRY/OTEL_EXPORTER_OTLP_ENDPOINT/
-  # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT override.)
+  # "observability"). Fields: enabled, otlpEndpoint, deploymentEnvironment,
+  # allowInsecureOtel. (configmap.ENABLE_TELEMETRY/OTEL_EXPORTER_OTLP_ENDPOINT/
+  # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT/ALLOW_INSECURE_OTEL override.)
   # Example: observability: { enabled: true, otlpEndpoint: "otel-collector:4317" }
   observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   allowInsecureOtel: "node-local collector on the pod's own node"
   # -- Env-wide auth (plugin-access-manager). Consumed by lerian-common.globalValue
   # (block "auth"). Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
   # Example: auth: { host: "http://plugin-access-manager-auth:4000" }
@@ -209,6 +212,16 @@ fees:
   # @default -- templates/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
+    # ALLOW_INSECURE_OTEL: reason lib-observability needs to export over plaintext in
+    # production. With otel-collector-lerian.enabled the chart points the app at the
+    # node-local collector ($(HOST_IP):4317, plaintext) and sets this on the container,
+    # resolved as fees.configmap.ALLOW_INSECURE_OTEL > global.observability.allowInsecureOtel
+    # > "node-local collector on the pod's own node". null is unset; "" is an explicit
+    # refusal (the app then refuses the plaintext exporter in production). "false" also
+    # stops the chain, but lib-observability v1.1.0 only refuses an empty value, so the
+    # app reads it as a reason and allows the exporter: use "" to refuse.
+    # A key in fees.extraEnvVars (legacy) still stands and the chart adds no entry then.
+    # ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
     # -- ENV_NAME is NOT pinned — consumed by lerian-common.globalValue (block
     # "env"); the chart already defaults it ("development") and picks up
     # global.env.name when set. Pinning it here would make global.env.name

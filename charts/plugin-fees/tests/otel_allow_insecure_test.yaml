@@ -1,0 +1,189 @@
+suite: node-local OTEL hop in production
+templates:
+  - templates/fees/deployment.yaml
+  - templates/fees/configmap.yaml
+  - templates/fees/secrets.yaml
+set:
+  fees.secrets.CLIENT_SECRET: sample
+  global.env.name: production
+tests:
+  - it: the plaintext node-local endpoint carries ALLOW_INSECURE_OTEL
+    template: templates/fees/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: an operator value in extraEnvVars stands, with no chart entry next to it
+    template: templates/fees/deployment.yaml
+    set:
+      fees.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "operator reason"}
+
+  - it: the collector off emits neither the node hop nor the variable
+    template: templates/fees/deployment.yaml
+    set:
+      otel-collector-lerian.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: an explicit endpoint does not lift the node hop, so the variable follows it
+    template: templates/fees/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: otel.example.com:4317
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: an existing Secret is invisible to the chart, so the entry is emitted
+    template: templates/fees/deployment.yaml
+    set:
+      fees.useExistingSecret: true
+      fees.existingSecretName: plugin-fees-operator
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: global.observability.allowInsecureOtel sets the value env-wide
+    template: templates/fees/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: the component configmap wins over the global
+    template: templates/fees/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      fees.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "component reason"}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: an explicit refusal stands as the one entry
+    template: templates/fees/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "env-wide reason"
+      fees.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: a "false" value stops the chain and is emitted as is
+    template: templates/fees/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: "false"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "false"}
+
+  - it: a null component value is unset and falls through to the global
+    template: templates/fees/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: env-wide reason
+      fees.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: env-wide reason}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+
+  - it: a null global is unset and leaves the node-local reason
+    template: templates/fees/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: 'fees: the ConfigMap renders configmap.ALLOW_INSECURE_OTEL (reaches the app with the collector off)'
+    template: templates/fees/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      fees.configmap.ALLOW_INSECURE_OTEL: component reason
+      global.observability.allowInsecureOtel: env-wide reason
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: component reason
+
+  - it: 'fees: the ConfigMap takes global.observability.allowInsecureOtel when the component is unset'
+    template: templates/fees/configmap.yaml
+    set:
+      global.observability.allowInsecureOtel: env-wide reason
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: env-wide reason
+
+  - it: 'fees: a null component value falls through to the global in the ConfigMap'
+    template: templates/fees/configmap.yaml
+    set:
+      fees.configmap.ALLOW_INSECURE_OTEL: null
+      global.observability.allowInsecureOtel: env-wide reason
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: env-wide reason
+
+  - it: 'fees: an explicit refusal renders as the empty value'
+    template: templates/fees/configmap.yaml
+    set:
+      fees.configmap.ALLOW_INSECURE_OTEL: ""
+      global.observability.allowInsecureOtel: env-wide reason
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ""
+
+  - it: 'fees: nothing renders in the ConfigMap when neither is set'
+    template: templates/fees/configmap.yaml
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+
+  - it: 'fees: a legacy extraEnvVars entry renders once, from extraEnvVars'
+    template: templates/fees/configmap.yaml
+    set:
+      fees.configmap.ALLOW_INSECURE_OTEL: component reason
+      fees.extraEnvVars.ALLOW_INSECURE_OTEL: legacy reason
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: legacy reason

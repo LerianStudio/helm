@@ -37,6 +37,12 @@ global:
     enabled: true
     host: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
 
+# Antifraud partner. "aws" or "vault" when any antifraud flow is on; empty denies
+# every enabled flow. Leave the allowlist empty on Lerian Cloud (BYOC only).
+antifraud:
+  secretsBackend: ""
+  # allowedPrivateHosts: "flowker.flowker.svc.cluster.local"
+
 # ------------------------------------------------------------
 # spi/api — PIX SPI (single-tenant identity REQUIRED)
 # ------------------------------------------------------------

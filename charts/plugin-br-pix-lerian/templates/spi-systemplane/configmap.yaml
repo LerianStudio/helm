@@ -70,6 +70,9 @@ data:
      then Chart.AppVersion. */}}
   {{- $compTag := default $.Chart.AppVersion $values.image.tag }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ $cm.OTEL_RESOURCE_SERVICE_VERSION | default $compTag | quote }}
+  {{- with include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ANTIFRAUD_ALLOWED_PRIVATE_HOSTS" "params" $.Values.antifraud "field" "allowedPrivateHosts" "default" "") }}
+  ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: {{ . | quote }}
+  {{- end }}
   # --- service discovery: shared knobs derived from global.serviceDiscovery
   #     (set once per env). Seeded into this systemplane's store on first boot. ---
   {{- include "plugin-br-pix-lerian.serviceDiscovery.env" (dict "context" $ "configmap" $cm "keys" (list "SD_ADDRESS" "SD_ENABLED" "SD_TLS" "SD_TLS_SKIP_VERIFY" "SD_WORKLOAD")) | nindent 2 }}
@@ -78,7 +81,7 @@ data:
      (leaked-secret guard) so a configmap.<SECRET> can never surface here. */}}
   {{- $enumerated := dict }}
   {{- range $k := (list
-      "ADAPTER_BASE_URL" "APPLICATION_NAME" "COB_BASE_URL" "COB_CLIENT_ID" "COB_CLIENT_SECRET"
+      "ADAPTER_BASE_URL" "ANTIFRAUD_ALLOWED_PRIVATE_HOSTS" "APPLICATION_NAME" "COB_BASE_URL" "COB_CLIENT_ID" "COB_CLIENT_SECRET"
       "CRM_BASE_URL" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET" "DATABASE_URL" "DB_REPLICA_SSL_MODE"
       "DB_SSL_MODE" "DEPLOYMENT_MODE" "DICT_BASE_URL" "DICT_CLIENT_ID" "DICT_CLIENT_SECRET"
       "ENABLE_TELEMETRY" "ENV_NAME" "ISPB" "LICENSE_KEY" "LOG_LEVEL" "MIDAZ_BASE_URL"

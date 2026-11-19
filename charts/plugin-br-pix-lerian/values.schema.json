@@ -289,6 +289,11 @@
         }
       }
     },
+    "antifraud": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Antifraud partner settings shared by the SPI workloads: allowedPrivateHosts (ANTIFRAUD_ALLOWED_PRIVATE_HOSTS, spi and spiSystemplane) and secretsBackend (ANTIFRAUD_SECRETS_BACKEND, spi only)."
+    },
     "spi": {
       "type": "object",
       "properties": {

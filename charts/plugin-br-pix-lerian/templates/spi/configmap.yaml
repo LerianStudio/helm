@@ -125,6 +125,12 @@ data:
      then Chart.AppVersion. */}}
   {{- $compTag := default $.Chart.AppVersion $values.image.tag }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ $cm.OTEL_RESOURCE_SERVICE_VERSION | default $compTag | quote }}
+  {{- with include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ANTIFRAUD_ALLOWED_PRIVATE_HOSTS" "params" $.Values.antifraud "field" "allowedPrivateHosts" "default" "") }}
+  ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: {{ . | quote }}
+  {{- end }}
+  {{- with include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ANTIFRAUD_SECRETS_BACKEND" "params" $.Values.antifraud "field" "secretsBackend" "default" "") }}
+  ANTIFRAUD_SECRETS_BACKEND: {{ . | quote }}
+  {{- end }}
   # --- service discovery: advertise pair derived from component identity;
   #     shared knobs come from this component's systemplane store, not here.
   #     global.serviceDiscovery lets the env set the shared knobs once. ---
@@ -134,7 +140,7 @@ data:
      (leaked-secret guard) so a configmap.<SECRET> can never surface here. */}}
   {{- $enumerated := dict }}
   {{- range $k := (list
-      "ADAPTER_BASE_URL" "APPLICATION_NAME" "COB_BASE_URL" "COB_CLIENT_ID" "COB_CLIENT_SECRET"
+      "ADAPTER_BASE_URL" "ANTIFRAUD_ALLOWED_PRIVATE_HOSTS" "ANTIFRAUD_SECRETS_BACKEND" "APPLICATION_NAME" "COB_BASE_URL" "COB_CLIENT_ID" "COB_CLIENT_SECRET"
       "CRM_BASE_URL" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET" "CRM_ORGANIZATION_ID" "DATABASE_URL"
       "DB_HOST" "DB_NAME" "DB_PASSWORD" "DB_PORT" "DB_REPLICA_HOST" "DB_REPLICA_NAME"
       "DB_REPLICA_PASSWORD" "DB_REPLICA_PORT" "DB_REPLICA_SSLMODE" "DB_REPLICA_SSL_MODE"

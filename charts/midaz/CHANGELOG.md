@@ -1,5 +1,22 @@
 # Midaz Changelog
 
+## [11.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.2.0)
+
+Features:
+- Update to `midaz-ledger@4.5.0`, `midaz-tracer@4.5.0`, `midaz-ledger-migrations@4.5.0`, and `midaz-tracer-migrations@4.5.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Stop rendering environment variables that the chart already sets. (@bedatty)
+- Remove the generated `secret.yaml` templates. (@bedatty)
+
+Improvements:
+- Pin the pre-partition test case to a `4.4` tag. (@bedatty)
+- Pin the legacy health suite test to a `4.4` tag. (@bedatty)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v11.1.2...midaz-v11.2.0)
+
+---
+
 ## [11.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.1.2)
 
 Fixes:

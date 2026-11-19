@@ -139,6 +139,17 @@ global:
       username: "pixswitch"
       password: ""
 
+# -- Antifraud partner settings shared by the SPI workloads. Leave both empty on
+# Lerian Cloud. A component's own configmap.<KEY> wins over this block.
+antifraud:
+  # -- ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: comma-separated private hosts the partner
+  # route may target. Sent to spi (checks it on every call) and spiSystemplane
+  # (checks it when a route is written) so the two never disagree. Empty renders nothing.
+  allowedPrivateHosts: ""
+  # -- ANTIFRAUD_SECRETS_BACKEND: "aws" or "vault". Sent to spi only, the one process
+  # that reads the credential. Empty renders nothing and every enabled flow denies.
+  secretsBackend: ""
+
 # Port allocation: 4111 and 4112 are intentionally unused. Allocate new
 # components from 4118 upward rather than filling the gap.
 # =============================================================================

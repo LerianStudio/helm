@@ -630,7 +630,7 @@ DATASOURCE_ONBOARDING_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded
 DATASOURCE_ONBOARDING_SSLROOTCERT: {{ $cm.DATASOURCE_ONBOARDING_SSLROOTCERT | default "" | quote }}
 {{- /* Escape hatch: any OTHER key the operator adds under common.configmap. */}}
 {{- range $key, $value := $cm }}
-{{- if not (has $key $explicit) }}
+{{- if not (or (has $key $explicit) (and (eq $key "ALLOW_INSECURE_OTEL") (kindIs "invalid" $value))) }}
 {{ $key }}: {{ $value | quote }}
 {{- end }}
 {{- end }}
@@ -710,4 +710,85 @@ The guard compares one semver (rc sorts above beta): an rc tier must bump to an 
       "name" "reporter-worker" "component" .Values.worker "health" .Values.worker.health
       "minImage" (include "reporter.minImage" .)
       "replicas" .Values.worker.replicaCount "autoscaling" .Values.worker.autoscaling) -}}
+{{- end -}}
+
+{{/*
+reporter.otelAllowInsecureEnv — the ALLOW_INSECURE_OTEL container env entry for a
+component that ships to the node-local collector (`$(HOST_IP):4317`, plaintext).
+Call it inside the same `otel-collector-lerian.enabled` gate that emits that endpoint:
+  {{- with (include "reporter.otelAllowInsecureEnv" (dict "context" $ "component" .Values.manager) | trim) }}
+  {{- . | nindent 10 }}
+  {{- end }}
+
+lib-observability refuses a plaintext exporter in production unless ALLOW_INSECURE_OTEL
+carries a reason. Value (lerian-common.otel.allowInsecure; null = unset, "" / "false" =
+an explicit refusal that stops the chain):
+  <component>.configmap.ALLOW_INSECURE_OTEL
+  > common.configmap.ALLOW_INSECURE_OTEL   (the chart's shared tier, same order as its ConfigMaps)
+  > global.observability.allowInsecureOtel
+  > "node-local collector on the pod's own node"
+
+Legacy routes stand, and then this emits nothing (no duplicate env name):
+  - the key in <component>.extraEnvVars;
+  - a non-empty secrets.ALLOW_INSECURE_OTEL in the chart's own Secret (useExistingSecret
+    false) while nothing in the order above is set — a set value, a refusal included, wins.
+With useExistingSecret the chart cannot see the Secret, so the entry is emitted.
+
+Pass "nodeLocal" false from the collector-off branch: the entry is then emitted only when
+the model (configmap tiers or global) is set, no extraEnvVars key exists, and a Secret
+route is present (secrets.ALLOW_INSECURE_OTEL present at all, "" included, or useExistingSecret), so the
+modeled value wins over the Secret as with the collector on. Otherwise the ConfigMap
+(reporter.otelAllowInsecureConfigmap) carries it.
+*/}}
+{{- define "reporter.otelAllowInsecureEnv" -}}
+{{- $ := .context -}}
+{{- $comp := .component | default dict -}}
+{{- $key := "ALLOW_INSECURE_OTEL" -}}
+{{- $src := dict -}}
+{{- range $m := list ($comp.configmap | default dict) ($.Values.common.configmap | default dict) -}}
+{{- if and (not (hasKey $src $key)) (hasKey $m $key) (not (kindIs "invalid" (index $m $key))) -}}
+{{- $_ := set $src $key (index $m $key) -}}
+{{- end -}}
+{{- end -}}
+{{- $obs := ($.Values.global | default dict).observability | default dict -}}
+{{- $modelSet := or (hasKey $src $key) (and (hasKey $obs "allowInsecureOtel") (not (kindIs "invalid" (index $obs "allowInsecureOtel")))) -}}
+{{- $legacyEnv := hasKey ($comp.extraEnvVars | default dict) $key -}}
+{{- $secretVal := index ($.Values.secrets | default dict) $key -}}
+{{- $legacySecret := and (not $comp.useExistingSecret) (not $modelSet) (not (kindIs "invalid" $secretVal)) (ne (toString $secretVal) "") -}}
+{{- $emit := not (or $legacyEnv $legacySecret) -}}
+{{- if eq (toString .nodeLocal) "false" -}}
+{{- /* Collector off: the ConfigMap carries the model, but the Secret, read after it by
+   the worker's envFrom, would beat it. Put the modeled value on the container when a
+   Secret could hold the key: an existing one, or the chart's own whenever the key is
+   present (it renders every key, so even "" would replace the modeled reason). */ -}}
+{{- $secretRoute := or $comp.useExistingSecret (hasKey ($.Values.secrets | default dict) $key) -}}
+{{- $emit = and $modelSet (not $legacyEnv) $secretRoute -}}
+{{- end -}}
+{{- if $emit -}}
+- name: "ALLOW_INSECURE_OTEL"
+  value: {{ include "lerian-common.otel.allowInsecure" (dict "context" $ "configmap" $src) | quote }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+reporter.otelAllowInsecureConfigmap — ALLOW_INSECURE_OTEL for ONE component ConfigMap
+(manager, worker; the KEDA ScaledJob worker reads the worker ConfigMap), so
+global.observability.allowInsecureOtel also reaches the app with the node-local
+collector off. Emits the global value only when it is non-null and no other source
+renders the key in that ConfigMap: <component>.configmap and common.configmap pass a
+non-null value through themselves (a null one is skipped there: unset, as in
+reporter.otelAllowInsecureEnv), and a key in <component>.extraEnvVars renders as is.
+*/}}
+{{- define "reporter.otelAllowInsecureConfigmap" -}}
+{{- $ := .context -}}
+{{- $comp := .component | default dict -}}
+{{- $key := "ALLOW_INSECURE_OTEL" -}}
+{{- $obs := ($.Values.global | default dict).observability | default dict -}}
+{{- $set := false -}}
+{{- range $m := list ($comp.configmap | default dict) ($.Values.common.configmap | default dict) -}}
+{{- if and (hasKey $m $key) (not (kindIs "invalid" (index $m $key))) }}{{ $set = true }}{{ end -}}
+{{- end -}}
+{{- if and (hasKey $obs "allowInsecureOtel") (not (kindIs "invalid" (index $obs "allowInsecureOtel"))) (not $set) (not (hasKey ($comp.extraEnvVars | default dict) $key)) -}}
+ALLOW_INSECURE_OTEL: {{ index $obs "allowInsecureOtel" | toString | quote }}
+{{- end -}}
 {{- end -}}

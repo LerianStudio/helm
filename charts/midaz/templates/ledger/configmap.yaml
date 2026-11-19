@@ -502,6 +502,10 @@ data:
   # =============================================================================
   CASDOOR_JWK_ADDRESS: {{ $cm.CASDOOR_JWK_ADDRESS | default "" | quote }}
   TRANSACTION_BATCH_MAX_SIZE: {{ .Values.ledger.configmap.TRANSACTION_BATCH_MAX_SIZE | default "10" | quote }}
+  LICENSE_FILE_PATH: {{ .Values.ledger.configmap.LICENSE_FILE_PATH | default "" | quote }}
+  OTEL_TRUST_INBOUND_TRACE_CONTEXT: {{ .Values.ledger.configmap.OTEL_TRUST_INBOUND_TRACE_CONTEXT | default "false" | quote }}
+  STREAMING_TENANT_KAFKA: {{ .Values.ledger.configmap.STREAMING_TENANT_KAFKA | default "false" | quote }}
+  TRANSACTION_CREATED_BY_ENABLED: {{ .Values.ledger.configmap.TRANSACTION_CREATED_BY_ENABLED | default "false" | quote }}
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

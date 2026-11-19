@@ -212,6 +212,10 @@ data:
         "clientId" (include "midaz-tracer.fullname" .)
         "cloudeventsSource" "tracer") | nindent 2 }}
 
+  LICENSE_FILE_PATH: {{ .Values.tracer.configmap.LICENSE_FILE_PATH | default "" | quote }}
+  OTEL_TRUST_INBOUND_TRACE_CONTEXT: {{ .Values.tracer.configmap.OTEL_TRUST_INBOUND_TRACE_CONTEXT | default "false" | quote }}
+  SHUTDOWN_DRAIN_DELAY: {{ .Values.tracer.configmap.SHUTDOWN_DRAIN_DELAY | default "0" | quote }}
+  STREAMING_TENANT_KAFKA: {{ .Values.tracer.configmap.STREAMING_TENANT_KAFKA | default "false" | quote }}
   # Extra Env Vars
   {{- with .Values.tracer.extraEnvVars }}
   {{- range $key, $value := . }}

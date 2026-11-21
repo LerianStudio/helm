@@ -1,5 +1,23 @@
 # Midaz Changelog
 
+## [11.2.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.2.2)
+
+Features:
+
+- Add Helm upgrade guide for `midaz` `v11.2.1`. (@dy-shimizu)
+- Add Helm upgrade guide for `v11.2.0`. (@dy-shimizu)
+
+Fixes:
+
+- Apply the ledger partition CronJob after the deployments. (@fredcamaral)
+- Fix the `11.2.1` upgrade guide hooks, verification, and `4.5.1` behavior. (@gandalf-at-lerian)
+- Pass the edited release values to the `v11.2.0` upgrade. (@gandalf-at-lerian)
+- Fix `v11.2.0` upgrade guide against chart and app sources. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v11.2.1...midaz-v11.2.2)
+
+---
+
 ## [11.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.2.1)
 
 Fixes:

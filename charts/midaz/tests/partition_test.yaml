@@ -137,3 +137,18 @@ tests:
             name: DB_TRANSACTION_HOST
             value: midaz-postgresql-primary
         template: templates/ledger/partition-reconcile-job.yaml
+  - it: applies the CronJob in the last Argo CD wave
+    asserts:
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "2"
+        template: templates/ledger/partition-cronjob.yaml
+  - it: follows the highest hook or Deployment wave
+    set:
+      ledger.partition.reconcile.syncWave: "5"
+      tracer.migrations.deploymentSyncWave: "7"
+    asserts:
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "8"
+        template: templates/ledger/partition-cronjob.yaml

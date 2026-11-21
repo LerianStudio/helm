@@ -1,5 +1,17 @@
 # Plugin-br-pix-lerian Changelog
 
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.2.1)
+
+Fixes:
+- Update multiple components to `@1.6.0`, ensuring compatibility and performance improvements across various APIs and system planes. (@lerian-studio)
+
+Improvements:
+- Clarify runtime documentation to enhance understanding and usability. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.2.0...plugin-br-pix-lerian-v2.2.1)
+
+---
+
 ## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.2.0)
 
 Features:

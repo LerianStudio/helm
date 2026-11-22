@@ -20,7 +20,13 @@ true
      still pending: both products' CronJobs go after every hook and Deployment so a Degraded one cannot stop them. */}}
 {{- define "midaz.partitionLastWave" -}}
 {{- $v := .context.Values -}}
-{{- add 1 (max (dig "migrations" "deploymentSyncWave" "1" ($v.ledger | default dict) | int) (dig "migrations" "deploymentSyncWave" "1" ($v.tracer | default dict) | int) (dig "partition" "reconcile" "syncWave" "1" ($v.ledger | default dict) | int) (dig "partition" "reconcile" "syncWave" "1" ($v.tracer | default dict) | int)) -}}
+{{- $w := list (dig "migrations" "deploymentSyncWave" "1" ($v.ledger | default dict) | int) (dig "migrations" "deploymentSyncWave" "1" ($v.tracer | default dict) | int) (dig "partition" "reconcile" "syncWave" "1" ($v.ledger | default dict) | int) -}}
+{{- if and $v.tracer.enabled (include "midaz.partitionEnabled" (dict "context" .context "product" "tracer")) -}}
+{{- $w = append $w (dig "partition" "reconcile" "syncWave" "1" $v.tracer | int) -}}
+{{- end -}}
+{{- $m := first $w -}}
+{{- range $w }}{{ $m = max $m . }}{{ end -}}
+{{- add 1 $m -}}
 {{- end -}}
 
 {{/* A CronJob name is capped at 52 characters (the controller appends an 11-character suffix to each Job it spawns). */}}

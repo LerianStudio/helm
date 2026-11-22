@@ -869,7 +869,8 @@ tracer:
     activeDeadlineSeconds: 1800
     reconcile:
       # -- Run reconcile-indexes after migration as a Sync/post-upgrade hook. Empty
-      # registries, unpartitioned tables and older schemas exit 0 without blocking sync.
+      # registries, unpartitioned tables and older schemas exit 0; a startup error
+      # (licence gateway included) still fails the hook.
       enabled: true
       # -- Argo CD sync wave of the reconcile Job (after the migration Job's
       # default wave 0). On plain Helm it runs post-install and post-upgrade, ordered by hook weight "10".

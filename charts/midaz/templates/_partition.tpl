@@ -169,7 +169,6 @@ containers:
             key: LICENSE_KEY
             optional: true
       {{- end }}
-      {{- /* Inline settings override stale ConfigMaps during pre-upgrade hooks. */}}
       {{- range $name, $value := include (printf "midaz-%s.partitionInlineEnv" .product) $ctx | fromYaml }}
       - name: {{ $name }}
         value: {{ $value | toString | quote }}
@@ -225,7 +224,7 @@ MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
 {{- if ne (include "midaz.isTrue" ($values.ledger.configmap.MULTI_TENANT_ENABLED | default "false")) "true" }}
 {{- if $pgInternal }}
 {{- include "midaz.infraSecretRef" (dict "context" $ctx "subchart" "postgresql" "key" "password" "envName" "DB_TRANSACTION_PASSWORD") }}
-{{- else if or $values.ledger.useExistingSecret $values.ledger.secrets.DB_TRANSACTION_PASSWORD }}
+{{- else if or $values.ledger.useExistingSecret $values.ledger.secrets.DB_TRANSACTION_PASSWORD -}}
 - name: DB_TRANSACTION_PASSWORD
   valueFrom:
     secretKeyRef:

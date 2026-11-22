@@ -413,7 +413,11 @@ golang-migrate tracks progress in the schema_migrations table.
 {{- else -}}
 {{- /* base + "-" + suffix + "-" + 8-char hash stays within 62 characters
        (42 for the "migrations" suffix, as before). */ -}}
-{{- printf "%s-%s-%s" (trunc (int (sub 52 (len $suffix))) .base | trimSuffix "-" | trimSuffix ".") $suffix (sha256sum $tag | trunc 8) -}}
+{{- $base := trunc (int (sub 52 (len $suffix))) .base | trimSuffix "-" | trimSuffix "." -}}
+{{- if .hashBase -}}
+{{- $base = printf "%s-%s" (trunc (int (sub 43 (len $suffix))) .base | trimSuffix "-" | trimSuffix ".") (sha256sum .base | trunc 8) -}}
+{{- end -}}
+{{- printf "%s-%s-%s" $base $suffix (sha256sum $tag | trunc 8) -}}
 {{- end -}}
 {{- end -}}
 

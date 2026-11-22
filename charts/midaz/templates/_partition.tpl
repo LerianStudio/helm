@@ -31,13 +31,19 @@ true
 
 {{/* A CronJob name is capped at 52 characters (the controller appends an 11-character suffix to each Job it spawns). */}}
 {{- define "midaz.partitionCronJobName" -}}
-{{- printf "%s-partition" (include (printf "midaz-%s.fullname" .product) .context | trunc 42 | trimSuffix "-") -}}
+{{- $full := include (printf "midaz-%s.fullname" .product) .context -}}
+{{- if or (eq .product "ledger") (le (len $full) 42) -}}
+{{- printf "%s-partition" ($full | trunc 42 | trimSuffix "-") -}}
+{{- else -}}
+{{- /* Truncation drops the "-tracer" tail: a hash of the whole name keeps it apart from the ledger's. */ -}}
+{{- printf "%s-%s-partition" ($full | trunc 33 | trimSuffix "-") (sha256sum $full | trunc 8) -}}
+{{- end -}}
 {{- end -}}
 
 {{/* Include the image tag in the immutable reconcile Job name. */}}
 {{- define "midaz.partitionReconcileJobName" -}}
 {{- $p := index .context.Values .product -}}
-{{- include "midaz.migrationsJobName" (dict "base" (include (printf "midaz-%s.fullname" .product) .context) "tag" ($p.image.tag | default .context.Chart.AppVersion | toString) "suffix" "partition-reconcile") -}}
+{{- include "midaz.migrationsJobName" (dict "base" (include (printf "midaz-%s.fullname" .product) .context) "tag" ($p.image.tag | default .context.Chart.AppVersion | toString) "suffix" "partition-reconcile" "hashBase" (ne .product "ledger")) -}}
 {{- end -}}
 
 {{- define "midaz.partitionLicenseHookSecretName" -}}
@@ -251,7 +257,7 @@ MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
 {{- end }}
 {{- end -}}
 
-{{/* Password env: single-tenant runners use the migrations' PostgreSQL rule; multi-tenant ones add nothing (the Tracer Secret carries the tenant settings). */}}
+{{/* Password env: single-tenant runners read the bundled PostgreSQL Secret here (an external password arrives through envFrom); multi-tenant ones add nothing (the Tracer Secret carries the tenant settings). */}}
 {{- define "midaz-tracer.partitionSecretEnv" -}}
 {{- $ctx := .context -}}
 {{- $tracer := $ctx.Values.tracer -}}

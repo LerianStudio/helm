@@ -1,4 +1,4 @@
-{{/* Partition runner helpers. Every define takes (dict "context" . "product" "ledger"). */}}
+{{/* Partition runner helpers. The midaz.partition* defines take (dict "context" . "product" "ledger"|"tracer"). */}}
 
 {{/* Explicit settings win; auto enables inside the product's range; every image in it ships the runner. */}}
 {{- define "midaz.partitionEnabled" -}}
@@ -9,7 +9,7 @@
 {{- /* Same anchored SemVer 2.0.0 guard as midaz.tagIsV4: semverCompare aborts the
        render on a malformed version instead of resolving to "off". */ -}}
 {{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag -}}
-{{- if semverCompare (index (dict "ledger" ">=4.5.0-beta.1") .product) $tag -}}true{{- end -}}
+{{- if semverCompare (index (dict "ledger" ">=4.5.0-beta.1" "tracer" ">=4.6.0-beta.11") .product) $tag -}}true{{- end -}}
 {{- end -}}
 {{- else if eq (toString $enabled) "true" -}}
 true
@@ -17,10 +17,10 @@ true
 {{- end -}}
 
 {{/* Argo CD gates a sync on a resource's health only while a later wave, or a hook in the same wave, is
-     still pending: the CronJob goes after every hook and Deployment so a Degraded one cannot stop them. */}}
+     still pending: both products' CronJobs go after every hook and Deployment so a Degraded one cannot stop them. */}}
 {{- define "midaz.partitionLastWave" -}}
 {{- $v := .context.Values -}}
-{{- add 1 (max (dig "migrations" "deploymentSyncWave" "1" ($v.ledger | default dict) | int) (dig "migrations" "deploymentSyncWave" "1" ($v.tracer | default dict) | int) (dig "partition" "reconcile" "syncWave" "1" (index $v .product | default dict) | int)) -}}
+{{- add 1 (max (dig "migrations" "deploymentSyncWave" "1" ($v.ledger | default dict) | int) (dig "migrations" "deploymentSyncWave" "1" ($v.tracer | default dict) | int) (dig "partition" "reconcile" "syncWave" "1" ($v.ledger | default dict) | int) (dig "partition" "reconcile" "syncWave" "1" ($v.tracer | default dict) | int)) -}}
 {{- end -}}
 
 {{/* A CronJob name is capped at 52 characters (the controller appends an 11-character suffix to each Job it spawns). */}}
@@ -44,12 +44,14 @@ true
 {{- $partition := (index $ctx.Values .product).partition | default dict -}}
 {{- $component := printf "%s-partition" (index $ctx.Values .product).name -}}
 {{- $labels := dict "context" $ctx "component" $component "name" $component }}
+{{- $labelsFn := ternary "midaz.labels" "midaz-tracer.labels" (eq .product "ledger") }}
+{{- $podLabelsFn := ternary "midaz.podLabels" "midaz-tracer.podLabels" (eq .product "ledger") }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: {{ include "midaz.partitionCronJobName" . }}
   labels:
-    {{- include "midaz.labels" $labels | nindent 4 }}
+    {{- include $labelsFn $labels | nindent 4 }}
   annotations:
     argocd.argoproj.io/sync-wave: {{ include "midaz.partitionLastWave" . | quote }}
 spec:
@@ -64,14 +66,14 @@ spec:
   jobTemplate:
     metadata:
       labels:
-        {{- include "midaz.labels" $labels | nindent 8 }}
+        {{- include $labelsFn $labels | nindent 8 }}
     spec:
       backoffLimit: 0
       activeDeadlineSeconds: {{ $partition.activeDeadlineSeconds | default 1800 }}
       template:
         metadata:
           labels:
-            {{- include "midaz.podLabels" $labels | nindent 12 }}
+            {{- include $podLabelsFn $labels | nindent 12 }}
         spec:
           {{- include "midaz.partitionPodSpec" (dict "context" $ctx "product" .product "args" (list "ensure" "--reconcile-indexes")) | nindent 10 }}
 {{- end -}}
@@ -83,14 +85,18 @@ spec:
 {{- $reconcile := dig "partition" "reconcile" dict $p -}}
 {{- $component := printf "%s-partition-reconcile" $p.name -}}
 {{- $labels := dict "context" $ctx "component" $component "name" $component }}
-{{- if and $p.secrets.LICENSE_KEY (not $p.useExistingSecret) }}
+{{- $labelsFn := ternary "midaz.labels" "midaz-tracer.labels" (eq .product "ledger") }}
+{{- $podLabelsFn := ternary "midaz.podLabels" "midaz-tracer.podLabels" (eq .product "ledger") }}
+{{- /* Only the ledger hook runs before its Secret exists; the Tracer's runs after install or upgrade. */}}
+{{- $hookSecret := and (eq .product "ledger") $p.secrets.LICENSE_KEY (not $p.useExistingSecret) }}
+{{- if $hookSecret }}
 {{- /* The hook runs before this release's Secret is written: carry LICENSE_KEY alone, ahead of the Job. */}}
 apiVersion: v1
 kind: Secret
 metadata:
   name: {{ include "midaz.partitionLicenseHookSecretName" . }}
   labels:
-    {{- include "midaz.labels" $labels | nindent 4 }}
+    {{- include $labelsFn $labels | nindent 4 }}
   annotations:
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
@@ -108,12 +114,12 @@ kind: Job
 metadata:
   name: {{ include "midaz.partitionReconcileJobName" . }}
   labels:
-    {{- include "midaz.labels" $labels | nindent 4 }}
+    {{- include $labelsFn $labels | nindent 4 }}
   annotations:
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
     argocd.argoproj.io/sync-wave: {{ dig "syncWave" "1" $reconcile | toString | quote }}
-    helm.sh/hook: post-install,pre-upgrade
+    helm.sh/hook: {{ ternary "post-install,pre-upgrade" "post-install,post-upgrade" (eq .product "ledger") }}
     helm.sh/hook-weight: "10"
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
@@ -123,16 +129,15 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "midaz.podLabels" $labels | nindent 8 }}
+        {{- include $podLabelsFn $labels | nindent 8 }}
     spec:
-      {{- include "midaz.partitionPodSpec" (dict "context" $ctx "product" .product "args" (list "reconcile-indexes" "--tolerate-unavailable") "licenseHook" true) | nindent 6 }}
+      {{- include "midaz.partitionPodSpec" (dict "context" $ctx "product" .product "args" (list "reconcile-indexes" "--tolerate-unavailable") "licenseHook" $hookSecret) | nindent 6 }}
 {{- end -}}
 
 {{/* Both partition workloads use the product's connections and migration credentials. */}}
 {{- define "midaz.partitionPodSpec" -}}
 {{- $ctx := .context -}}
-{{- $values := $ctx.Values -}}
-{{- $p := index $values .product -}}
+{{- $p := index $ctx.Values .product -}}
 {{- $partition := $p.partition | default dict -}}
 {{- $secretName := ternary $p.existingSecretName (include (printf "midaz-%s.fullname" .product) $ctx) $p.useExistingSecret -}}
 restartPolicy: Never
@@ -161,7 +166,7 @@ containers:
       {{- . | nindent 6 }}
       {{- end }}
       {{- /* The reconcile hook runs before the chart Secret is updated: read the key from its hook Secret. */}}
-      {{- if and .licenseHook $p.secrets.LICENSE_KEY (not $p.useExistingSecret) }}
+      {{- if .licenseHook }}
       - name: LICENSE_KEY
         valueFrom:
           secretKeyRef:
@@ -169,9 +174,11 @@ containers:
             key: LICENSE_KEY
             optional: true
       {{- end }}
-      {{- range $name, $value := include (printf "midaz-%s.partitionInlineEnv" .product) $ctx | fromYaml }}
+      {{- if eq .product "ledger" }}
+      {{- range $name, $value := include "midaz-ledger.partitionInlineEnv" $ctx | fromYaml }}
       - name: {{ $name }}
         value: {{ $value | toString | quote }}
+      {{- end }}
       {{- end }}
       {{- with include (printf "midaz-%s.partitionSecretEnv" .product) (dict "context" $ctx "secretName" $secretName) }}
       {{- . | nindent 6 }}
@@ -236,6 +243,25 @@ MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
 {{- $vkAuth := $vk.auth | default dict }}
 {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
 {{- include "midaz.infraSecretRef" (dict "context" $ctx "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") }}
+{{- end }}
+{{- end }}
+{{- end -}}
+
+{{/* Password env: single-tenant runners use the migrations' PostgreSQL rule; multi-tenant ones add nothing (the Tracer Secret carries the tenant settings). */}}
+{{- define "midaz-tracer.partitionSecretEnv" -}}
+{{- $ctx := .context -}}
+{{- $tracer := $ctx.Values.tracer -}}
+{{- $pg := $ctx.Values.postgresql | default dict -}}
+{{- $pgInternal := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) (include "midaz.operatorSecret" (dict "context" $ctx "subchart" "postgresql")) -}}
+{{- if ne (include "midaz.isTrue" (($tracer.configmap | default dict).MULTI_TENANT_ENABLED | default "false")) "true" }}
+{{- if $pgInternal }}
+{{- include "midaz.infraSecretRef" (dict "context" $ctx "subchart" "postgresql" "key" "password" "envName" "DB_PASSWORD") }}
+{{- else if or $tracer.useExistingSecret $tracer.secrets.DB_PASSWORD -}}
+- name: DB_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ .secretName }}
+      key: DB_PASSWORD
 {{- end }}
 {{- end }}
 {{- end -}}

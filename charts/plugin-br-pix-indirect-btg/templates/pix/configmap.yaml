@@ -196,6 +196,10 @@ data:
   STREAMING_ENABLED: {{ .Values.pix.configmap.STREAMING_ENABLED | default "false" | quote }}
   STREAMING_TENANT_ID: {{ .Values.pix.configmap.STREAMING_TENANT_ID | default "default" | quote }}
   LICENSE_FILE_PATH: {{ .Values.pix.configmap.LICENSE_FILE_PATH | default "" | quote }}
+  ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: {{ .Values.pix.configmap.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS | default "" | quote }}
+  ANTIFRAUD_IN_CAUTELAR_ENABLED: {{ .Values.pix.configmap.ANTIFRAUD_IN_CAUTELAR_ENABLED | default "false" | quote }}
+  ANTIFRAUD_OUT_REVIEW_HOLD_ENABLED: {{ .Values.pix.configmap.ANTIFRAUD_OUT_REVIEW_HOLD_ENABLED | default "false" | quote }}
+  ANTIFRAUD_SECRETS_BACKEND: {{ .Values.pix.configmap.ANTIFRAUD_SECRETS_BACKEND | default "" | quote }}
   # Extra Env Vars
   {{- with .Values.pix.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

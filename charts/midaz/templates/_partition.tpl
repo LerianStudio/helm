@@ -36,7 +36,7 @@ true
 {{- printf "%s-partition" ($full | trunc 42 | trimSuffix "-") -}}
 {{- else -}}
 {{- /* Truncation drops the "-tracer" tail: a hash of the whole name keeps it apart from the ledger's. */ -}}
-{{- printf "%s-%s-partition" ($full | trunc 33 | trimSuffix "-") (sha256sum $full | trunc 8) -}}
+{{- printf "%s-%s-partition" ($full | trunc 33 | trimSuffix "-" | trimSuffix ".") (sha256sum $full | trunc 8) -}}
 {{- end -}}
 {{- end -}}
 

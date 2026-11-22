@@ -93,7 +93,6 @@ spec:
 {{- $labels := dict "context" $ctx "component" $component "name" $component }}
 {{- $labelsFn := ternary "midaz.labels" "midaz-tracer.labels" (eq .product "ledger") }}
 {{- $podLabelsFn := ternary "midaz.podLabels" "midaz-tracer.podLabels" (eq .product "ledger") }}
-{{- /* Only the ledger hook runs before its Secret exists; the Tracer's runs after install or upgrade. */}}
 {{- $hookSecret := and (eq .product "ledger") $p.secrets.LICENSE_KEY (not $p.useExistingSecret) }}
 {{- if $hookSecret }}
 {{- /* The hook runs before this release's Secret is written: carry LICENSE_KEY alone, ahead of the Job. */}}
@@ -171,7 +170,6 @@ containers:
       {{- with include "midaz.licenseFileEnv" $p }}
       {{- . | nindent 6 }}
       {{- end }}
-      {{- /* The reconcile hook runs before the chart Secret is updated: read the key from its hook Secret. */}}
       {{- if .licenseHook }}
       - name: LICENSE_KEY
         valueFrom:
@@ -262,12 +260,6 @@ MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
 {{- if ne (include "midaz.isTrue" (($tracer.configmap | default dict).MULTI_TENANT_ENABLED | default "false")) "true" }}
 {{- if $pgInternal }}
 {{- include "midaz.infraSecretRef" (dict "context" $ctx "subchart" "postgresql" "key" "password" "envName" "DB_PASSWORD") }}
-{{- else if or $tracer.useExistingSecret $tracer.secrets.DB_PASSWORD -}}
-- name: DB_PASSWORD
-  valueFrom:
-    secretKeyRef:
-      name: {{ .secretName }}
-      key: DB_PASSWORD
 {{- end }}
 {{- end }}
 {{- end -}}

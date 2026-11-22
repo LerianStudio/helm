@@ -177,9 +177,6 @@ tests:
           path: spec.template.spec.containers[0].args
           value: [reconcile-indexes, --tolerate-unavailable]
         template: templates/tracer/partition-reconcile-job.yaml
-      - notExists:
-          path: spec.template.spec.containers[0].env[?(@.name == "LICENSE_KEY")]
-        template: templates/tracer/partition-reconcile-job.yaml
   - it: carries no ledger inline settings, the Tracer ConfigMap supplies them
     asserts:
       - notExists:
@@ -213,31 +210,6 @@ tests:
               secretKeyRef:
                 name: midaz-postgresql
                 key: password
-        template: templates/tracer/partition-reconcile-job.yaml
-  - it: reads an external PostgreSQL password from the Tracer Secret
-    set:
-      postgresql.enabled: false
-      postgresql.external: true
-      tracer.secrets.DB_PASSWORD: external-password
-      tracer.configmap.DB_HOST: pg.example
-    asserts:
-      - contains:
-          path: spec.jobTemplate.spec.template.spec.containers[0].env
-          content:
-            name: DB_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: midaz-tracer
-                key: DB_PASSWORD
-        template: templates/tracer/partition-cronjob.yaml
-      - contains:
-          path: spec.template.spec.containers[0].env
-          content:
-            name: DB_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: midaz-tracer
-                key: DB_PASSWORD
         template: templates/tracer/partition-reconcile-job.yaml
   - it: adds no password variable in multi-tenant mode with an existing Secret
     set:

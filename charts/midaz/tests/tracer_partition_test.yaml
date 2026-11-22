@@ -180,11 +180,20 @@ tests:
       - notExists:
           path: spec.template.spec.containers[0].env[?(@.name == "LICENSE_KEY")]
         template: templates/tracer/partition-reconcile-job.yaml
-  - it: carries no inline connection settings, the Tracer ConfigMap supplies them
+  - it: carries no ledger inline settings, the Tracer ConfigMap supplies them
     asserts:
       - notExists:
-          path: spec.template.spec.containers[0].env[?(@.name == "DB_HOST")]
+          path: spec.template.spec.containers[0].env[?(@.name == "MULTI_TENANT_ENABLED")]
         template: templates/tracer/partition-reconcile-job.yaml
+      - notExists:
+          path: spec.template.spec.containers[0].env[?(@.name == "DB_TRANSACTION_HOST")]
+        template: templates/tracer/partition-reconcile-job.yaml
+      - notExists:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env[?(@.name == "MULTI_TENANT_ENABLED")]
+        template: templates/tracer/partition-cronjob.yaml
+      - notExists:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env[?(@.name == "DB_TRANSACTION_HOST")]
+        template: templates/tracer/partition-cronjob.yaml
   - it: reads the bundled PostgreSQL password
     asserts:
       - contains:
@@ -299,6 +308,18 @@ tests:
           path: metadata.annotations["argocd.argoproj.io/sync-wave"]
           value: "6"
         template: templates/tracer/partition-reconcile-job.yaml
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "7"
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "7"
+        template: templates/ledger/partition-cronjob.yaml
+  - it: follows the ledger reconcile wave on both CronJobs
+    set:
+      ledger.partition.reconcile.syncWave: "6"
+    asserts:
       - equal:
           path: metadata.annotations["argocd.argoproj.io/sync-wave"]
           value: "7"

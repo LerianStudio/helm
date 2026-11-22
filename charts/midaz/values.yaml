@@ -868,7 +868,7 @@ tracer:
     # -- Hard timeout for one run, in seconds
     activeDeadlineSeconds: 1800
     reconcile:
-      # -- Run reconcile-indexes after migration as a Sync/post-upgrade hook. Empty
+      # -- Run reconcile-indexes after migration as a Sync hook (post-install/post-upgrade on plain Helm). Empty
       # registries, unpartitioned tables and older schemas exit 0; a startup error
       # (licence gateway included) still fails the hook.
       enabled: true

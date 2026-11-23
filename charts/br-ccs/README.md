@@ -16,7 +16,7 @@ judicial secrecy (liminares / LC 105) and LGPD.
 - Required secrets: `brCcs.secrets.CCS_CRYPTO_MASTER_KEY` (AES-256-GCM, 64 hex chars — empty fails fast at boot). `POSTGRES_PASSWORD` and `REDIS_PASSWORD` are single-sourced from the bundled `<release>-{postgresql,valkey}` Secrets via `secretKeyRef` when those subcharts are enabled; supply them (or `<subchart>.auth.existingSecret`) for external infra. `FETCHER_CRYPTO_KEY` is optional (empty = passthrough). See `docs/helm-chart-standard.md`.
 - Dependency notes: Bundled PostgreSQL and Valkey subcharts are used unless external services are configured. No MongoDB.
 - Production overrides: Disable the bundled subcharts (`<subchart>.enabled=false`, `.external=true`), set `POSTGRES_HOST`/`REDIS_HOST`, and supply secrets via a secrets manager or `brCcs.useExistingSecret`; override image tags, ingress, resources, and integration endpoints (Fetcher/STA/Reporter).
-- Source/license: Source is in `github.com/LerianStudio/helm` and `github.com/LerianStudio/br-ccs`; license is Apache-2.0.
+- Source/license: Source is in `github.com/LerianStudio/helm`; chart license is Elastic License 2.0. The br-ccs service itself is proprietary (Lerian Studio).
 
 ## TL;DR
 

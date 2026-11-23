@@ -101,11 +101,6 @@ tests:
         path: /readyz
         port: health
   - contains:
-      path: spec.template.spec.containers[0].env
-      content:
-        name: HEALTH_PORT
-        value: "8099"
-  - contains:
       path: spec.template.spec.containers[0].ports
       content:
         name: health

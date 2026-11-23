@@ -2,7 +2,6 @@
 # paths in their ENABLED state so the render gate catches regressions there:
 #   - multiTenant.env + fail-fast multiTenant.secret (MT on, API key supplied)
 #   - otel.env driven by global.observability
-#   - datastore.value broker mask + RABBITMQ_DEFAULT_PASS fail-fast (rmq on)
 #   - serviceDiscovery.env (SD on) and streaming.env + streaming.secret (streaming on, SASL)
 # Values are placeholders; the gate only checks that the chart renders.
 brCcs:
@@ -13,9 +12,6 @@ brCcs:
   streaming:
     enabled: true
   configmap:
-    RABBITMQ_ENABLED: "true"
-    # The rabbitmq subchart stays off: the broker is external, so it is named.
-    RABBITMQ_HOST: "rabbitmq.messaging.svc.cluster.local"
     STREAMING_BROKERS: "kafka:9092"
     STREAMING_SASL_MECHANISM: "PLAIN"
     STREAMING_SASL_USERNAME: "render-fixture-user"
@@ -23,7 +19,6 @@ brCcs:
   secrets:
     CCS_CRYPTO_MASTER_KEY: "render-fixture-crypto-key"
     MULTI_TENANT_SERVICE_API_KEY: "render-fixture-mt-api-key"
-    RABBITMQ_DEFAULT_PASS: "render-fixture-rmq-pass"
     STREAMING_SASL_PASSWORD: "render-fixture-stream-pass"
     SD_TOKEN: "render-fixture-sd-token"
 global:

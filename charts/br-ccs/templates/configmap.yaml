@@ -1,6 +1,6 @@
 {{- if .Values.brCcs.enabled }}
 {{- $cm := .Values.brCcs.configmap | default dict }}
-{{- /* TIERED model (the #1741 pattern). DEPENDENCY CONNECTIONS (postgres/redis/broker,
+{{- /* TIERED model (the #1741 pattern). DEPENDENCY CONNECTIONS (postgres/redis,
    multiTenant, otel, serviceDiscovery, streaming, auth) resolve via lerian-common domain
    helpers + the datastore mask — precedence configmap.<KEY> > brCcs.datastores.<type>.<field>
    > global.datastores.<type>.<field> > chart default. EVERYTHING ELSE is an escape-hatch
@@ -12,7 +12,6 @@
 {{- $multiTenantEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MULTI_TENANT_ENABLED" "params" $mt "field" "enabled" "default" "false")) "true" }}
 {{- $sdEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SD_ENABLED" "params" $sd "field" "enabled" "default" "false")) "true" }}
 {{- $streamingEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "STREAMING_ENABLED" "params" $strm "field" "enabled" "default" "false")) "true" }}
-{{- $rmqEnabled := eq (toString ($cm.RABBITMQ_ENABLED | default "false")) "true" }}
 {{- $pg := .Values.postgresql | default dict }}
 {{- $vk := .Values.valkey | default dict }}
 {{- $ds := .Values.brCcs.datastores | default dict }}
@@ -135,38 +134,6 @@ data:
   # CIRCUIT BREAKER (passthrough — prerequisite for object storage adapters)
   # =====================================================================
   CIRCUIT_BREAKER_ENABLED: {{ $cm.CIRCUIT_BREAKER_ENABLED | default "true" | quote }}
-
-  # =====================================================================
-  # RABBITMQ (optional). HOST/PORT/USER via the datastore mask; rest passthrough.
-  # =====================================================================
-  RABBITMQ_ENABLED: {{ $cm.RABBITMQ_ENABLED | default "false" | quote }}
-  {{- if $rmqEnabled }}
-  {{- /* RABBITMQ_URL carries the password and is rendered as a Secret (see
-         templates/secrets.yaml), never as a ConfigMap value. */}}
-  RABBITMQ_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" (printf "%s-rabbitmq.%s.svc.cluster.local" .Release.Name $namespace)) | quote }}
-  RABBITMQ_PORT_AMQP: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "5672") | quote }}
-  RABBITMQ_PORT_HOST: {{ $cm.RABBITMQ_PORT_HOST | default "15672" | quote }}
-  RABBITMQ_DEFAULT_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "broker" "field" "user" "nativeKey" "RABBITMQ_DEFAULT_USER" "default" "br-ccs") | quote }}
-  RABBITMQ_VHOST: {{ $cm.RABBITMQ_VHOST | default "/" | quote }}
-  RABBITMQ_EXCHANGE: {{ $cm.RABBITMQ_EXCHANGE | default "events" | quote }}
-  RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS: {{ $cm.RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS | default "false" | quote }}
-  RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: {{ $cm.RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK | default "false" | quote }}
-  RABBITMQ_ALLOW_INSECURE_TLS: {{ $cm.RABBITMQ_ALLOW_INSECURE_TLS | default "false" | quote }}
-  RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS: {{ $cm.RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS | default "5000" | quote }}
-  RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS: {{ $cm.RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS | default "1000" | quote }}
-  RABBITMQ_PUBLISHER_RECOVERY_MAX_MS: {{ $cm.RABBITMQ_PUBLISHER_RECOVERY_MAX_MS | default "30000" | quote }}
-  RABBITMQ_PUBLISHER_MAX_RECOVERIES: {{ $cm.RABBITMQ_PUBLISHER_MAX_RECOVERIES | default "10" | quote }}
-  CCS_STA_DLQ_TTL_SECONDS: {{ $cm.CCS_STA_DLQ_TTL_SECONDS | default "30" | quote }}
-  {{- if $cm.RABBITMQ_QUEUE }}
-  RABBITMQ_QUEUE: {{ $cm.RABBITMQ_QUEUE | quote }}
-  {{- end }}
-  {{- if $cm.RABBITMQ_HEALTH_CHECK_URL }}
-  RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | quote }}
-  {{- end }}
-  {{- if $cm.RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS }}
-  RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS: {{ $cm.RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS | quote }}
-  {{- end }}
-  {{- end }}
 
   # =====================================================================
   # OUTBOX (passthrough)
@@ -442,7 +409,7 @@ data:
   {{- end }}
   {{- end }}
   {{- /* CCS RUNTIME KNOBS (optional — unset = app defaults) */}}
-  {{- range $k := (list "CCS_CONSUMER_MAX_REDELIVERIES" "CCS_DETAIL_PII_RETENTION_BUSINESS_DAYS" "CCS_MOVEMENT_MAX_BUSINESS_DAYS_PAST" "CCS_MOVEMENT_SUBMIT_WINDOW_ALWAYS_OPEN" "CCS_NON_SUBMISSION_SCAN_INTERVAL_SEC" "CCS_OUTBOX_OVERRIDES_ENABLED") }}
+  {{- range $k := (list "CCS_DETAIL_PII_RETENTION_BUSINESS_DAYS" "CCS_MOVEMENT_MAX_BUSINESS_DAYS_PAST" "CCS_MOVEMENT_SUBMIT_WINDOW_ALWAYS_OPEN" "CCS_NON_SUBMISSION_SCAN_INTERVAL_SEC" "CCS_OUTBOX_OVERRIDES_ENABLED") }}
   {{- if and (hasKey $cm $k) (ne (toString (index $cm $k)) "") (not (hasKey $extra $k)) }}
   {{ $k }}: {{ index $cm $k | quote }}
   {{- end }}

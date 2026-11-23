@@ -146,7 +146,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.7.1` | 1.5.1 |
+| `2.7.2` | 1.6.0 |
 -----------------
 
 ### Fetcher

@@ -11,7 +11,7 @@
 
 ### 1. Ledger partition CronJob Argo CD sync wave ordering
 
-The ledger partition CronJob now applies in a later Argo CD sync wave to prevent a `Degraded` CronJob from blocking the deployment of migration Jobs and application Deployments.
+The ledger partition CronJob now applies in the last Argo CD sync wave of the chart. A `Degraded` CronJob no longer stops the ledger and tracer Deployments and the partition reconcile hook from applying.
 
 #### What changed
 
@@ -53,9 +53,11 @@ This ensures the CronJob applies **after** all migration Jobs and Deployments ha
 
 #### Why this matters
 
-Argo CD gates a sync on a resource's health only while a later wave, or a hook in the same wave, is still pending. If the partition CronJob is created in the default wave (wave `"0"`) or the same wave as the ledger Deployment, a `Degraded` CronJob (e.g., due to a misconfigured schedule or suspended state) can block the entire sync, preventing migration Jobs and Deployments from applying.
+Argo CD gates a sync on a resource's health only while a later wave, or a hook in the same wave, is still pending. Up to 11.2.1 the partition CronJob had no sync-wave annotation, so Argo CD applied it in wave `"0"`, together with the migration Jobs (`Sync` hooks). After one failed scheduled run, Argo CD reads the CronJob as `Degraded` and fails the sync at wave `"0"`. The migration Jobs ran, but nothing from wave `"1"` applied: when the migration Jobs render, that wave holds the ledger and tracer Deployments and the `midaz-ledger-partition-reconcile` hook. A release that fixes the failing run could not roll out.
 
 By placing the CronJob in a wave **after** all critical resources, Argo CD will not wait for the CronJob's health before proceeding with the ledger and tracer components.
+
+> **Note:** Argo CD still reports the Application as `Degraded` until a scheduled run of the CronJob succeeds. The sync of the hooks and Deployments completes, so this status alone does not mean that the upgrade failed. The job-failure alert (`kube_job_status_failed`) does not change.
 
 #### Impact on existing deployments
 
@@ -63,7 +65,18 @@ By placing the CronJob in a wave **after** all critical resources, Argo CD will 
 |---------|---------|---------|
 | `argocd.argoproj.io/sync-wave` annotation on partition CronJob | Not present | Dynamically calculated (default `"2"`) |
 
-> **Note:** This change only affects Argo CD-managed deployments. Plain `helm install` / `helm upgrade` ignores the `argocd.argoproj.io/sync-wave` annotation, so non-Argo CD deployments are unaffected.
+> **Note:** Plain `helm install` / `helm upgrade` ignores the `argocd.argoproj.io/sync-wave` annotation, so the new order applies only to Argo CD. The pod restarts and hooks below apply to both Helm and Argo CD.
+
+#### Operational impact
+
+- **Pod restarts:** `midaz-crm` and `midaz-tracer` roll once with the same images. Their ConfigMap and Secret carry the `helm.sh/chart` label, so the `checksum/config` and `checksum/secret` annotations change while the content stays the same. `midaz-ledger` and the CronJob pod template do not change. The bundled Valkey, PostgreSQL, MongoDB and RabbitMQ pods do not roll.
+- **Hooks on `helm upgrade`:** Helm runs these hooks before it applies the Deployments. A failed or timed-out hook stops the upgrade before the new pods start.
+  1. Weight `-1`: RabbitMQ definitions ConfigMap.
+  2. Weight `0`: RabbitMQ bootstrap Job, `midaz-ledger-migrations-4.5.1`, and `midaz-tracer-migrations-4.5.1-<hash>` when the tracer is on.
+  3. Weight `5`: license hook Secret, only with `ledger.secrets.LICENSE_KEY`.
+  4. Weight `10`: `midaz-ledger-partition-reconcile-4.5.1`, which runs `reconcile-indexes --tolerate-unavailable` with `activeDeadlineSeconds: 1800`.
+- **Migrations:** the images stay on `4.5.1`, so both migration Jobs apply nothing new.
+- **Reconcile Job:** Helm runs the hook on every upgrade, so it runs again with the same `4.5.1` name. The `before-hook-creation` policy removes a failed copy left by an earlier run. When an earlier upgrade built `idx_transaction_organization_ledger_id_live`, it finds the index and exits. When an earlier upgrade skipped the hook (`ledger.partition.reconcile.enabled: false`) or left the index pending or invalid, this run builds it. The build time grows with the `transaction` table, so keep `--timeout 35m` as in [Command to upgrade](#command-to-upgrade). See [section 3 of the 11.2 guide](UPGRADE-11.2.md#3-ledger-partition-runner-and-index-reconcile-hook).
 
 #### Migration steps
 
@@ -82,7 +95,7 @@ ledger:
 
 In this example, the partition CronJob would render with `argocd.argoproj.io/sync-wave: "4"` (one higher than the maximum of `3`, `1`, and `2`).
 
-> **Important:** If you have explicitly set `ledger.partition.annotations` in your values to include a custom `argocd.argoproj.io/sync-wave`, it will be overridden by the chart's calculated value. Remove the custom annotation from your values to allow the chart to manage the sync wave automatically.
+The chart has no value for the CronJob annotations. Only the three wave values above change the CronJob wave.
 
 ## Preview changes before upgrading
 
@@ -95,5 +108,7 @@ helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n mi
 ## Command to upgrade
 
 ```bash
-helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n midaz --version 11.2.2
+helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n midaz --version 11.2.2 --timeout 35m
 ```
+
+With no `-f` and no `--set`, Helm reuses the values of the current release with the 11.2.2 chart defaults. `--timeout 35m` lets Helm wait for the reconcile hook up to its 1800 s deadline. Adjust it if you change `ledger.partition.reconcile.activeDeadlineSeconds`.

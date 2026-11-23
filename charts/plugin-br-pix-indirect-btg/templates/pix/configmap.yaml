@@ -102,6 +102,20 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.pix.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.pix.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}
   ENABLE_TELEMETRY: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.pix.configmap.ENABLE_TELEMETRY | quote }}
+  {{- /* ALLOW_INSECURE_OTEL: pix.configmap.ALLOW_INSECURE_OTEL, then
+     global.observability.allowInsecureOtel; null is unset and nothing renders when both are.
+     Rendered here so the setting reaches the app with the node-local collector off too
+     (an explicit plaintext endpoint); with it on, the Deployment's env entry carries the
+     same value. A key in pix.extraEnvVars renders below instead. */}}
+  {{- $otelAllowCm := .Values.pix.configmap | default dict }}
+  {{- $otelAllowObs := (.Values.global | default dict).observability | default dict }}
+  {{- if not (hasKey (.Values.pix.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL") }}
+  {{- if not (kindIs "invalid" (index $otelAllowCm "ALLOW_INSECURE_OTEL")) }}
+  ALLOW_INSECURE_OTEL: {{ index $otelAllowCm "ALLOW_INSECURE_OTEL" | toString | quote }}
+  {{- else if not (kindIs "invalid" (index $otelAllowObs "allowInsecureOtel")) }}
+  ALLOW_INSECURE_OTEL: {{ index $otelAllowObs "allowInsecureOtel" | toString | quote }}
+  {{- end }}
+  {{- end }}
 
   ## BTG
   BTG_BASE_URL: {{ .Values.pix.configmap.BTG_BASE_URL | default "https://developer.api.btgpactual.com" | quote }}

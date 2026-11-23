@@ -42,6 +42,20 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.schedule.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.schedule.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}
   ENABLE_TELEMETRY: {{ .Values.schedule.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+  {{- /* ALLOW_INSECURE_OTEL: schedule.configmap.ALLOW_INSECURE_OTEL, then
+     global.observability.allowInsecureOtel; null is unset and nothing renders when both are.
+     Rendered here so the setting reaches the app with the node-local collector off too
+     (an explicit plaintext endpoint); with it on, the Deployment's env entry carries the
+     same value. A key in schedule.extraEnvVars renders below instead. */}}
+  {{- $otelAllowCm := .Values.schedule.configmap | default dict }}
+  {{- $otelAllowObs := (.Values.global | default dict).observability | default dict }}
+  {{- if not (hasKey (.Values.schedule.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL") }}
+  {{- if not (kindIs "invalid" (index $otelAllowCm "ALLOW_INSECURE_OTEL")) }}
+  ALLOW_INSECURE_OTEL: {{ index $otelAllowCm "ALLOW_INSECURE_OTEL" | toString | quote }}
+  {{- else if not (kindIs "invalid" (index $otelAllowObs "allowInsecureOtel")) }}
+  ALLOW_INSECURE_OTEL: {{ index $otelAllowObs "allowInsecureOtel" | toString | quote }}
+  {{- end }}
+  {{- end }}
 
   LICENSE_FILE_PATH: {{ .Values.schedule.configmap.LICENSE_FILE_PATH | default "" | quote }}
   # Extra Env Vars

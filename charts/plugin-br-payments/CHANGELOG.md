@@ -1,5 +1,14 @@
 # Plugin-br-payments Changelog
 
+## [2.7.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.7.2)
+
+Fixes:
+- Update `plugin-br-payments` to `@1.6.0`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.7.1...plugin-br-payments-v2.7.2)
+
+---
+
 ## [2.7.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.7.1)
 
 Fixes:

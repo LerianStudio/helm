@@ -48,6 +48,20 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.inbound.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.inbound.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm" | quote }}
   ENABLE_TELEMETRY: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.ENABLE_TELEMETRY | quote }}
+  {{- /* ALLOW_INSECURE_OTEL: inbound.configmap.ALLOW_INSECURE_OTEL, then
+     global.observability.allowInsecureOtel; null is unset and nothing renders when both are.
+     Rendered here so the setting reaches the app with the node-local collector off too
+     (an explicit plaintext endpoint); with it on, the Deployment's env entry carries the
+     same value. A key in inbound.extraEnvVars renders below instead. */}}
+  {{- $otelAllowCm := .Values.inbound.configmap | default dict }}
+  {{- $otelAllowObs := (.Values.global | default dict).observability | default dict }}
+  {{- if not (hasKey (.Values.inbound.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL") }}
+  {{- if not (kindIs "invalid" (index $otelAllowCm "ALLOW_INSECURE_OTEL")) }}
+  ALLOW_INSECURE_OTEL: {{ index $otelAllowCm "ALLOW_INSECURE_OTEL" | toString | quote }}
+  {{- else if not (kindIs "invalid" (index $otelAllowObs "allowInsecureOtel")) }}
+  ALLOW_INSECURE_OTEL: {{ index $otelAllowObs "allowInsecureOtel" | toString | quote }}
+  {{- end }}
+  {{- end }}
 
   # Routing Configuration
   WEBHOOK_INBOUND_BASE_URL: {{ .Values.inbound.configmap.WEBHOOK_INBOUND_BASE_URL | default (include "plugin-br-pix-indirect-btg.apiURL" .) | quote }}

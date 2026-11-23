@@ -1,0 +1,30 @@
+suite: antifraud env reaches the SPI workloads
+release: {name: test, namespace: test}
+templates:
+  - templates/spi/configmap.yaml
+  - templates/spi-systemplane/configmap.yaml
+tests:
+  - it: renders no antifraud key by default
+    asserts:
+      - notExists: {path: data.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS}
+      - notExists: {path: data.ANTIFRAUD_SECRETS_BACKEND}
+  - it: sends the allowlist to the SPI API and the systemplane
+    set: {antifraud.allowedPrivateHosts: 'flowker.flowker.svc.cluster.local,10.0.0.5'}
+    asserts:
+      - equal: {path: data.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS, value: 'flowker.flowker.svc.cluster.local,10.0.0.5'}
+  - it: sends the secret backend to the SPI API only
+    set: {antifraud.secretsBackend: vault}
+    asserts:
+      - equal: {path: data.ANTIFRAUD_SECRETS_BACKEND, value: vault}
+        template: templates/spi/configmap.yaml
+      - notExists: {path: data.ANTIFRAUD_SECRETS_BACKEND}
+        template: templates/spi-systemplane/configmap.yaml
+  - it: lets the component configmap win over the block, once
+    set:
+      antifraud.allowedPrivateHosts: a
+      spiSystemplane.configmap.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: b
+    asserts:
+      - equal: {path: data.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS, value: a}
+        template: templates/spi/configmap.yaml
+      - equal: {path: data.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS, value: b}
+        template: templates/spi-systemplane/configmap.yaml

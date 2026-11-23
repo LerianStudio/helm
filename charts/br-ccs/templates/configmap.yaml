@@ -265,6 +265,13 @@ data:
           "OTEL_RESOURCE_SERVICE_NAME" "br-ccs"
           "OTEL_LIBRARY_NAME" "br-ccs"
           "OTEL_RESOURCE_SERVICE_VERSION" (.Values.brCcs.image.tag | default .Chart.AppVersion))) | nindent 2 }}
+  {{- /* ALLOW_INSECURE_OTEL (modeled setting): brCcs.configmap.ALLOW_INSECURE_OTEL >
+     global.observability.allowInsecureOtel; rendered only when one is set (null =
+     unset, "" = refusal, rendered as is), so it also reaches the app when the
+     node-local hop is off. A key in brCcs.extraEnvVars renders it instead. */}}
+  {{- if and (include "br-ccs.otel.allowInsecureSet" (dict "context" $ "configmap" $cm)) (not (hasKey (.Values.brCcs.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL")) }}
+  ALLOW_INSECURE_OTEL: {{ include "br-ccs.otel.allowInsecure" (dict "context" $ "configmap" $cm) | quote }}
+  {{- end }}
 
   # =====================================================================
   # SERVICE DISCOVERY (dependency — lerian-common.serviceDiscovery.env +

@@ -26,6 +26,12 @@ spec:
       protocol: TCP
       name: execution
     {{- end }}
+    {{- if and .Values.brSisbajud.serveHealthPort (eq (.Values.brSisbajud.service.type | default "ClusterIP") "ClusterIP") }}
+    - port: 8099
+      targetPort: health
+      protocol: TCP
+      name: health
+    {{- end }}
   selector:
     {{- include "br-sisbajud.selectorLabels" . | nindent 4 }}
 {{- end -}}

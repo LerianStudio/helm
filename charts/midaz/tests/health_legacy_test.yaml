@@ -17,8 +17,11 @@ release:
   namespace: midaz
 set:
   tracer.enabled: true
+  # A pre-preset tag: the chart default moved past 4.5.0-beta.94.
+  ledger.image.tag: "4.4.3"
+  tracer.image.tag: "4.4.3"
 tests:
-  - it: default tag keeps the 4.4 probes, ports and drain on the ledger
+  - it: a 4.4 tag keeps the 4.4 probes, ports and drain on the ledger
     template: templates/ledger/deployment.yaml
     asserts:
       - matchRegex:
@@ -45,7 +48,7 @@ tests:
           path: spec.template.spec.containers[0].env
           content: {name: SHUTDOWN_DRAIN_DELAY, value: 15s}
 
-  - it: default tag exposes no health port on the ledger Service and keeps the PDB at 1
+  - it: a 4.4 tag exposes no health port on the ledger Service and keeps the PDB at 1
     asserts:
       - lengthEqual:
           path: spec.ports
@@ -56,7 +59,7 @@ tests:
           value: 1
         template: templates/ledger/pdb.yaml
 
-  - it: default tag renders the RabbitMQ health URL on the ledger and the drain grace on the tracer
+  - it: a 4.4 tag renders the RabbitMQ health URL on the ledger and the drain grace on the tracer
     asserts:
       - equal:
           path: data.RABBITMQ_HEALTH_CHECK_URL
@@ -71,7 +74,7 @@ tests:
           value: "12"
         template: templates/tracer/configmap.yaml
 
-  - it: default tag keeps the 4.4 tracer probes and Service
+  - it: a 4.4 tag keeps the 4.4 tracer probes and Service
     asserts:
       - equal:
           path: spec.template.spec.containers[0].readinessProbe.httpGet

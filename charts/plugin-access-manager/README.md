@@ -162,6 +162,18 @@ Copy `values-template.yaml` as your starting point — it documents every
 power-user reference; `values.schema.json` validates it.
 
 ---
+## Plaintext OTEL to the node-local collector (`ALLOW_INSECURE_OTEL`)
+
+With `otel-collector-lerian.enabled` on (the default), the auth, identity and caradhras containers ship telemetry to the collector on their own node at `$(HOST_IP):4317`, in plaintext. lib-observability refuses a plaintext exporter in production unless `ALLOW_INSECURE_OTEL` carries a reason, so the chart sets that variable on each of the three containers. For each component, the value resolves in this order:
+
+1. `<component>.configmap.ALLOW_INSECURE_OTEL` (`auth`, `identity` or `caradhras`)
+2. `global.observability.allowInsecureOtel`, one value for the whole environment
+3. the default reason, `node-local collector on the pod's own node`
+
+`null` counts as unset. An empty string or `"false"` is an explicit refusal, and the app then refuses the plaintext exporter in production. The component ConfigMap carries the configmap value, or else the global one, so the setting also reaches the app when the node-local collector is off and you point at an explicit plaintext endpoint.
+
+A key in `<component>.extraEnvVars` is the legacy route, and the chart then adds no container entry of its own for that component (the key reaches the app through the ConfigMap). The chart's own Secrets render a fixed key list, so there is no Secret route. With `useExistingSecret: true` the chart cannot see the Secret, so the container entry overrides any `ALLOW_INSECURE_OTEL` held there; set `<component>.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
+
 ## Configuring Ingress for Different Controllers
 
 This chart has no top-level `ingress:` block: a top-level `ingress.*` value is ignored and renders no Ingress. Each exposed component has its own block, with the same shape (`enabled`, `className`, `annotations`, `hosts`, `tls`):
@@ -684,7 +696,7 @@ caradhras both.
 
 | Parameter | Description | Default |
 | --- | --- | --- |
-| `otel-collector-lerian.enabled` | Inject `HOST_IP` (node IP) and `OTEL_EXPORTER_OTLP_ENDPOINT=$(HOST_IP):4317` into the auth, identity and caradhras containers, so telemetry goes to a node-local OTLP collector. This chart declares no collector dependency and deploys none: install `otel-collector-lerian` (or any collector listening on the node IP, port 4317) separately. Set `false` to omit the two variables | `true` |
+| `otel-collector-lerian.enabled` | Inject `HOST_IP` (node IP) and `OTEL_EXPORTER_OTLP_ENDPOINT=$(HOST_IP):4317` into the auth, identity and caradhras containers, so telemetry goes to a node-local OTLP collector. This chart declares no collector dependency and deploys none: install `otel-collector-lerian` (or any collector listening on the node IP, port 4317) separately. Set `false` to omit the two variables. Also sets `ALLOW_INSECURE_OTEL` on the plaintext hop (see "Plaintext OTEL to the node-local collector") | `true` |
 
 | `auth.pdb.enabled`                            | Specifies whether PodDisruptionBudget is enabled.                                         | `true`                                         |
 | `auth.pdb.annotations`                        | Annotations for the PodDisruptionBudget.                                                 | `{}`                                           |

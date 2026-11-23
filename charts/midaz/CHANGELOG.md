@@ -1,5 +1,49 @@
 # Midaz Changelog
 
+## [11.2.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.2.2)
+
+Features:
+
+- Add Helm upgrade guide for `midaz` `v11.2.1`. (@dy-shimizu)
+- Add Helm upgrade guide for `v11.2.0`. (@dy-shimizu)
+
+Fixes:
+
+- Apply the ledger partition CronJob after the deployments. (@fredcamaral)
+- Fix the `11.2.1` upgrade guide hooks, verification, and `4.5.1` behavior. (@gandalf-at-lerian)
+- Pass the edited release values to the `v11.2.0` upgrade. (@gandalf-at-lerian)
+- Fix `v11.2.0` upgrade guide against chart and app sources. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v11.2.1...midaz-v11.2.2)
+
+---
+
+## [11.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.2.1)
+
+Fixes:
+- Update `midaz-ledger` to `4.5.1`, `midaz-tracer` to `4.5.1`, `midaz-tracer-migrations` to `4.5.1`, and `midaz-ledger-migrations` to `4.5.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v11.2.0...midaz-v11.2.1)
+
+---
+
+## [11.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.2.0)
+
+Features:
+- Update to `midaz-ledger@4.5.0`, `midaz-tracer@4.5.0`, `midaz-ledger-migrations@4.5.0`, and `midaz-tracer-migrations@4.5.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Stop rendering environment variables that the chart already sets. (@bedatty)
+- Remove the generated `secret.yaml` templates. (@bedatty)
+
+Improvements:
+- Pin the pre-partition test case to a `4.4` tag. (@bedatty)
+- Pin the legacy health suite test to a `4.4` tag. (@bedatty)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v11.1.2...midaz-v11.2.0)
+
+---
+
 ## [11.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.1.2)
 
 Fixes:

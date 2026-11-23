@@ -66,6 +66,7 @@ data:
           "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" $envName)) | nindent 2 }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }} 
   ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}
+  {{- with (include "plugin-access-manager.allowInsecureOtelConfigmap" (dict "context" $ "component" "identity") | trim) }}{{ . | nindent 2 }}{{ end }}
   # REDIS
   REDIS_HOST: {{ printf "%s:%s" (include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" (printf "%s.%s.svc.cluster.local" (include "plugin-access-manager.valkeyHost" .) .Release.Namespace))) (include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "port" "nativeKey" "REDIS_PORT" "default" "6379") | toString) | quote }}
   REDIS_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "port" "nativeKey" "REDIS_PORT" "default" "6379") | quote }}

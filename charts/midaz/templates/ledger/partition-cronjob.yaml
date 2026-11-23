@@ -2,6 +2,9 @@
 {{- /* The daily pass retries index reconciliation and never prunes partitions. */}}
 {{- $partition := .Values.ledger.partition | default dict }}
 {{- $component := printf "%s-partition" .Values.ledger.name }}
+{{- /* Argo CD gates a sync on a resource's health only while a later wave, or a hook in the same wave, is
+     still pending: apply the CronJob after every hook and Deployment so a Degraded one cannot stop them. */}}
+{{- $lastWave := add 1 (max (dig "migrations" "deploymentSyncWave" "1" (.Values.ledger | default dict) | int) (dig "migrations" "deploymentSyncWave" "1" (.Values.tracer | default dict) | int) (dig "reconcile" "syncWave" "1" $partition | int)) }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -10,6 +13,8 @@ metadata:
   name: {{ printf "%s-partition" (include "midaz-ledger.fullname" . | trunc 42 | trimSuffix "-") }}
   labels:
     {{- include "midaz.labels" (dict "context" . "component" $component "name" $component) | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ $lastWave | toString | quote }}
 spec:
   schedule: {{ $partition.schedule | default "0 6 * * *" | quote }}
   {{- with $partition.timeZone }}

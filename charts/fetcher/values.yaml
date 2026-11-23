@@ -65,9 +65,13 @@ global:
   #     fetcher: { endpoint: "https://s3.us-east-1.amazonaws.com", region: "us-east-1", bucket: "my-bucket" }
   objectStorage: {}
   # -- Env-wide observability. Consumed by lerian-common.globalValue (block "observability").
-  # Fields: enabled, otlpEndpoint, deploymentEnvironment. (common.configmap.<KEY> overrides.)
+  # Fields: enabled, otlpEndpoint, deploymentEnvironment, allowInsecureOtel (ALLOW_INSECURE_OTEL
+  # on the node-local hop). (common.configmap.<KEY> overrides.)
   # Example: observability: { enabled: true, otlpEndpoint: "otel-collector:4317" }
   observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   allowInsecureOtel: "node-local collector on the pod's own node"
   # -- Env-wide auth (access-manager), used by the manager's PLUGIN_AUTH_* gate.
   # Consumed by lerian-common.globalValue (block "auth"). Fields: enabled, host.
   # (manager.configmap.PLUGIN_AUTH_* overrides.)
@@ -374,6 +378,15 @@ common:
   # common.configmap.<KEY> here to override any shared key; add any other key
   # and it flows through as-is.
   configmap: {}
+  # ALLOW_INSECURE_OTEL: with telemetry on and the default node-local endpoint
+  # (http://$(HOST_IP):4317, plaintext), the manager and worker containers get
+  # this env so lib-observability boots in production. Order (null = unset):
+  # manager/worker.configmap.ALLOW_INSECURE_OTEL > common.configmap.ALLOW_INSECURE_OTEL
+  # > global.observability.allowInsecureOtel > "node-local collector on the pod's own node".
+  # "" or "false" is an explicit refusal (the app then refuses the plaintext exporter).
+  # A key in <component>.extraEnvVars or a non-empty Secret value still stands (no
+  # chart entry then). Example (under configmap above):
+  # ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
 # Shared secrets
 secrets:
   MONGO_USER: "fetcher"

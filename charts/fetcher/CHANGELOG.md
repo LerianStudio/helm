@@ -1,5 +1,26 @@
 # Fetcher Changelog
 
+## [4.2.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.2.1)
+
+Features:
+
+- Use a server dry-run when the chart reads Secrets. (@gandalf-at-lerian)
+
+Fixes:
+
+- Match the Secret route to what the Secrets render. (@guimoreirar)
+- Carry the global `ALLOW_INSECURE_OTEL` with the node-local hop off. (@guimoreirar)
+- Let the node-local OTEL hop boot in production. (@guimoreirar)
+
+Improvements:
+
+- Correct `4.2` upgrade guidance. (@victorlazari)
+- Apply review fixes to chart docs and upgrade guides. (@victorlazari, @gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.2.0...fetcher-v4.2.1)
+
+---
+
 ## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.2.0)
 
 Features:

@@ -1,5 +1,19 @@
 # Plugin-br-bank-transfer Changelog
 
+## [3.3.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.3.1)
+
+Features:
+
+- Provide upgrade and migration guidance for `plugin-br-bank-transfer`. (@victorlazari)
+
+Fixes:
+
+- Update `plugin-br-bank-transfer` to `3.8.0`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.3.0...plugin-br-bank-transfer-v3.3.1)
+
+---
+
 ## [3.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.3.0)
 
 Features:

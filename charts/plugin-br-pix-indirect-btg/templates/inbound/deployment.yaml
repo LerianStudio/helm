@@ -61,6 +61,16 @@ spec:
                 fieldPath: status.hostIP
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
+          {{- /* ALLOW_INSECURE_OTEL is a modeled setting: inbound.configmap.ALLOW_INSECURE_OTEL, then
+             global.observability.allowInsecureOtel, then the node-local reason; lerian-common
+             resolves it. A key in inbound.extraEnvVars (the legacy route, rendered by the ConfigMap)
+             still stands, so the chart adds no entry then. The chart Secret renders an explicit
+             key list, so there is no Secret route; an existing Secret (useExistingSecrets) is not
+             visible to the chart and this entry overrides a value held there. */}}
+          {{- if not (hasKey (.Values.inbound.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL") }}
+          - name: "ALLOW_INSECURE_OTEL"
+            value: {{ include "lerian-common.otel.allowInsecure" (dict "context" $ "configmap" .Values.inbound.configmap) | quote }}
+          {{- end }}
           {{- end }}
           resources:
             {{- toYaml .Values.inbound.resources | nindent 12 }}

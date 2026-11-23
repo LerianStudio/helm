@@ -1,5 +1,34 @@
 # Plugin-access-manager Changelog
 
+## [11.2.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.2.4)
+
+Features:
+- Added Helm upgrade guide for `plugin-access-manager` `v11.1.1`. (@victorlazari)
+- Added Helm upgrade guide for `plugin-access-manager` `v11.2.1`. (@victorlazari)
+- Added Helm upgrade guide for `plugin-access-manager` `v11.1.2`. (@victorlazari)
+- Added Helm upgrade guide for `plugin-access-manager` `v11.2.3`. (@victorlazari)
+- Added Helm upgrade guide for `plugin-access-manager` `v11.2.2`. (@victorlazari)
+
+Fixes:
+- Let the node-local OTEL hop boot in production. (@guimoreirar)
+- Fixed `11.2.1` preview and registry. (@gandalf-at-lerian)
+- Corrected upgrade guide. (@victorlazari)
+- Fixed upgrade safety. (@victorlazari)
+
+Improvements:
+- Clarified previews. (@victorlazari)
+- Guarded preview. (@victorlazari)
+- Included Caradhras in `11.2` rollout. (@gandalf-at-lerian)
+- Noted `init_data.json` removal in `11.1.2` guide. (@gandalf-at-lerian)
+- Corrected whitespace and rollout notes in `11.1.1` guide. (@gandalf-at-lerian)
+- Reset upgrade values. (@victorlazari)
+- Clarified rollout. (@victorlazari)
+- Corrected license guide. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v11.2.3...plugin-access-manager-v11.2.4)
+
+---
+
 ## [11.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.2.3)
 
 Fixes:

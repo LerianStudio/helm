@@ -5,7 +5,7 @@
 - Chart type: `multi-component`
 - Required secrets: None for the default render, which is **not** a working installation. A working installation requires per-component Postgres DSNs and `LICENSE_KEY` outside `local` mode; see [Required before installation](#required-before-installation). Credential-bearing DSNs, URLs, tokens, and passwords belong in a component's `secrets` block or an existing Secret — never in `configmap`.
 - Dependency notes: PostgreSQL, Valkey, and RabbitMQ ship as local subcharts that are **disabled by default**. Production points the components at externally managed services.
-- Production overrides: Per-component `secrets` (or `useExistingSecret` + `existingSecretName`), `global.externalPostgresDefinitions`, `PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_HOST`, and the ingress blocks. An existing Secret **replaces** the chart-rendered Secret for that component; it is not merged.
+- Production overrides: Per-component `secrets` (or `useExistingSecret` + `existingSecretName`), `global.externalPostgresDefinitions`, `PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_HOST`, `antifraud.secretsBackend` when an antifraud flow is on, and the ingress blocks. An existing Secret **replaces** the chart-rendered Secret for that component; it is not merged.
 - Source/license: Source is in [github.com/LerianStudio/helm](https://github.com/LerianStudio/helm); chart license is Elastic License 2.0.
 
 ## Overview
@@ -508,6 +508,21 @@ When telemetry is on and no endpoint is set (see **OTLP endpoint** above), each 
 `null` counts as unset. An empty string or `"false"` is an explicit refusal, and the app then refuses the plaintext exporter in production. When you set your own endpoint (`<component>.configmap.OTEL_EXPORTER_OTLP_ENDPOINT`, `global.observability.otlpEndpoint`, or `OTEL_EXPORTER_OTLP_ENDPOINT` in `extraEnvVars`), or supply `HOST_IP` through `extraEnvVars` (the endpoint then points wherever you decided, so it is not the node-local hop), the chart sets no default reason on the container. The ConfigMap still carries the setting, so it reaches the app with an explicit plaintext endpoint too: `<component>.configmap.ALLOW_INSECURE_OTEL` when set, or else `global.observability.allowInsecureOtel`, and no key when both are unset (a `null` component value falls through to the global). A key in `<component>.extraEnvVars` keeps it out of the ConfigMap, since that entry already sets it.
 
 A key in `<component>.extraEnvVars` or a non-empty `<component>.secrets.ALLOW_INSECURE_OTEL` in the chart's own Secret is the legacy route, and the chart then adds no entry of its own. Any value the Secret renders non-empty counts, a YAML `false` or `0` included (it renders as `"false"` / `"0"`). The Secret counts only while nothing in the order above is set: a configmap or global value, a refusal included, wins over the Secret. On the node-local hop that is the chart's entry. With your own endpoint or `HOST_IP` (or telemetry off), the chart adds a container entry carrying the configmap or global value whenever a Secret may hold the key: `useExistingSecret: true`, or `ALLOW_INSECURE_OTEL` present in `<component>.secrets` (an empty value included, since the Secret renders it). The Secret is imported after the ConfigMap and would otherwise win. With `useExistingSecret: true` the chart cannot see the Secret, so on the node-local hop the container entry (the modeled value or the default reason), and off it the modeled value when set, overrides any `ALLOW_INSECURE_OTEL` held there; set `<component>.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
+
+## Antifraud partner
+
+One block sets the antifraud values the SPI workloads need. The allowlist reaches `spi` and `spiSystemplane`; the backend reaches `spi` only. Set them here, once.
+
+| Value | Env | Workloads | Meaning |
+|---|---|---|---|
+| `antifraud.allowedPrivateHosts` | `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` | `spi`, `spiSystemplane` | Comma-separated private hosts a partner route may target. `spi` checks it on every call; `spiSystemplane` checks it when a route is written. |
+| `antifraud.secretsBackend` | `ANTIFRAUD_SECRETS_BACKEND` | `spi` | `aws` or `vault`: where the partner credential is read from. Only `spi` reads it. Empty denies every enabled flow. |
+
+- An empty value renders nothing. Leave the allowlist empty on Lerian Cloud; Lerian Cloud sets `secretsBackend` to `aws` through GitOps.
+- A component's own `configmap.ANTIFRAUD_*` still wins over the block. Set the allowlist only in the block, or the two workloads can disagree.
+- `aws` uses the pod's AWS identity (IRSA, through `spi.serviceAccount.annotations`). `vault` needs `VAULT_ADDR` in `spi.configmap` and `VAULT_TOKEN` in `spi.secrets`.
+- `ANTIFRAUD_OUT_REVIEW_ALLOWED` is read by `spi` only: set it in `spi.configmap`.
+- Application 1.5.0 and later read these values. 1.5.0 no longer reads the 1.4.0 boolean `ANTIFRAUD_HOOK_ALLOW_PRIVATE_NETWORK`: list the exact hosts here instead. Earlier images ignore the block.
 
 ## Authentication
 

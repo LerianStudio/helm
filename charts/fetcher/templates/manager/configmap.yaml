@@ -15,7 +15,8 @@ data:
   {{- /* IDP_DECLARATION_ENABLED / IDP_HOST are emitted by lerian-common.idp.env below. */ -}}
   {{- $idpEnvKeys := include "lerian-common.idp.keys" (dict "kind" "env") | fromJsonArray }}
   {{- range $key, $value := $mc }}
-  {{- if not (or (has $key (list "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS")) (has $key $idpEnvKeys)) }}
+  {{- /* A null ALLOW_INSECURE_OTEL is unset: fetcher.otelAllowInsecureConfigmap below may render the global. */}}
+  {{- if not (or (has $key (list "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS")) (has $key $idpEnvKeys) (and (eq $key "ALLOW_INSECURE_OTEL") (kindIs "invalid" $value))) }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
   {{- end }}
@@ -40,4 +41,9 @@ data:
   {{- if not (or (hasKey $mc $key) (has $key $idpEnvKeys) (has $key (list "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS" "VERSION" "OTEL_RESOURCE_SERVICE_VERSION"))) }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
+  {{- end }}
+  {{- /* ALLOW_INSECURE_OTEL from global.observability.allowInsecureOtel, so it reaches the app
+     with the node-local hop off too; only when no configmap/extraEnvVars source renders it. */}}
+  {{- with include "fetcher.otelAllowInsecureConfigmap" (dict "context" $ "component" .Values.manager) }}
+  {{- . | nindent 2 }}
   {{- end }}

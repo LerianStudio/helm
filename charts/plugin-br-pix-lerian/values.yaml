@@ -57,9 +57,13 @@ global:
   datastores: {}
   # -- Observability (OTel collector) shared by ALL components: enabled / otlpEndpoint
   #    / deploymentEnvironment -> ENABLE_TELEMETRY / OTEL_EXPORTER_OTLP_ENDPOINT /
-  #    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT. Example:
+  #    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT; allowInsecureOtel -> ALLOW_INSECURE_OTEL on
+  #    the plaintext node-local hop (see the README). Example:
   #    observability: { enabled: true, otlpEndpoint: "otel-collector:4317" }
   observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   allowInsecureOtel: "node-local collector on the pod's own node"
   # -- Auth (plugin-access-manager) shared by ALL components -> PLUGIN_AUTH_ENABLED +
   #    PLUGIN_AUTH_HOST. Example: auth: { enabled: true, host: "http://plugin-access-manager-auth:4000" }
   auth: {}
@@ -236,6 +240,15 @@ spi:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the Deployment
+  # ships to the node-local collector at $(HOST_IP):4317 in plaintext, which
+  # lib-observability refuses in production unless ALLOW_INSECURE_OTEL carries a
+  # reason. The chart sets it on the container: configmap.ALLOW_INSECURE_OTEL,
+  # else global.observability.allowInsecureOtel, else "node-local collector on
+  # the pod's own node". "" or "false" refuses (the app then will not boot on the
+  # node-local hop in production); null is unset. See the README.
+  # configmap:
+  #   ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
   # -- Credentials (never rendered in the ConfigMap). Provide via a
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the
@@ -340,6 +353,15 @@ spiSystemplane:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the Deployment
+  # ships to the node-local collector at $(HOST_IP):4317 in plaintext, which
+  # lib-observability refuses in production unless ALLOW_INSECURE_OTEL carries a
+  # reason. The chart sets it on the container: configmap.ALLOW_INSECURE_OTEL,
+  # else global.observability.allowInsecureOtel, else "node-local collector on
+  # the pod's own node". "" or "false" refuses (the app then will not boot on the
+  # node-local hop in production); null is unset. See the README.
+  # configmap:
+  #   ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
   # -- Credentials (never rendered in the ConfigMap). Provide via a
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the
@@ -430,6 +452,15 @@ adapterProviderMock:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the Deployment
+  # ships to the node-local collector at $(HOST_IP):4317 in plaintext, which
+  # lib-observability refuses in production unless ALLOW_INSECURE_OTEL carries a
+  # reason. The chart sets it on the container: configmap.ALLOW_INSECURE_OTEL,
+  # else global.observability.allowInsecureOtel, else "node-local collector on
+  # the pod's own node". "" or "false" refuses (the app then will not boot on the
+  # node-local hop in production); null is unset. See the README.
+  # configmap:
+  #   ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
   # -- Credentials (never rendered in the ConfigMap). Provide via a
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the
@@ -516,6 +547,15 @@ dictHub:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the Deployment
+  # ships to the node-local collector at $(HOST_IP):4317 in plaintext, which
+  # lib-observability refuses in production unless ALLOW_INSECURE_OTEL carries a
+  # reason. The chart sets it on the container: configmap.ALLOW_INSECURE_OTEL,
+  # else global.observability.allowInsecureOtel, else "node-local collector on
+  # the pod's own node". "" or "false" refuses (the app then will not boot on the
+  # node-local hop in production); null is unset. See the README.
+  # configmap:
+  #   ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
   # -- Credentials (never rendered in the ConfigMap). Provide via a
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the
@@ -627,6 +667,15 @@ dictHubVsync:
   #    VSYNC_GATE_TTL_SEC has no chart default. When unset, VSync uses the
   #    application default of 57600 seconds.
   configmap: {}
+  # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the Deployment
+  # ships to the node-local collector at $(HOST_IP):4317 in plaintext, which
+  # lib-observability refuses in production unless ALLOW_INSECURE_OTEL carries a
+  # reason. The chart sets it on the container: configmap.ALLOW_INSECURE_OTEL,
+  # else global.observability.allowInsecureOtel, else "node-local collector on
+  # the pod's own node". "" or "false" refuses (the app then will not boot on the
+  # node-local hop in production); null is unset. See the README.
+  # configmap:
+  #   ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
   # -- Credentials (never rendered in the ConfigMap). Provide via a
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the
@@ -717,6 +766,15 @@ dictProxy:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the Deployment
+  # ships to the node-local collector at $(HOST_IP):4317 in plaintext, which
+  # lib-observability refuses in production unless ALLOW_INSECURE_OTEL carries a
+  # reason. The chart sets it on the container: configmap.ALLOW_INSECURE_OTEL,
+  # else global.observability.allowInsecureOtel, else "node-local collector on
+  # the pod's own node". "" or "false" refuses (the app then will not boot on the
+  # node-local hop in production); null is unset. See the README.
+  # configmap:
+  #   ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
   # -- Credentials (never rendered in the ConfigMap). Provide via a
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the
@@ -797,6 +855,15 @@ dictSystemplane:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the Deployment
+  # ships to the node-local collector at $(HOST_IP):4317 in plaintext, which
+  # lib-observability refuses in production unless ALLOW_INSECURE_OTEL carries a
+  # reason. The chart sets it on the container: configmap.ALLOW_INSECURE_OTEL,
+  # else global.observability.allowInsecureOtel, else "node-local collector on
+  # the pod's own node". "" or "false" refuses (the app then will not boot on the
+  # node-local hop in production); null is unset. See the README.
+  # configmap:
+  #   ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
   # -- Credentials (never rendered in the ConfigMap). Provide via a
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the
@@ -887,6 +954,15 @@ cobHub:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the Deployment
+  # ships to the node-local collector at $(HOST_IP):4317 in plaintext, which
+  # lib-observability refuses in production unless ALLOW_INSECURE_OTEL carries a
+  # reason. The chart sets it on the container: configmap.ALLOW_INSECURE_OTEL,
+  # else global.observability.allowInsecureOtel, else "node-local collector on
+  # the pod's own node". "" or "false" refuses (the app then will not boot on the
+  # node-local hop in production); null is unset. See the README.
+  # configmap:
+  #   ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
   # -- Credentials (never rendered in the ConfigMap). Provide via a
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the
@@ -991,6 +1067,15 @@ cobProxy:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the Deployment
+  # ships to the node-local collector at $(HOST_IP):4317 in plaintext, which
+  # lib-observability refuses in production unless ALLOW_INSECURE_OTEL carries a
+  # reason. The chart sets it on the container: configmap.ALLOW_INSECURE_OTEL,
+  # else global.observability.allowInsecureOtel, else "node-local collector on
+  # the pod's own node". "" or "false" refuses (the app then will not boot on the
+  # node-local hop in production); null is unset. See the README.
+  # configmap:
+  #   ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
   # -- Credentials (never rendered in the ConfigMap). Provide via a
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the
@@ -1071,6 +1156,15 @@ cobSystemplane:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the Deployment
+  # ships to the node-local collector at $(HOST_IP):4317 in plaintext, which
+  # lib-observability refuses in production unless ALLOW_INSECURE_OTEL carries a
+  # reason. The chart sets it on the container: configmap.ALLOW_INSECURE_OTEL,
+  # else global.observability.allowInsecureOtel, else "node-local collector on
+  # the pod's own node". "" or "false" refuses (the app then will not boot on the
+  # node-local hop in production); null is unset. See the README.
+  # configmap:
+  #   ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
   # -- Credentials (never rendered in the ConfigMap). Provide via a
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the
@@ -1299,6 +1393,15 @@ adapterLerian:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the Deployment
+  # ships to the node-local collector at $(HOST_IP):4317 in plaintext, which
+  # lib-observability refuses in production unless ALLOW_INSECURE_OTEL carries a
+  # reason. The chart sets it on the container: configmap.ALLOW_INSECURE_OTEL,
+  # else global.observability.allowInsecureOtel, else "node-local collector on
+  # the pod's own node". "" or "false" refuses (the app then will not boot on the
+  # node-local hop in production); null is unset. See the README.
+  # configmap:
+  #   ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
   # -- Credentials (never rendered in the ConfigMap). Provide via a
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the
@@ -1392,6 +1495,15 @@ adapterLerianSystemplane:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the Deployment
+  # ships to the node-local collector at $(HOST_IP):4317 in plaintext, which
+  # lib-observability refuses in production unless ALLOW_INSECURE_OTEL carries a
+  # reason. The chart sets it on the container: configmap.ALLOW_INSECURE_OTEL,
+  # else global.observability.allowInsecureOtel, else "node-local collector on
+  # the pod's own node". "" or "false" refuses (the app then will not boot on the
+  # node-local hop in production); null is unset. See the README.
+  # configmap:
+  #   ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
   # -- Credentials (never rendered in the ConfigMap). Provide via a
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the
@@ -1499,6 +1611,15 @@ pixauto:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the Deployment
+  # ships to the node-local collector at $(HOST_IP):4317 in plaintext, which
+  # lib-observability refuses in production unless ALLOW_INSECURE_OTEL carries a
+  # reason. The chart sets it on the container: configmap.ALLOW_INSECURE_OTEL,
+  # else global.observability.allowInsecureOtel, else "node-local collector on
+  # the pod's own node". "" or "false" refuses (the app then will not boot on the
+  # node-local hop in production); null is unset. See the README.
+  # configmap:
+  #   ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
   # -- Credentials (never rendered in the ConfigMap). Provide via a
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the
@@ -1615,6 +1736,15 @@ pixautoSystemplane:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the Deployment
+  # ships to the node-local collector at $(HOST_IP):4317 in plaintext, which
+  # lib-observability refuses in production unless ALLOW_INSECURE_OTEL carries a
+  # reason. The chart sets it on the container: configmap.ALLOW_INSECURE_OTEL,
+  # else global.observability.allowInsecureOtel, else "node-local collector on
+  # the pod's own node". "" or "false" refuses (the app then will not boot on the
+  # node-local hop in production); null is unset. See the README.
+  # configmap:
+  #   ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
   # -- Credentials (never rendered in the ConfigMap). Provide via a
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the

@@ -662,3 +662,88 @@ global.serviceDiscovery (all optional): enabled, address, tls, tlsSkipVerify, wo
 {{- end -}}
 {{- join "\n" $lines -}}
 {{- end -}}
+
+{{/*
+plugin-br-pix-lerian.otelAllowInsecure.env — the ALLOW_INSECURE_OTEL container
+env entry. lib-observability refuses a plaintext exporter in a strict deployment
+environment (production / prod) unless ALLOW_INSECURE_OTEL carries a reason.
+
+nodeLocal=true: the chart itself injects HOST_IP from status.hostIP and points
+the app at "$(HOST_IP):4317" (plaintext, the pod's own node). The value is the
+modeled setting (lerian-common.otel.allowInsecure):
+  <component>.configmap.ALLOW_INSECURE_OTEL
+  > global.observability.allowInsecureOtel
+  > "node-local collector on the pod's own node"
+null is unset; "" / "false" is a refusal and is emitted as is.
+
+nodeLocal=false: the endpoint is not the chart's node-local hop (an operator
+endpoint, an operator-supplied HOST_IP, or telemetry off), so the default reason
+never applies; the modeled value reaches the app through the ConfigMap. The
+entry is emitted only when the model is set AND a Secret may carry
+ALLOW_INSECURE_OTEL: useExistingSecret (the chart cannot see it), or the key is
+present in <component>.secrets (any value, "" included, since secrets.yaml renders
+it). The Secret is imported after the ConfigMap and would beat the model, so an
+explicit env entry keeps "the model wins over the Secret".
+
+Legacy routes still stand, and then no entry is emitted (a duplicate env name
+breaks the apply):
+  - ALLOW_INSECURE_OTEL in <component>.extraEnvVars;
+  - ALLOW_INSECURE_OTEL in <component>.secrets (any non-null value the Secret
+    renders non-empty, a YAML false/0 included), while the model is unset.
+    With useExistingSecret the chart cannot see the Secret, so on the node-local
+    branch the entry is emitted and overrides a value there.
+
+Inputs (dict): context (root), values (the component block), configmap (its
+.configmap map, nil-safe), nodeLocal (bool).
+*/}}
+{{- define "plugin-br-pix-lerian.otelAllowInsecure.env" -}}
+{{- $values := .values | default dict -}}
+{{- $cm := .configmap | default dict -}}
+{{- $obs := (.context.Values.global | default dict).observability | default dict -}}
+{{- $modelSet := or (not (kindIs "invalid" (index $cm "ALLOW_INSECURE_OTEL"))) (not (kindIs "invalid" (index $obs "allowInsecureOtel"))) -}}
+{{- /* Match what <component>/secrets.yaml renders ({{ $value | quote }}): null
+   renders empty, a bool false renders "false", 0 renders "0". */ -}}
+{{- $secretVal := index ($values.secrets | default dict) "ALLOW_INSECURE_OTEL" -}}
+{{- $secretSet := and (not $values.useExistingSecret) (not (kindIs "invalid" $secretVal)) (ne (toString $secretVal) "") -}}
+{{- /* Off the node-local hop: could a Secret shadow the ConfigMap's modeled value? */ -}}
+{{- $secretMayCarry := or $values.useExistingSecret (hasKey ($values.secrets | default dict) "ALLOW_INSECURE_OTEL") -}}
+{{- $extra := hasKey ($values.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL" -}}
+{{- $emit := false -}}
+{{- if not $extra -}}
+{{- if .nodeLocal -}}
+{{- $emit = not (and $secretSet (not $modelSet)) -}}
+{{- else -}}
+{{- $emit = and $modelSet $secretMayCarry -}}
+{{- end -}}
+{{- end -}}
+{{- if $emit -}}
+- name: ALLOW_INSECURE_OTEL
+  value: {{ include "lerian-common.otel.allowInsecure" (dict "context" .context "configmap" $cm) | quote }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+plugin-br-pix-lerian.otelAllowInsecure.configmap — the ConfigMap line that carries
+global.observability.allowInsecureOtel to the app, so the env-wide setting also
+reaches it when the Deployment does NOT ship the node-local endpoint (an operator
+endpoint, or the collector off). With the node-local hop on, the Deployment's env
+entry carries the same value and wins.
+
+Renders only when global.observability.allowInsecureOtel is present and non-null,
+the component configmap does not carry a non-null ALLOW_INSECURE_OTEL (that one
+already reaches the ConfigMap through the pass-through), and the key is not in the
+component extraEnvVars (which renders it as env instead). Null tiers are unset;
+"" / "false" is a refusal and is rendered as is.
+
+Inputs (dict): context (root), values (the component block), configmap (its
+.configmap map, nil-safe).
+*/}}
+{{- define "plugin-br-pix-lerian.otelAllowInsecure.configmap" -}}
+{{- $values := .values | default dict -}}
+{{- $cm := .configmap | default dict -}}
+{{- $obs := (.context.Values.global | default dict).observability | default dict -}}
+{{- $global := index $obs "allowInsecureOtel" -}}
+{{- if and (not (kindIs "invalid" $global)) (kindIs "invalid" (index $cm "ALLOW_INSECURE_OTEL")) (not (hasKey ($values.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL")) -}}
+ALLOW_INSECURE_OTEL: {{ $global | toString | quote }}
+{{- end -}}
+{{- end -}}

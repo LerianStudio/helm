@@ -1,0 +1,1283 @@
+suite: node-local OTEL hop in production (ALLOW_INSECURE_OTEL)
+templates:
+  - templates/manager/deployment.yaml
+  - templates/worker/deployment.yaml
+  - templates/worker/keda-scaled-job.yaml
+  - templates/manager/configmap.yaml
+  - templates/manager/secrets.yaml
+  - templates/worker/configmap.yaml
+  - templates/worker/secrets.yaml
+release:
+  name: reporter
+  namespace: reporter
+set:
+  rabbitmq.enabled: false
+  secrets.RABBITMQ_DEFAULT_PASS: x
+  secrets.DATASOURCE_ONBOARDING_PASSWORD: x
+  secrets.DATASOURCE_CRED_ENC_KEY: "46071cab3c0a47d43400741cb2a1aab25951f0d3509f373d150e96860ace057a"
+  secrets.LICENSE_KEY: x
+  otel-collector-lerian.enabled: true
+tests:
+
+  - it: "manager: the plaintext node-local endpoint carries the default reason"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+          count: 1
+
+  - it: "manager: global.observability.allowInsecureOtel sets the value env-wide"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: "manager: common.configmap wins over the global"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      common.configmap.ALLOW_INSECURE_OTEL: "common reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "common reason"}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: "manager: the component configmap wins over the global"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      manager.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "component reason"}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: "manager: a common.configmap refusal stands over the global"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      common.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: "manager: an explicit refusal stands as the one entry"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      manager.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: "manager: a false refusal in the global stands as the one entry"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      global.observability.allowInsecureOtel: "false"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "false"}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: "manager: a null component value falls through to the global"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      manager.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+
+  - it: "manager: a null global leaves the node-local reason"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+
+  - it: "manager: a key in extraEnvVars (legacy) stands, so the chart adds no entry"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      manager.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "manager: telemetry off (collector disabled) emits nothing"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "manager: an explicit endpoint in the configmap is still overridden by the node-local hop, so the entry stays"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      common.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: "https://otel.example.com:4317"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+          count: 1
+
+  - it: "manager: a non-empty secrets.ALLOW_INSECURE_OTEL in the chart Secret stands (no entry)"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "manager: a model refusal wins over the Secret value"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      manager.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "secret reason"}
+
+  - it: "manager: a global value wins over the Secret value"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+
+  - it: "manager: an empty secrets.ALLOW_INSECURE_OTEL is no legacy route"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+          count: 1
+
+  - it: "manager: a YAML false in secrets.ALLOW_INSECURE_OTEL renders \"false\" in the Secret, so the legacy route stands"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "manager: a YAML 0 in secrets.ALLOW_INSECURE_OTEL renders \"0\" in the Secret, so the legacy route stands"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: 0
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "manager: collector off: a model refusal wins over a Secret reason via the container env"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      manager.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "secret reason"}
+
+  - it: "manager: collector off: a global value wins over a Secret reason via the container env"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+
+  - it: "manager: collector off: a common.configmap value wins over a Secret reason via the container env"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      common.configmap.ALLOW_INSECURE_OTEL: "common reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "common reason"}
+          count: 1
+
+  - it: "manager: collector off: with useExistingSecret the modeled value goes on the container"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      manager.useExistingSecret: true
+      manager.existingSecretName: "ext-secret"
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+
+  - it: "manager: collector off: an empty Secret value still renders in the Secret, so the global reason goes on the container"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: ""
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+
+  - it: "manager: collector off: a Secret reason with no model gets no container entry"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "manager: collector off: a model with no Secret leaves it to the ConfigMap (no container entry)"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "manager: collector off: an extraEnvVars key stays the legacy route (no container entry)"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      global.observability.allowInsecureOtel: "env-wide reason"
+      manager.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "manager: with useExistingSecret the chart cannot see the Secret and emits the entry"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      manager.useExistingSecret: true
+      manager.existingSecretName: "ext-secret"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+          count: 1
+
+  - it: "worker Deployment: the plaintext node-local endpoint carries the default reason"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+          count: 1
+
+  - it: "worker Deployment: global.observability.allowInsecureOtel sets the value env-wide"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: "worker Deployment: common.configmap wins over the global"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      common.configmap.ALLOW_INSECURE_OTEL: "common reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "common reason"}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: "worker Deployment: the component configmap wins over the global"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      worker.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "component reason"}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: "worker Deployment: a common.configmap refusal stands over the global"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      common.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: "worker Deployment: an explicit refusal stands as the one entry"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      worker.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: "worker Deployment: a false refusal in the global stands as the one entry"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      global.observability.allowInsecureOtel: "false"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "false"}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: "worker Deployment: a null component value falls through to the global"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      worker.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+
+  - it: "worker Deployment: a null global leaves the node-local reason"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+
+  - it: "worker Deployment: a key in extraEnvVars (legacy) stands, so the chart adds no entry"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      worker.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker Deployment: telemetry off (collector disabled) emits nothing"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker Deployment: an explicit endpoint in the configmap is still overridden by the node-local hop, so the entry stays"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      common.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: "https://otel.example.com:4317"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+          count: 1
+
+  - it: "worker Deployment: a non-empty secrets.ALLOW_INSECURE_OTEL in the chart Secret stands (no entry)"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker Deployment: a model refusal wins over the Secret value"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      worker.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "secret reason"}
+
+  - it: "worker Deployment: a global value wins over the Secret value"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+
+  - it: "worker Deployment: an empty secrets.ALLOW_INSECURE_OTEL is no legacy route"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+          count: 1
+
+  - it: "worker Deployment: a YAML false in secrets.ALLOW_INSECURE_OTEL renders \"false\" in the Secret, so the legacy route stands"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker Deployment: a YAML 0 in secrets.ALLOW_INSECURE_OTEL renders \"0\" in the Secret, so the legacy route stands"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: 0
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker Deployment: collector off: a model refusal wins over a Secret reason via the container env"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      worker.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "secret reason"}
+
+  - it: "worker Deployment: collector off: a global value wins over a Secret reason via the container env"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+
+  - it: "worker Deployment: collector off: a common.configmap value wins over a Secret reason via the container env"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      common.configmap.ALLOW_INSECURE_OTEL: "common reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "common reason"}
+          count: 1
+
+  - it: "worker Deployment: collector off: with useExistingSecret the modeled value goes on the container"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      worker.useExistingSecret: true
+      worker.existingSecretName: "ext-secret"
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+
+  - it: "worker Deployment: collector off: an empty Secret value still renders in the Secret, so the global reason goes on the container"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: ""
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+
+  - it: "worker Deployment: collector off: a Secret reason with no model gets no container entry"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker Deployment: collector off: a model with no Secret leaves it to the ConfigMap (no container entry)"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker Deployment: collector off: an extraEnvVars key stays the legacy route (no container entry)"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      global.observability.allowInsecureOtel: "env-wide reason"
+      worker.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker Deployment: with useExistingSecret the chart cannot see the Secret and emits the entry"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      worker.useExistingSecret: true
+      worker.existingSecretName: "ext-secret"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+          count: 1
+
+  - it: "worker ScaledJob: the plaintext node-local endpoint carries the default reason"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+          count: 1
+
+  - it: "worker ScaledJob: global.observability.allowInsecureOtel sets the value env-wide"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: "worker ScaledJob: common.configmap wins over the global"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      global.observability.allowInsecureOtel: "env-wide reason"
+      common.configmap.ALLOW_INSECURE_OTEL: "common reason"
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "common reason"}
+          count: 1
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: "worker ScaledJob: the component configmap wins over the global"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      global.observability.allowInsecureOtel: "env-wide reason"
+      worker.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "component reason"}
+          count: 1
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: "worker ScaledJob: a common.configmap refusal stands over the global"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      global.observability.allowInsecureOtel: "env-wide reason"
+      common.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+          count: 1
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+
+  - it: "worker ScaledJob: an explicit refusal stands as the one entry"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      worker.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+          count: 1
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: "worker ScaledJob: a false refusal in the global stands as the one entry"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      global.observability.allowInsecureOtel: "false"
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "false"}
+          count: 1
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: "worker ScaledJob: a null component value falls through to the global"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      global.observability.allowInsecureOtel: "env-wide reason"
+      worker.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+
+  - it: "worker ScaledJob: a null global leaves the node-local reason"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+          count: 1
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+
+  - it: "worker ScaledJob: a key in extraEnvVars (legacy) stands, so the chart adds no entry"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      worker.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker ScaledJob: telemetry off (collector disabled) emits nothing"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+    asserts:
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker ScaledJob: an explicit endpoint in the configmap is still overridden by the node-local hop, so the entry stays"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      common.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: "https://otel.example.com:4317"
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+          count: 1
+
+  - it: "worker ScaledJob: a non-empty secrets.ALLOW_INSECURE_OTEL in the chart Secret stands (no entry)"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+    asserts:
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker ScaledJob: a model refusal wins over the Secret value"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      worker.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+          count: 1
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "secret reason"}
+
+  - it: "worker ScaledJob: a global value wins over the Secret value"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+
+  - it: "worker ScaledJob: an empty secrets.ALLOW_INSECURE_OTEL is no legacy route"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      secrets.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+          count: 1
+
+  - it: "worker ScaledJob: a YAML false in secrets.ALLOW_INSECURE_OTEL renders \"false\" in the Secret, so the legacy route stands"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      secrets.ALLOW_INSECURE_OTEL: false
+    asserts:
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker ScaledJob: a YAML 0 in secrets.ALLOW_INSECURE_OTEL renders \"0\" in the Secret, so the legacy route stands"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      secrets.ALLOW_INSECURE_OTEL: 0
+    asserts:
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker ScaledJob: collector off: a model refusal wins over a Secret reason via the container env"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      worker.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+          count: 1
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "secret reason"}
+
+  - it: "worker ScaledJob: collector off: a global value wins over a Secret reason via the container env"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+
+  - it: "worker ScaledJob: collector off: a common.configmap value wins over a Secret reason via the container env"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      common.configmap.ALLOW_INSECURE_OTEL: "common reason"
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "common reason"}
+          count: 1
+
+  - it: "worker ScaledJob: collector off: with useExistingSecret the modeled value goes on the container"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+      worker.useExistingSecret: true
+      worker.existingSecretName: "ext-secret"
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+
+  - it: "worker ScaledJob: collector off: an empty Secret value still renders in the Secret, so the global reason goes on the container"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: ""
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+
+  - it: "worker ScaledJob: collector off: a Secret reason with no model gets no container entry"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+    asserts:
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker ScaledJob: collector off: a model with no Secret leaves it to the ConfigMap (no container entry)"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker ScaledJob: collector off: an extraEnvVars key stays the legacy route (no container entry)"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      global.observability.allowInsecureOtel: "env-wide reason"
+      worker.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker ScaledJob: with useExistingSecret the chart cannot see the Secret and emits the entry"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      worker.useExistingSecret: true
+      worker.existingSecretName: "ext-secret"
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+          count: 1
+
+  - it: "manager ConfigMap: collector off + global value reaches the app"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "env-wide reason"
+
+  - it: "manager ConfigMap: the component configmap value is the only one"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      manager.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "component reason"
+
+  - it: "manager ConfigMap: the common.configmap value is the only one"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      common.configmap.ALLOW_INSECURE_OTEL: "common reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "common reason"
+
+  - it: "manager ConfigMap: the extraEnvVars value is the only one"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      manager.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "operator reason"
+
+  - it: "manager ConfigMap: a null component value is unset and the global fills in"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      manager.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "env-wide reason"
+
+  - it: "manager ConfigMap: a null common value is unset and the global fills in"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      common.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "env-wide reason"
+
+  - it: "manager ConfigMap: a component refusal stands over the global"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      manager.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ""
+
+  - it: "manager ConfigMap: nothing set renders no key"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+
+  - it: "manager ConfigMap: a null global renders no key"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+
+  - it: "worker ConfigMap: collector off + global value reaches the app"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "env-wide reason"
+
+  - it: "worker ConfigMap: the component configmap value is the only one"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      worker.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "component reason"
+
+  - it: "worker ConfigMap: the common.configmap value is the only one"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      common.configmap.ALLOW_INSECURE_OTEL: "common reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "common reason"
+
+  - it: "worker ConfigMap: the extraEnvVars value is the only one"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      worker.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "operator reason"
+
+  - it: "worker ConfigMap: a null component value is unset and the global fills in"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      worker.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "env-wide reason"
+
+  - it: "worker ConfigMap: a null common value is unset and the global fills in"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      common.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "env-wide reason"
+
+  - it: "worker ConfigMap: a component refusal stands over the global"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      worker.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ""
+
+  - it: "worker ConfigMap: nothing set renders no key"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+
+  - it: "worker ConfigMap: a null global renders no key"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL

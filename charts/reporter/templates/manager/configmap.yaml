@@ -20,9 +20,12 @@ data:
   # Service specific values
   {{- $idpEnvKeys := include "lerian-common.idp.keys" (dict "kind" "env") | fromJsonArray }}
   {{- range $key, $value := .Values.manager.configmap }}
-  {{- if not (has $key $idpEnvKeys) }}
+  {{- if not (or (has $key $idpEnvKeys) (and (eq $key "ALLOW_INSECURE_OTEL") (kindIs "invalid" $value))) }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
+  {{- end }}
+  {{- with (include "reporter.otelAllowInsecureConfigmap" (dict "context" $ "component" .Values.manager) | trim) }}
+  {{- . | nindent 2 }}
   {{- end }}
   # Access Manager permission declaration (RI) via lerian-common.idp.env — manager only.
   # IDP_DECLARATION_ENABLED (always, default "false") and IDP_HOST (only when set), resolved as

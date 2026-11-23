@@ -164,6 +164,10 @@ spec:
             - secretRef:
                 name: {{ $secretName }}
           env:
+            {{- if .Values.brSisbajud.serveHealthPort }}
+            - name: HEALTH_PORT
+              value: "8099"
+            {{- end }}
             {{- /* Bundled (or existingSecret) infra passwords are single-sourced from the
                subchart Secret; the external path reads them from the app Secret via envFrom. */}}
             {{- /* An explicit extraEnvVars entry is the effective value (it renders
@@ -205,6 +209,11 @@ spec:
               containerPort: {{ $ex.port }}
               protocol: TCP
             {{- end }}
+            {{- if .Values.brSisbajud.serveHealthPort }}
+            - name: health
+              containerPort: 8099
+              protocol: TCP
+            {{- end }}
           {{- with $appMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}
@@ -212,7 +221,7 @@ spec:
           livenessProbe:
             httpGet:
               path: {{ .Values.brSisbajud.livenessProbe.path | default "/health" }}
-              port: http
+              port: {{ ternary "health" "http" (default false .Values.brSisbajud.serveHealthPort) }}
             initialDelaySeconds: {{ .Values.brSisbajud.livenessProbe.initialDelaySeconds | default 15 }}
             periodSeconds: {{ .Values.brSisbajud.livenessProbe.periodSeconds | default 20 }}
             timeoutSeconds: {{ .Values.brSisbajud.livenessProbe.timeoutSeconds | default 5 }}
@@ -221,7 +230,7 @@ spec:
           readinessProbe:
             httpGet:
               path: {{ .Values.brSisbajud.readinessProbe.path | default "/readyz" }}
-              port: http
+              port: {{ ternary "health" "http" (default false .Values.brSisbajud.serveHealthPort) }}
             initialDelaySeconds: {{ .Values.brSisbajud.readinessProbe.initialDelaySeconds | default 5 }}
             periodSeconds: {{ .Values.brSisbajud.readinessProbe.periodSeconds | default 10 }}
             timeoutSeconds: {{ .Values.brSisbajud.readinessProbe.timeoutSeconds | default 5 }}

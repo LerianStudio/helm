@@ -132,6 +132,8 @@ securityContext:
 # =============================================================================
 brSisbajud:
   enabled: true
+  # -- true only with an image that serves 8099; flip it with the image tag.
+  serveHealthPort: false
   replicaCount: 1
   # -- 55 = 15s SHUTDOWN_DRAIN_DELAY + 30s shutdown budget + 10s margin; do not lower it below the shutdown budget.
   # The default image (app 1.1.0) does not read SHUTDOWN_DRAIN_DELAY.

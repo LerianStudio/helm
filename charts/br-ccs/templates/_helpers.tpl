@@ -78,14 +78,6 @@ Allows overriding it for multi-namespace deployments in combined charts.
 Enable internal dependencies
 These helpers check both .enabled and .external flags
 */}}
-{{- define "rabbitmq.enabled" -}}
-{{- if and (default true .Values.rabbitmq.enabled) (not .Values.rabbitmq.external) -}}
-true
-{{- else -}}
-false
-{{- end -}}
-{{- end -}}
-
 {{- define "valkey.enabled" -}}
 {{- if and (default true .Values.valkey.enabled) (not .Values.valkey.external) -}}
 true

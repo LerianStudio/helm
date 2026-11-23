@@ -58,24 +58,6 @@ tests:
       - notExists:
           path: data.IDP_M2M_CLIENT_SECRET
 
-  # --- RABBITMQ_URL embeds the password: Secret, never ConfigMap -------------
-  - it: keeps RABBITMQ_URL in the Secret
-    template: templates/secrets.yaml
-    set:
-      brCcs.secrets.RABBITMQ_URL: amqp://user:pass@rabbitmq:5672/
-    asserts:
-      - equal:
-          path: stringData.RABBITMQ_URL
-          value: amqp://user:pass@rabbitmq:5672/
-
-  - it: never puts RABBITMQ_URL in the ConfigMap
-    template: templates/configmap.yaml
-    set:
-      brCcs.secrets.RABBITMQ_URL: amqp://user:pass@rabbitmq:5672/
-    asserts:
-      - notExists:
-          path: data.RABBITMQ_URL
-
   # --- Passthrough: only when set ---------------------------------------------
   - it: passes the app keys through when set
     template: templates/configmap.yaml

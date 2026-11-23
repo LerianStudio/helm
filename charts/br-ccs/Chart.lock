@@ -8,8 +8,5 @@ dependencies:
 - name: postgresql
   repository: https://charts.bitnami.com/bitnami
   version: 16.3.5
-- name: rabbitmq
-  repository: https://groundhog2k.github.io/helm-charts
-  version: 2.1.11
-digest: sha256:f9337c26d495b322477a1119ec13731b9939bae627bbf105476ef7b23e46c005
-generated: "2026-11-10T17:58:12.387547241-03:00"
+digest: sha256:e829513d5f4c5d36827568e3a0a94d8358789452f4b879051afe2c287a603c0b
+generated: "2026-11-23T22:24:21.729030572Z"

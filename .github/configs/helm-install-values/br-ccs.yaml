@@ -23,13 +23,9 @@ brCcs:
     # The app refuses a blank server-side encryption posture for either bucket.
     OBJECT_STORAGE_STA_SSE_ALGORITHM: "AES256"
     OBJECT_STORAGE_CCS_SSE_ALGORITHM: "AES256"
-    # The render fixture names an external broker; here the bundled rabbitmq
-    # subchart serves, addressed by its Service in the release namespace.
-    RABBITMQ_HOST: "br-ccs-rabbitmq"
     ORGANIZATION_IDS: "global"
     # The app refuses an empty REPORTER_URL; an unreachable Reporter only trips its breaker.
     REPORTER_URL: "http://reporter:4005"
-    # With RabbitMQ on, the Reporter integration registers an outbox handler (dev-st runs it on).
     OUTBOX_ENABLED: "true"
   # The app refuses to boot in every environment without a license the Lerian
   # gateway accepts: the CI license placeholder (README) is written over by
@@ -41,13 +37,3 @@ brCcs:
 global:
   observability:
     enabled: false
-# The app dials RabbitMQ at boot; bundle the broker with the fixture's password.
-rabbitmq:
-  enabled: true
-  persistence:
-    enabled: false
-  authentication:
-    password:
-      value: "render-fixture-rmq-pass"
-    erlangCookie:
-      value: "render-fixture-erlang-cookie-0123456789"

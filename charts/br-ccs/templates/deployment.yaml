@@ -145,6 +145,14 @@ spec:
             value: "$(HOST_IP):4317"
           - name: "OTEL_RESOURCE_ATTRIBUTES"
             value: "k8s.pod.ip=$(POD_IP)"
+          {{- /* The node-local hop is plaintext (no scheme); lib-observability refuses
+                 it in production unless ALLOW_INSECURE_OTEL carries a reason. A key
+                 in brCcs.extraEnvVars is the legacy route and stands alone (the
+                 Secret renders an explicit key list, so it has no such route). */}}
+          {{- if not (hasKey (.Values.brCcs.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL") }}
+          - name: "ALLOW_INSECURE_OTEL"
+            value: {{ include "br-ccs.otel.allowInsecure" (dict "context" $ "configmap" (.Values.brCcs.configmap | default dict)) | quote }}
+          {{- end }}
           {{- end }}
           ports:
             - name: http

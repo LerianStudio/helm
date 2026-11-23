@@ -169,3 +169,43 @@ replication mode (standalone publishes the bare fullname).
 {{- define "br-ccs.valkey.defaultHost" -}}
 {{- printf "%s-primary.%s.svc.cluster.local:6379" (include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" .Values.valkey "context" .)) (include "global.namespace" .) -}}
 {{- end -}}
+
+{{/*
+br-ccs.otel.allowInsecure — the ALLOW_INSECURE_OTEL value for the pod that ships
+plaintext OTLP to the node-local collector ($(HOST_IP):4317). Chart-local copy of
+lerian-common 2.7.0's lerian-common.otel.allowInsecure (this chart stays on
+lerian-common-helm 1.4.0). Resolution:
+  brCcs.configmap.ALLOW_INSECURE_OTEL
+  > global.observability.allowInsecureOtel
+  > "node-local collector on the pod's own node"
+A key set to null is unset; "" is an explicit refusal and stops the chain. "false"
+also stops it, but lib-observability v1.1.0 only refuses an empty value, so the app
+reads "false" as a reason. Inputs: context (root), configmap (the component configmap map).
+*/}}
+{{- define "br-ccs.otel.allowInsecure" -}}
+{{- $cm := .configmap | default dict -}}
+{{- $obs := (.context.Values.global | default dict).observability | default dict -}}
+{{- /* A key set to null is unset, not a refusal: Helm keeps it and it would
+   print as "", which the app reads as a refusal. */ -}}
+{{- if and (hasKey $cm "ALLOW_INSECURE_OTEL") (not (kindIs "invalid" (index $cm "ALLOW_INSECURE_OTEL"))) -}}
+{{- index $cm "ALLOW_INSECURE_OTEL" | toString -}}
+{{- else if and (hasKey $obs "allowInsecureOtel") (not (kindIs "invalid" (index $obs "allowInsecureOtel"))) -}}
+{{- index $obs "allowInsecureOtel" | toString -}}
+{{- else -}}
+node-local collector on the pod's own node
+{{- end -}}
+{{- end -}}
+
+{{/*
+br-ccs.otel.allowInsecureSet — "true" when the modeled setting is present
+(brCcs.configmap.ALLOW_INSECURE_OTEL or global.observability.allowInsecureOtel,
+non-null; a refusal counts as set), "" otherwise. The ConfigMap renders the key
+only then, so an untouched install keeps its ConfigMap unchanged.
+*/}}
+{{- define "br-ccs.otel.allowInsecureSet" -}}
+{{- $cm := .configmap | default dict -}}
+{{- $obs := (.context.Values.global | default dict).observability | default dict -}}
+{{- if or (and (hasKey $cm "ALLOW_INSECURE_OTEL") (not (kindIs "invalid" (index $cm "ALLOW_INSECURE_OTEL")))) (and (hasKey $obs "allowInsecureOtel") (not (kindIs "invalid" (index $obs "allowInsecureOtel")))) -}}
+true
+{{- end -}}
+{{- end -}}

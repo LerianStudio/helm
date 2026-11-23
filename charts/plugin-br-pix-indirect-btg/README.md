@@ -114,6 +114,7 @@ The Plugin BR PIX Indirect BTG system consists of five components: the PIX servi
 | `pix.affinity` | Affinity rules for pod scheduling. | `{}` |
 | `pix.configmap.*` | Environment variables for the service. | See `values.yaml` |
 | `pix.configmap.DB_SSL_MODE` | TLS to PostgreSQL: `disable`, `allow`, `prefer`, `require`, `verify-ca` or `verify-full`. Only `require` and stricter guarantee encryption; set one of them for an external database. | `"disable"` |
+| `pix.configmap.SWAGGER_ENABLED` | Serves the per-module API reference (`/v1/<module>/docs`, `openapi.json`, `openapi.yaml`). It does not turn off `/swagger/index.html`, `/docs/api` or `/docs/webhooks`. See [API Documentation (Swagger)](#api-documentation-swagger). | `"true"` |
 | `pix.secrets.*` | Secrets for the service. | See `values.yaml` |
 | `pix.useExistingSecrets` | Use an existing secret instead of creating a new one. | `false` |
 | `pix.existingSecretName` | The name of the existing secret to use. | `""` |
@@ -326,6 +327,57 @@ pix:
         hosts:
           - pix.example.com
 ```
+
+---
+
+## API Documentation (Swagger)
+
+The PIX service serves its API documentation on the API port (`pix.service.port`, default `4014`), through the same Service and Ingress as the API. From application `1.10.0` (chart `4.0.0`), the endpoint reference is split into one OpenAPI 3.1 spec per module. `/swagger/index.html` no longer lists any endpoint.
+
+### Where each page lives
+
+| Path | Content | Controlled by |
+|---|---|---|
+| `/v1/<module>/docs` | Interactive endpoint reference (Scalar) for one module. | `pix.configmap.SWAGGER_ENABLED` |
+| `/v1/<module>/openapi.json`, `/v1/<module>/openapi.yaml` | The module's OpenAPI 3.1 spec, for client generation or a Postman import. | `pix.configmap.SWAGGER_ENABLED` |
+| `/swagger/index.html`, `/docs/api` | `PIX-xxxx` error catalog, authentication and integration requirements. No endpoints. | Always served |
+| `/docs/webhooks` | Webhook event catalog with payload schemas. | Always served |
+| `/version` | Build identity of the running image. | Always served |
+
+### Modules
+
+| Module | Prefix | Covers |
+|---|---|---|
+| DICT | `/v1/dict` | Entries, keys, claims, infraction reports, refund requests, fraud markers, funds recovery, reconciliation, statistics |
+| Payment | `/v1/payment` | Transfers (cash-out), schedules, refunds, transaction reports |
+| Collections | `/v1/collections` | Immediate and due date collections |
+| BRCode | `/v1/brcode` | Static QR codes |
+| Decode | `/v1/qrcodes` | QR code decode |
+| Recurring | `/v1/recurrences` | Pix Automático |
+| Webhooks | `/v1/webhooks` | List, inspect and retry received and delivered webhooks, dead-letter rows included |
+
+Example: with the Ingress host `pix.example.com`, the payment reference is `https://pix.example.com/v1/payment/docs`.
+
+### Upgrading from chart 3.x (application 1.9.x)
+
+Up to chart `3.8.0` (application `1.9.1`), `/swagger/index.html` listed every endpoint. From chart `4.0.0` (application `1.10.0`), that page shows only the error catalog and the integration guide. The endpoints are in the module pages above. Send the module URLs to every team that used `/swagger/index.html` as its endpoint reference before you upgrade an environment past chart `3.8.0`. Otherwise one environment shows the full list and the upgraded one shows none.
+
+### `SWAGGER_ENABLED`
+
+- `"true"` (default): the per-module `docs`, `openapi.json` and `openapi.yaml` routes are served.
+- `"false"`: only those per-module routes are removed. `/swagger/index.html`, `/docs/api`, `/docs/webhooks` and `/version` stay up, because the application mounts them without this flag. [UPGRADE-4.0](docs/UPGRADE-4.0.md) describes the flag as a Swagger UI toggle; the `/swagger` page is not affected by it.
+- The per-module routes sit outside the authentication chain. When `pix.ingress` is public and the reference must not be, set `"false"` or restrict these paths at the Ingress.
+
+### Checking a deployment
+
+```console
+$ curl -s https://<host>/version
+$ curl -s -o /dev/null -w '%{http_code}\n' https://<host>/v1/payment/openapi.json
+```
+
+- `200`: the per-module reference is served.
+- `404` with `/version` at `1.10.0` or later: `SWAGGER_ENABLED` is `"false"` in this release.
+- `404` with `/version` older than `1.10.0`: the endpoints are still in `/swagger/index.html`.
 
 ---
 

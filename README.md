@@ -121,7 +121,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.2.1` | 1.6.0 |
+| `2.2.2` | 1.6.0 |
 -----------------
 
 ### Plugin BR Pix Indirect BTG

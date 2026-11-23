@@ -243,7 +243,8 @@ MULTI_TENANT_ENABLED: {{ $mtRaw | quote }}
       "emitPool" true "emitEnvironment" true) | nindent 0 }}
 {{- /* Escape hatch: any OTHER key the operator adds under common.configmap. */}}
 {{- range $key, $value := $cm }}
-{{- if not (has $key $explicit) }}
+{{- /* A null ALLOW_INSECURE_OTEL is unset (fetcher.otelAllowInsecureConfigmap), not "". */ -}}
+{{- if not (or (has $key $explicit) (and (eq $key "ALLOW_INSECURE_OTEL") (kindIs "invalid" $value))) }}
 {{ $key }}: {{ $value | quote }}
 {{- end }}
 {{- end }}
@@ -306,4 +307,87 @@ component values. Nil-safe so --reuse-values over an old release cannot nil-poin
 */}}
 {{- define "fetcher.licenseFileSecret" -}}
 {{- ((.licenseFile | default dict).existingSecret | default "") -}}
+{{- end }}
+
+{{/*
+fetcher.otelAllowInsecureEnv — the ALLOW_INSECURE_OTEL env entry of a component
+container. lib-observability refuses a plaintext exporter in production unless
+the variable carries a reason.
+
+A modeled setting, resolved by lerian-common.otel.allowInsecure from the merged
+configmap (component wins over common; null is unset):
+  <component>.configmap.ALLOW_INSECURE_OTEL > common.configmap.ALLOW_INSECURE_OTEL
+  > global.observability.allowInsecureOtel > the node-local reason.
+"" or "false" is an explicit refusal and is emitted as is.
+
+Legacy routes stand and then no entry is added (a duplicate env name breaks the
+apply): a key in <component>.extraEnvVars, or an ALLOW_INSECURE_OTEL the chart's
+own Secrets render (<component>.secrets unless useExistingSecret, or the shared
+top-level secrets) while nothing in the model is set. The Secrets render every
+non-null value whose string form is non-empty (a YAML false as "false", 0 as
+"0"), so the same values count here.
+
+hopOn (bool): the container ships to http://$(HOST_IP):4317 (plaintext). Then the
+entry is emitted unless a legacy route stands. With the hop off the ConfigMaps
+carry the model, but envFrom loads the Secrets after them, so a Secret value
+would beat it: the entry is emitted only when the model is set and a Secret may
+hold the key (a visible Secret value, or an existing Secret the chart cannot
+see), so the model wins as documented.
+
+Inputs (dict): context (root), component (.Values.manager / .Values.worker), hopOn.
+*/}}
+{{- define "fetcher.otelAllowInsecureEnv" -}}
+{{- $ctx := .context -}}
+{{- $comp := .component | default dict -}}
+{{- $compCm := $comp.configmap | default dict -}}
+{{- $commonCm := (($ctx.Values.common | default dict).configmap) | default dict -}}
+{{- $cm := dict -}}
+{{- if not (kindIs "invalid" (index $compCm "ALLOW_INSECURE_OTEL")) -}}
+{{- $_ := set $cm "ALLOW_INSECURE_OTEL" (index $compCm "ALLOW_INSECURE_OTEL") -}}
+{{- else if not (kindIs "invalid" (index $commonCm "ALLOW_INSECURE_OTEL")) -}}
+{{- $_ := set $cm "ALLOW_INSECURE_OTEL" (index $commonCm "ALLOW_INSECURE_OTEL") -}}
+{{- end -}}
+{{- $obs := (($ctx.Values.global | default dict).observability) | default dict -}}
+{{- $modelSet := or (hasKey $cm "ALLOW_INSECURE_OTEL") (not (kindIs "invalid" (index $obs "allowInsecureOtel"))) -}}
+{{- $compSecret := index ($comp.secrets | default dict) "ALLOW_INSECURE_OTEL" -}}
+{{- $sharedSecret := index ($ctx.Values.secrets | default dict) "ALLOW_INSECURE_OTEL" -}}
+{{- $secretSet := or
+      (and (not $comp.useExistingSecret) (not (kindIs "invalid" $compSecret)) (ne (toString $compSecret) ""))
+      (and (not (kindIs "invalid" $sharedSecret)) (ne (toString $sharedSecret) "")) -}}
+{{- $emit := false -}}
+{{- if hasKey ($comp.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL" -}}
+{{- else if .hopOn -}}
+{{- $emit = or $modelSet (not $secretSet) -}}
+{{- else -}}
+{{- $emit = and $modelSet (or $secretSet $comp.useExistingSecret) -}}
+{{- end -}}
+{{- if $emit -}}
+- name: "ALLOW_INSECURE_OTEL"
+  value: {{ include "lerian-common.otel.allowInsecure" (dict "context" $ctx "configmap" $cm) | quote }}
+{{- end -}}
+{{- end }}
+
+{{/*
+fetcher.otelAllowInsecureConfigmap — renders ALLOW_INSECURE_OTEL from
+global.observability.allowInsecureOtel into a component ConfigMap, so the
+env-wide value reaches the app with the node-local hop off too (an explicit
+plaintext endpoint). Rendered only in the component ConfigMap, and only when no
+other source already renders the key: <component>.configmap and
+common.configmap pass it through themselves, and a <component>.extraEnvVars key
+renders from extraEnvVars. Null is unset at every tier.
+
+Inputs (dict): context (root), component (.Values.manager / .Values.worker).
+*/}}
+{{- define "fetcher.otelAllowInsecureConfigmap" -}}
+{{- $ctx := .context -}}
+{{- $comp := .component | default dict -}}
+{{- $obs := (($ctx.Values.global | default dict).observability) | default dict -}}
+{{- $commonCm := (($ctx.Values.common | default dict).configmap) | default dict -}}
+{{- $g := index $obs "allowInsecureOtel" -}}
+{{- if and (not (kindIs "invalid" $g))
+      (kindIs "invalid" (index ($comp.configmap | default dict) "ALLOW_INSECURE_OTEL"))
+      (kindIs "invalid" (index $commonCm "ALLOW_INSECURE_OTEL"))
+      (not (hasKey ($comp.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL")) -}}
+ALLOW_INSECURE_OTEL: {{ $g | toString | quote }}
+{{- end -}}
 {{- end }}

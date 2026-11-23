@@ -1,5 +1,21 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [5.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.5.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-pix-indirect-btg` `v5.5.0`. (@victorlazari)
+
+Fixes:
+- Allow the node-local OTEL hop to boot in production. (@guimoreirar)
+
+Improvements:
+- Remove the inert enabled line from the observability example. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-indirect-btg` `v5.4.1`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.5.0...plugin-br-pix-indirect-btg-v5.5.1)
+
+---
+
 ## [5.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.5.0)
 
 Features:

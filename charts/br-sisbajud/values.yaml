@@ -132,6 +132,8 @@ securityContext:
 # =============================================================================
 brSisbajud:
   enabled: true
+  # -- true only with an image that serves 8099; flip it with the image tag.
+  serveHealthPort: false
   replicaCount: 1
   # -- 55 = 15s SHUTDOWN_DRAIN_DELAY + 30s shutdown budget + 10s margin; do not lower it below the shutdown budget.
   # The default image (app 1.1.0) does not read SHUTDOWN_DRAIN_DELAY.
@@ -151,7 +153,7 @@ brSisbajud:
     maxUnavailable: 1
   service:
     type: ClusterIP
-    # The main HTTP API (admin, institutions, /health, /readyz). Matches the
+    # The main HTTP API (admin, institutions, /health; /readyz while serveHealthPort is false). Matches the
     # Mensageria default SERVER_ADDRESS :4031 (Dockerfile EXPOSE 4031);
     # SERVER_ADDRESS defaults to 0.0.0.0:<port>. The execution API listens on its
     # own port (brSisbajud.execution.port), exposed on this same Service as the

@@ -1,0 +1,137 @@
+# Same render fixture as otel_allow_insecure_test.yaml, without telemetry.
+suite: brSisbajud.serveHealthPort
+set:
+  global:
+    env:
+      name: development
+    objectStorage:
+      sta:
+        bucket: br-sta-transfer
+  brSisbajud:
+    vault:
+      tokenRenewEnabled: false
+    auth:
+      jwtIssuer: dev-only-unverifiable-issuer
+      jwtVerifyCert: '-----BEGIN PUBLIC KEY-----
+
+        MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArhJ23YF4HU1WMEOdpN7J
+
+        /pJt3ICTEsyhSP8Q32J5fZ1bvWvCOo++f4mA+38wwrfst02KWUohfFKPLQsPoqBO
+
+        3PkdBlW4rSjY1k7gK1uwLbDavQTwiF29Q0CiiI//oqwOjXVdviQTwKAPlEh0FRMO
+
+        HQBvxGej4Yl1jgnYgv6+6JAajn2oSdSf6KohPjqnJeCAx04J57IXYWS3jsEwQl0+
+
+        HTFZcB1q0ECDYysUKVfVAXo6xeost7vXmVCamPqnX2/lFxD4r3T80QYgD7jjn/Fu
+
+        XvB9UDWf1a83M/RaJute6vdd10m9WTJZ0GwVM9no8NI8MZJ5Uiw+NbfNpUDmki9F
+
+        vQIDAQAB
+
+        -----END PUBLIC KEY-----
+
+        '
+    execution:
+      tls:
+        generate: true
+    secrets:
+      LICENSE_KEY: IT_LICENSE_KEY
+    license:
+      organizationIds: global
+  postgresql:
+    enabled: true
+    external: false
+  valkey:
+    enabled: true
+    external: false
+  seaweedfs:
+    enabled: true
+  openbao:
+    enabled: true
+  redpandaBundle:
+    enabled: true
+tests:
+- it: switch off keeps the probes on http and the Service on http and execution
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - equal:
+      path: spec.template.spec.containers[0].livenessProbe.httpGet
+      value:
+        path: /health
+        port: http
+  - equal:
+      path: spec.template.spec.containers[0].readinessProbe.httpGet
+      value:
+        path: /readyz
+        port: http
+  - lengthEqual:
+      path: spec.template.spec.containers[0].ports
+      count: 2
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: HEALTH_PORT
+        value: "8099"
+- it: switch off lists http and execution on the Service
+  template: templates/service.yaml
+  asserts:
+  - lengthEqual:
+      path: spec.ports
+      count: 2
+- it: switch on probes the health port with the paths unchanged
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  set:
+    brSisbajud:
+      serveHealthPort: true
+  asserts:
+  - equal:
+      path: spec.template.spec.containers[0].livenessProbe.httpGet
+      value:
+        path: /health
+        port: health
+  - equal:
+      path: spec.template.spec.containers[0].readinessProbe.httpGet
+      value:
+        path: /readyz
+        port: health
+  - contains:
+      path: spec.template.spec.containers[0].ports
+      content:
+        name: health
+        containerPort: 8099
+        protocol: TCP
+  - equal:
+      path: spec.template.spec.containers[0].env[0]
+      value:
+        name: HEALTH_PORT
+        value: "8099"
+- it: switch on adds health to a ClusterIP Service
+  template: templates/service.yaml
+  set:
+    brSisbajud:
+      serveHealthPort: true
+  asserts:
+  - contains:
+      path: spec.ports
+      content:
+        port: 8099
+        targetPort: health
+        protocol: TCP
+        name: health
+- it: switch on never publishes health on a LoadBalancer Service
+  template: templates/service.yaml
+  set:
+    brSisbajud:
+      serveHealthPort: true
+      service:
+        type: LoadBalancer
+  asserts:
+  - lengthEqual:
+      path: spec.ports
+      count: 2

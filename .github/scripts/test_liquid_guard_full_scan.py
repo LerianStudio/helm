@@ -90,7 +90,8 @@ class FullScan(unittest.TestCase):
         self.write("untracked.md", "{{")
         result = self.scan()
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout, "All published markdown is Liquid-safe\n")
+        self.assertEqual(result.stdout, "Markdown Liquid Guard: full mode (every published .md tracked by git), 1 file(s) to check\n"
+                                        "All 1 checked markdown file(s) are Liquid-safe\n")
 
     def test_cli_annotates_each_bad_file_and_fails(self):
         self.write("charts/app/a.md", "safe\n{{")
@@ -107,14 +108,15 @@ class FullScan(unittest.TestCase):
         with patch.object(GUARD, "published", return_value=True), patch.object(GUARD.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, str(target))) as run:
             with contextlib.redirect_stdout(io.StringIO()) as output:
                 self.assertEqual(GUARD.main([]), 1)
-            run.assert_called_once_with(["git", "ls-files", "*.md"], check=True,
+            run.assert_called_once_with(["git", "ls-files", "-z", "--", "*.md"], check=True,
                                         capture_output=True, text=True)
             self.assertIn("line=2::Liquid syntax outside a raw block", output.getvalue())
             self.assertIn("1 markdown file(s)", output.getvalue())
             target.write_text("safe", encoding="utf-8")
             with contextlib.redirect_stdout(io.StringIO()) as output:
                 self.assertEqual(GUARD.main([]), 0)
-            self.assertEqual(output.getvalue(), "All published markdown is Liquid-safe\n")
+            self.assertEqual(output.getvalue(), "Markdown Liquid Guard: full mode (every published .md tracked by git), 1 file(s) to check\n"
+                                                "All 1 checked markdown file(s) are Liquid-safe\n")
 
     def test_fix_wraps_unicode_and_is_idempotent(self):
         target = self.write("README.md", "# Atualização\n{{ .Values.x }}\n\n")

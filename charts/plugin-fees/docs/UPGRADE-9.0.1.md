@@ -24,7 +24,7 @@ This is a patch release that increments the chart version from 9.0.0 to 9.0.1 wi
 
 **Migration impact:**
 
-This upgrade requires no configuration changes or operator intervention. All existing values.yaml configurations remain valid and unchanged.
+This upgrade requires no configuration changes or operator intervention. All existing values.yaml configurations remain valid and unchanged. The pods still restart once: the chart version is part of the `helm.sh/chart` label in the pod template.
 
 > **Note:** This release contains no functional changes. Upgrading is optional unless you require the latest chart version for dependency management or organizational policies.
 

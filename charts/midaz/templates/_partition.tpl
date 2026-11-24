@@ -9,7 +9,7 @@
 {{- /* Same anchored SemVer 2.0.0 guard as midaz.tagIsV4: semverCompare aborts the
        render on a malformed version instead of resolving to "off". */ -}}
 {{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag -}}
-{{- if semverCompare (index (dict "ledger" ">=4.5.0-beta.1" "tracer" ">=4.6.0-beta.11") .product) $tag -}}true{{- end -}}
+{{- if semverCompare (index (dict "ledger" ">=4.5.0-beta.1" "tracer" ">=4.6.0-beta.30") .product) $tag -}}true{{- end -}}
 {{- end -}}
 {{- else if eq (toString $enabled) "true" -}}
 true

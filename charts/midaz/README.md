@@ -97,7 +97,7 @@ $ helm install midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --versio
 
 Replace `<version>` with the desired chart version. This creates a namespace called `midaz` if it doesn't already exist and deploys the Midaz Helm chart.
 
-The default ledger and tracer image is the stable `4.4.0`. A `ledger.image.tag` or `tracer.image.tag` of `4.5.0-beta.94` or later, the first image that serves the health port, turns on the health preset (`HEALTH_PORT` 8099, preset probes, PDB and rollout strategy). The ledger partition runner is on for any `ledger.image.tag` from `4.5.0-beta.1`, and the tracer's for any `tracer.image.tag` from `4.6.0-beta.11`. Below `4.5.0-beta.94` the chart renders the 4.4 layout: probes on the main port, `RABBITMQ_HEALTH_CHECK_URL` on the ledger, `READYZ_DRAIN_GRACE_SECONDS` on the tracer, and it honors `readinessProbe`, `livenessProbe`, `terminationGracePeriodSeconds`, `deploymentUpdate` and `pdb.maxUnavailable`/`minAvailable` values.
+The default ledger and tracer image is the stable `4.4.0`. A `ledger.image.tag` or `tracer.image.tag` of `4.5.0-beta.94` or later, the first image that serves the health port, turns on the health preset (`HEALTH_PORT` 8099, preset probes, PDB and rollout strategy). The ledger partition runner is on for any `ledger.image.tag` from `4.5.0-beta.1`, and the tracer's for any `tracer.image.tag` from `4.6.0-beta.30`. Below `4.5.0-beta.94` the chart renders the 4.4 layout: probes on the main port, `RABBITMQ_HEALTH_CHECK_URL` on the ledger, `READYZ_DRAIN_GRACE_SECONDS` on the tracer, and it honors `readinessProbe`, `livenessProbe`, `terminationGracePeriodSeconds`, `deploymentUpdate` and `pdb.maxUnavailable`/`minAvailable` values.
 
 Upgrading a release that runs a `4.5.0` pre-release (chart `10.3.0` to `10.3.2` on default values): set `ledger.image.tag` and `tracer.image.tag` to the running tag before `helm upgrade`. Without the pin the default `4.4.0` migration Job finds a schema newer than its migrations and fails (`no migration found for version N`), so the upgrade stops before any pod changes. `ledger.migrations.enabled: false` or `tracer.migrations.enabled: false` removes the stop of that component only, and with Argo CD an empty `deploymentSyncWave` lets a Deployment apply even when its migrations Job fails; keep the pin in those installs.
 
@@ -318,7 +318,7 @@ Both products run the same two workloads from their own image, ConfigMap, Secret
 
 | | Ledger | Tracer |
 |---|---|---|
-| Image with `/partition` (the runner is on from) | `ledger.image` from `4.5.0-beta.1` | `tracer.image` from `4.6.0-beta.11` |
+| Image with `/partition` (the runner is on from; for the Tracer, the first tag with the command) | `ledger.image` from `4.5.0-beta.1` | `tracer.image` from `4.6.0-beta.30` |
 | Database variables | `DB_TRANSACTION_*`, set inline from the release values | `DB_*` from the Tracer ConfigMap, `DB_PASSWORD` from the PostgreSQL Secret (the Tracer Secret with an external PostgreSQL) |
 | Multi-tenant Valkey password | `REDIS_PASSWORD` | none: the tenant settings come from the Tracer Secret |
 | Workloads | `midaz-ledger-partition`, `midaz-ledger-partition-reconcile-<tag>` | `midaz-tracer-partition`, `midaz-tracer-partition-reconcile-<tag>` |

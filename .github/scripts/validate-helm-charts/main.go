@@ -76,8 +76,10 @@ var allowlistedCredentialDefaults = map[string]bool{
 var allowlistedConfigMapKeys = map[string]bool{
 	// Selects the secret manager the antifraud credentials are read from ("aws" or
 	// "vault"); the credentials themselves never pass through the chart or env.
-	"plugin-br-bank-transfer:ANTIFRAUD_SECRETS_BACKEND": true,
-	"plugin-br-pix-lerian:ANTIFRAUD_SECRETS_BACKEND":    true,
+	"plugin-br-bank-transfer:ANTIFRAUD_SECRETS_BACKEND":    true,
+	"plugin-br-pix-lerian:ANTIFRAUD_SECRETS_BACKEND":       true,
+	"plugin-br-pix-indirect-btg:ANTIFRAUD_SECRETS_BACKEND": true,
+	"plugin-br-ted-lerian:ANTIFRAUD_SECRETS_BACKEND":       true,
 }
 
 type chartYAML struct {

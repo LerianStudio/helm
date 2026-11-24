@@ -15,9 +15,11 @@ func TestScanConfigMapTemplatesAllowlistIsPerChartAndPerKey(t *testing.T) {
 		"  CLIENT_SECRET: {{ .Values.clientSecret | quote }}\n"
 
 	cases := map[string][]string{
-		"plugin-br-bank-transfer": {"CLIENT_SECRET"},
-		"plugin-br-pix-lerian":    {"CLIENT_SECRET"},
-		"plugin-br-pix-jd":        {"ANTIFRAUD_SECRETS_BACKEND", "CLIENT_SECRET"},
+		"plugin-br-bank-transfer":    {"CLIENT_SECRET"},
+		"plugin-br-pix-lerian":       {"CLIENT_SECRET"},
+		"plugin-br-pix-indirect-btg": {"CLIENT_SECRET"},
+		"plugin-br-ted-lerian":       {"CLIENT_SECRET"},
+		"plugin-br-pix-jd":           {"ANTIFRAUD_SECRETS_BACKEND", "CLIENT_SECRET"},
 	}
 	for chartName, want := range cases {
 		chartDir := filepath.Join(t.TempDir(), chartName)

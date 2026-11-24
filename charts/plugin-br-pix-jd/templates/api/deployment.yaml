@@ -39,7 +39,7 @@ spec:
       labels:
         {{- include "plugin-br-pix-jd.componentPodLabels" (dict "root" $ "name" "api") | nindent 8 }}
     spec:
-      serviceAccountName: {{ include "plugin-br-pix-jd.serviceAccountName" . }}
+      serviceAccountName: {{ include "plugin-br-pix-jd.api.serviceAccountName" . }}
       {{- with (.Values.api.imagePullSecrets | default (.Values.global).imagePullSecrets) }}
       {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
       {{- end }}

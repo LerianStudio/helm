@@ -79,6 +79,7 @@ var allowlistedConfigMapKeys = map[string]bool{
 	"plugin-br-bank-transfer:ANTIFRAUD_SECRETS_BACKEND":    true,
 	"plugin-br-pix-lerian:ANTIFRAUD_SECRETS_BACKEND":       true,
 	"plugin-br-pix-indirect-btg:ANTIFRAUD_SECRETS_BACKEND": true,
+	"plugin-br-ted-lerian:ANTIFRAUD_SECRETS_BACKEND":       true,
 }
 
 type chartYAML struct {

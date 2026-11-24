@@ -1,5 +1,17 @@
 # Plugin-br-ted-lerian Changelog
 
+## [1.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.3.0)
+
+Features:
+- Model the antifraud secrets backend to enhance security measures. (@fredcamaral)
+
+Improvements:
+- Correct the OTEL policy and precedence to ensure accurate documentation. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.2.1...plugin-br-ted-lerian-v1.3.0)
+
+---
+
 ## [1.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.2.1)
 
 Features:

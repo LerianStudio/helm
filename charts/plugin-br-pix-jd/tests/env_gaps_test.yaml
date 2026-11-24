@@ -1,0 +1,154 @@
+suite: telemetry wiring and env pass-through
+templates:
+  - templates/api/deployment.yaml
+  - templates/api/configmap.yaml
+  - templates/api/secrets.yaml
+  - templates/worker/deployment.yaml
+  - templates/worker/configmap.yaml
+  - templates/worker/secrets.yaml
+release:
+  name: pix-jd
+  namespace: pix-jd
+set:
+  api.configmap.REDIS_HOST: "valkey:6379"
+  api.configmap.POSTGRES_HOST: postgresql
+  api.configmap.ENVIRONMENT_NAME: development
+  api.secrets.POSTGRES_PASSWORD: x
+  api.secrets.LICENSE_KEY: x
+  worker.enabled: true
+# A failing gate is attributed to the first template that evaluates it — the
+# deployments include their ConfigMap/Secret for the checksum annotations — so the
+# failedTemplate cases target the deployment helm reports.
+tests:
+  - it: adds no collector env while telemetry is off
+    template: templates/api/deployment.yaml
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HOST_IP, valueFrom: {fieldRef: {fieldPath: status.hostIP}}}
+  - it: wires the api to the node-local collector with telemetry on and no endpoint
+    set: {api.configmap.ENABLE_TELEMETRY: "true"}
+    template: templates/api/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HOST_IP, valueFrom: {fieldRef: {fieldPath: status.hostIP}}}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "http://$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ALLOW_INSECURE_OTEL
+            value: "node-local otel-collector on the pod's own node (status.hostIP:4317): plaintext gRPC that never leaves the node"
+  - it: wires the worker too, from global.observability
+    set: {global.observability.enabled: true}
+    template: templates/worker/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "http://$(HOST_IP):4317"}
+  - it: leaves an explicit endpoint alone
+    set: {api.configmap.ENABLE_TELEMETRY: "true", api.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: "http://collector:4317"}
+    template: templates/api/deployment.yaml
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HOST_IP, valueFrom: {fieldRef: {fieldPath: status.hostIP}}}
+  - it: lets extraEnvVars replace HOST_IP and ALLOW_INSECURE_OTEL
+    set:
+      api.configmap.ENABLE_TELEMETRY: "true"
+      api.extraEnvVars:
+        - {name: HOST_IP, value: "10.0.0.1"}
+        - {name: ALLOW_INSECURE_OTEL, value: mine}
+    template: templates/api/deployment.yaml
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HOST_IP, valueFrom: {fieldRef: {fieldPath: status.hostIP}}}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "http://$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: mine}
+  - it: emits no pass-through key that was not set
+    template: templates/api/configmap.yaml
+    asserts:
+      - notExists: {path: data.POSTGRES_REPLICA_HOST}
+      - notExists: {path: data.SYSTEM_FACTS_ENABLED}
+      - notExists: {path: data.ANTIFRAUD_SECRETS_BACKEND}
+      - notExists: {path: data.REQUEST_TIMEOUT_SEC}
+  - it: passes the replica through, password to the Secret
+    set: {api.configmap.POSTGRES_REPLICA_HOST: replica, api.secrets.POSTGRES_REPLICA_PASSWORD: rp}
+    template: templates/api/secrets.yaml
+    asserts:
+      - equal: {path: data.POSTGRES_REPLICA_PASSWORD, value: cnA=}
+  - it: refuses an unknown antifraud backend
+    set: {api.configmap.ANTIFRAUD_SECRETS_BACKEND: gcp}
+    template: templates/worker/deployment.yaml
+    asserts:
+      - failedTemplate: {errorPattern: "ANTIFRAUD_SECRETS_BACKEND must be aws or vault"}
+  - it: never emits the Pix Automático flags in multi-tenant
+    set:
+      api.configmap.MULTI_TENANT_ENABLED: "true"
+      api.configmap.MULTI_TENANT_URL: http://tm
+      api.configmap.MULTI_TENANT_REDIS_HOST: mr
+      api.configmap.M2M_LEDGER_TARGET_SERVICE: ledger
+      api.configmap.M2M_CRM_TARGET_SERVICE: plugin-crm
+      api.configmap.AWS_REGION: us-east-2
+      api.secrets.MULTI_TENANT_SERVICE_API_KEY: k
+      api.configmap.PIX_AUTOMATICO_BLOQUEAR_ENABLED: "true"
+    template: templates/api/configmap.yaml
+    asserts:
+      - notExists: {path: data.PIX_AUTOMATICO_BLOQUEAR_ENABLED}
+  - it: refuses the claim-received poll without the outbox and streaming
+    set: {api.configmap.JOBS_CLAIM_RECEIVED_POLL_ENABLED: "true"}
+    template: templates/worker/deployment.yaml
+    asserts:
+      - failedTemplate: {errorPattern: "JOBS_CLAIM_RECEIVED_POLL_ENABLED=true requires OUTBOX_ENABLED=true"}
+  - it: System Facts on, single-tenant pair — api carries all, worker only the flag
+    set:
+      api.configmap.SYSTEM_FACTS_ENABLED: "true"
+      api.configmap.SYSTEM_FACTS_URL: https://sf
+      api.configmap.PLUGIN_AUTH_HOST: https://am
+      api.secrets.SYSTEM_FACTS_CLIENT_ID: i
+      api.secrets.SYSTEM_FACTS_CLIENT_SECRET: s
+    asserts:
+      - equal: {path: data.SYSTEM_FACTS_URL, value: https://sf}
+        template: templates/api/configmap.yaml
+      - exists: {path: data.SYSTEM_FACTS_CLIENT_ID}
+        template: templates/api/secrets.yaml
+      - equal: {path: data.SYSTEM_FACTS_ENABLED, value: "true"}
+        template: templates/worker/configmap.yaml
+      - notExists: {path: data.SYSTEM_FACTS_URL}
+        template: templates/worker/configmap.yaml
+      - notExists: {path: data.SYSTEM_FACTS_CLIENT_ID}
+        template: templates/worker/secrets.yaml
+  - it: refuses System Facts without a URL
+    set: {api.configmap.SYSTEM_FACTS_ENABLED: "true", api.secrets.SYSTEM_FACTS_TOKEN: t}
+    template: templates/api/deployment.yaml
+    asserts:
+      - failedTemplate: {errorPattern: "SYSTEM_FACTS_URL is required when SYSTEM_FACTS_ENABLED=true"}
+  - it: refuses a partial System Facts pair
+    set:
+      api.configmap.SYSTEM_FACTS_ENABLED: "true"
+      api.configmap.SYSTEM_FACTS_URL: https://sf
+      api.secrets.SYSTEM_FACTS_CLIENT_ID: i
+    template: templates/api/secrets.yaml
+    asserts:
+      - failedTemplate: {errorPattern: "go together: set both or neither"}
+  - it: refuses the System Facts pair without PLUGIN_AUTH_HOST
+    set:
+      api.configmap.SYSTEM_FACTS_ENABLED: "true"
+      api.configmap.SYSTEM_FACTS_URL: https://sf
+      api.secrets.SYSTEM_FACTS_CLIENT_ID: i
+      api.secrets.SYSTEM_FACTS_CLIENT_SECRET: s
+    template: templates/api/deployment.yaml
+    asserts:
+      - failedTemplate: {errorPattern: "PLUGIN_AUTH_HOST is required when SYSTEM_FACTS_ENABLED=true"}
+  - it: refuses the static System Facts token under production
+    set: {api.configmap.ENVIRONMENT_NAME: production, api.extraSecrets.SYSTEM_FACTS_TOKEN: t}
+    template: templates/worker/deployment.yaml
+    asserts:
+      - failedTemplate: {errorPattern: "SYSTEM_FACTS_TOKEN must not be set under ENVIRONMENT_NAME=production"}

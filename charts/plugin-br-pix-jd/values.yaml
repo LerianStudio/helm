@@ -86,12 +86,13 @@ aws:
     certificateSecretName: ""
     sidecar:
       image:
-        # NOTE: this is the tag every sibling chart (plugin-fees, fetcher, reporter)
-        # uses, kept identical on purpose. Be aware it is BOTH floating and
-        # arch-pinned: `latest-amd64` will not schedule on arm64 nodes, and it can
-        # change under a running deployment. Pin a digest for production.
+        # Pinned to an immutable version-arch-timestamp tag — the image `latest-amd64`
+        # pointed at when pinned (digest
+        # sha256:2ee2113e0f085090bae2a8fb06ab115072b319a924c32604b3b8c4e2164956ca).
+        # Still amd64-only: on arm64 nodes use the multi-arch 1.8.6-2026.11.04.18.00.
+        # Bump deliberately; do not go back to the rolling `latest-amd64`.
         repository: public.ecr.aws/rolesanywhere/credential-helper
-        tag: latest-amd64
+        tag: "1.8.6-amd64-2026.11.04.18.00"
         pullPolicy: IfNotPresent
       # -- Loopback port the IMDS shim listens on.
       port: 9911
@@ -213,6 +214,39 @@ api:
   #   global.datastores    -> POSTGRES_PORT / POSTGRES_USER / POSTGRES_SSLMODE,
   #                           REDIS_HOST
   #
+  # Telemetry: ENABLE_TELEMETRY=true is all a cluster with the node-local Lerian
+  # collector needs. With no OTEL_EXPORTER_OTLP_ENDPOINT anywhere (configmap,
+  # extraConfigmap, global.observability.otlpEndpoint) the chart adds HOST_IP
+  # (status.hostIP), OTEL_EXPORTER_OTLP_ENDPOINT=http://$(HOST_IP):4317 and
+  # ALLOW_INSECURE_OTEL to the api and worker containers. An explicit endpoint
+  # wins and turns that wiring off.
+  #
+  # Pass-through keys — emitted ONLY when set, because the app owns their default:
+  #   POSTGRES_REPLICA_{HOST,PORT,USER,NAME,SSLMODE} (+ secrets.POSTGRES_REPLICA_PASSWORD)
+  #   MULTI_TENANT_{INTEGRATION_CACHE_TTL_SEC,INTEGRATION_MAX_CACHED_TENANTS,
+  #     WORKER_TENANT_POOL_SIZE,WORKER_TENANT_DEADLINE_SEC,WORKER_DEGRADED_THRESHOLD}
+  #     (multi-tenant only)
+  #   ANTIFRAUD_{ALLOWED_PRIVATE_HOSTS,SECRETS_BACKEND,OUT_REVIEW_HOLD_ENABLED}
+  #     (SECRETS_BACKEND: aws | vault, checked at render)
+  #   PIX_AUTOMATICO_{BLOQUEAR,ESTORNO}_ENABLED (single-tenant only; multi-tenant reads
+  #     them from systemplane and the chart never emits them there)
+  #   JOBS_CLAIM_RECEIVED_POLL_ENABLED (worker; needs OUTBOX_ENABLED + STREAMING_ENABLED)
+  #   OUTBOX_PRIORITY_EVENT_TYPES (with OUTBOX_ENABLED), STREAMING_TENANT_KAFKA,
+  #   LICENSE_FILE_PATH (licenseFile.existingSecret is the modeled route and wins),
+  #   REQUEST_TIMEOUT_SEC, TRUSTED_PROXIES (api only),
+  #   SWAGGER_{DESCRIPTION,LEFT_DELIM,RIGHT_DELIM} (api, with SWAGGER_ENABLED=true)
+  #
+  # System Facts producer (off by default; nothing is emitted until a key is set):
+  #   SYSTEM_FACTS_ENABLED, SYSTEM_FACTS_URL (required when enabled),
+  #   SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE, SYSTEM_FACTS_INSECURE_HTTP (refused under
+  #   production), M2M_SYSTEM_FACTS_TARGET_SERVICE (required in multi-tenant), plus
+  #   api.secrets.SYSTEM_FACTS_CLIENT_ID / _CLIENT_SECRET (and the dev-only
+  #   SYSTEM_FACTS_TOKEN). The worker is record-only and gets the flag alone. See README.
+  #
+  # Deliberately NOT modeled: ENV_NAME (the app derives it from ENVIRONMENT_NAME) and
+  # SERVER_TLS_CERT_FILE / SERVER_TLS_KEY_FILE (TLS terminates upstream; no cert is
+  # mounted).
+  #
   # Chart defaults when a key is absent everywhere: LOG_LEVEL=info,
   # SERVER_ADDRESS=:8080, TLS_TERMINATED_UPSTREAM=true, POSTGRES_SSLMODE=disable,
   # POSTGRES_USER/POSTGRES_NAME=plugin-br-pix-jd, MIGRATIONS_PATH=/migrations,
@@ -239,7 +273,10 @@ api:
   #
   # See README.md for the full table.
   configmap: {}
-  # -- Extra environment variables appended to the container (list of name/value)
+  # -- Extra environment variables appended to the container (list of name/value).
+  # With the node-local telemetry wiring on (see configmap above), an entry named
+  # OTEL_EXPORTER_OTLP_ENDPOINT turns it off, and one named HOST_IP or
+  # ALLOW_INSECURE_OTEL replaces the chart's entry of that name.
   extraEnvVars: []
   # -- Escape hatch for non-secret env keys this chart does not model yet. These are
   # merged LAST, so a key here DOES override a modeled key of the same name. Use it

@@ -71,13 +71,41 @@ Set these only when your institution needs them.
 | `api.configmap.IDP_HOST` | only with `IDP_DECLARATION_ENABLED="true"` | Access Manager identity address, `http(s)://` URL without credentials | empty |
 | `api.configmap.IDP_M2M_CLIENT_ID` | only with `IDP_DECLARATION_ENABLED="true"`; may be set in `api.secrets` instead | client ID of the plugin's M2M application in the Access Manager | empty |
 | `api.secrets.IDP_M2M_CLIENT_SECRET` | only with `IDP_DECLARATION_ENABLED="true"` | client secret of that application | empty |
+| `api.configmap.ENABLE_TELEMETRY` | only to export traces and metrics. With `"true"` and no endpoint set anywhere, the chart wires the API and worker pods to the node-local Lerian collector: `HOST_IP`, `OTEL_EXPORTER_OTLP_ENDPOINT=http://$(HOST_IP):4317` and `ALLOW_INSECURE_OTEL` | `"true"` or `"false"` | empty, telemetry off |
+| `api.configmap.POSTGRES_REPLICA_HOST` (`_PORT`, `_USER`, `_NAME`, `_SSLMODE`) and `api.secrets.POSTGRES_REPLICA_PASSWORD` | only with a Postgres read replica | host, port, user, database, SSL mode, password | empty: no replica. An unset field falls back to the primary's |
+| `api.configmap.ANTIFRAUD_SECRETS_BACKEND`, `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS`, `ANTIFRAUD_OUT_REVIEW_HOLD_ENABLED` | only with an antifraud partner | `aws` or `vault` (anything else fails the render); comma-separated hosts; `"true"` or `"false"` | empty: every antifraud flow off |
+| `api.configmap.PIX_AUTOMATICO_BLOQUEAR_ENABLED`, `PIX_AUTOMATICO_ESTORNO_ENABLED` | only in a single-tenant install that offers the Pix Automático debit block or reversal. Multi-tenant reads them from systemplane and the chart does not emit them | `"true"` or `"false"` | empty, read as `false` |
+| `api.configmap.JOBS_CLAIM_RECEIVED_POLL_ENABLED` | only to emit `key.claim-received` from the worker. Needs `OUTBOX_ENABLED` and `STREAMING_ENABLED`; the render fails otherwise | `"true"` or `"false"` | empty, read as `false` |
+| `api.configmap.OUTBOX_PRIORITY_EVENT_TYPES`, `STREAMING_TENANT_KAFKA` | only to tune the outbox (with `OUTBOX_ENABLED`) or to publish per tenant (multi-tenant only) | comma-separated event types; `"true"` or `"false"` | empty |
+| `api.configmap.MULTI_TENANT_INTEGRATION_CACHE_TTL_SEC`, `MULTI_TENANT_INTEGRATION_MAX_CACHED_TENANTS`, `MULTI_TENANT_WORKER_TENANT_POOL_SIZE`, `MULTI_TENANT_WORKER_TENANT_DEADLINE_SEC`, `MULTI_TENANT_WORKER_DEGRADED_THRESHOLD` | only to tune a multi-tenant install | integers | empty: the plugin's defaults (600, 512, 4, 8, 3) |
+| `api.configmap.REQUEST_TIMEOUT_SEC`, `TRUSTED_PROXIES` | only to change the read timeout, or when a proxy sits in front of the API and the caller IP must come from `X-Forwarded-For` | seconds; comma-separated CIDRs | empty: 30 s; no proxy trusted |
+| `api.configmap.SWAGGER_DESCRIPTION`, `SWAGGER_LEFT_DELIM`, `SWAGGER_RIGHT_DELIM` | only with `SWAGGER_ENABLED="true"` | text; template delimiters | empty: the plugin's defaults |
+| `api.configmap.LICENSE_FILE_PATH` | only for a licence file mounted by other means; `api.licenseFile.existingSecret` is the modeled route and wins | file path | empty |
 
+- **Telemetry.** The node-local wiring is skipped when an endpoint is already set (`api.configmap`, `api.extraConfigmap` or `global.observability.otlpEndpoint`) or when `extraEnvVars` names `OTEL_EXPORTER_OTLP_ENDPOINT`; an entry named `HOST_IP` or `ALLOW_INSECURE_OTEL` in `extraEnvVars` replaces the chart's. `ALLOW_INSECURE_OTEL` takes its value from `ALLOW_INSECURE_OTEL` in the component's configmap, then `global.observability.allowInsecureOtel`, then a fixed reason. Without any endpoint the plugin exports nowhere and drops every span and metric without an error. For a collector that is not node-local, set `OTEL_EXPORTER_OTLP_ENDPOINT`; a plaintext endpoint under `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT=production` also needs `ALLOW_INSECURE_OTEL` in `extraEnvVars` or an `https://` endpoint.
 - **The encryption key** protects the delivery secret of each indirect participant. Create it with `openssl rand -hex 32`. The render fails on a value that is not 64 hex characters. See [Hosting indirect participants](https://docs.lerian.studio/en/interfaces/pix-jd/hosting-indirect-participants).
 - **The signing key and the certificate go together: set both or neither.** With only one, the render fails, because the plugin would refuse every payment order. With neither, the plugin sends unsigned orders, which a JD that does not require the signature accepts.
   - Register at JD **only the certificate**. The private key never leaves your environment: it goes only into `api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY`.
   - `api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE` must be **the same certificate** you registered at JD; JD refuses every order signed against a different one. Compare its SHA-1 fingerprint with the one JD shows: `openssl x509 -in payment-signing.crt -outform DER | shasum -a 1 | tr a-f A-F`.
   - Pass each file with `--set-file`, as the install example shows, or as a YAML block scalar (`|`). A set value without a `-----BEGIN` PEM header, or an algorithm outside the three above, fails the render.
   - To create the pair and register the certificate, see [Payment-order signing](https://docs.lerian.studio/en/interfaces/pix-jd/payment-order-signing).
+
+### System Facts producer
+
+The plugin can record a System Facts fact for the Pix it settles. It is **off by default**, and the chart emits nothing for it until you set a key.
+
+| Key | When | Format | Default |
+| :-- | :--- | :----- | :------ |
+| `api.configmap.SYSTEM_FACTS_ENABLED` | to turn the producer on | `"true"` or `"false"` | empty, read as `false` |
+| `api.configmap.SYSTEM_FACTS_URL` | required when enabled | base URL of the System Facts service | empty: the render fails when enabled |
+| `api.secrets.SYSTEM_FACTS_CLIENT_ID` / `SYSTEM_FACTS_CLIENT_SECRET` | when enabled. Both or neither. Exchanged at `PLUGIN_AUTH_HOST`, which must then be set. Single-tenant: the producer's credential. Multi-tenant: required, the service credential that registers the contract at startup | Access Manager client pair | empty |
+| `api.configmap.M2M_SYSTEM_FACTS_TARGET_SERVICE` | multi-tenant, when enabled | the segment in `.../m2m/{target}/credentials`; copy it from the provisioned secret path | empty: the render fails |
+| `api.configmap.SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE` | only once every credential carries a declared source | `"true"` or `"false"` | empty, read as `false` |
+| `api.configmap.SYSTEM_FACTS_INSECURE_HTTP` | only for a plaintext `http://` URL; the render fails with it under `production` | `"true"` or `"false"` | empty |
+| `api.secrets.SYSTEM_FACTS_TOKEN` | dev only, single-tenant, instead of the client pair. The render fails with it under `production`, beside the pair, or with `SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE="true"`; multi-tenant ignores it and the chart does not emit it | static bearer | empty |
+
+- The worker only records facts: it gets `SYSTEM_FACTS_ENABLED` alone, never the URL or the credentials.
+- Each render failure above mirrors a check that stops the plugin from starting.
 
 ### Secrets and `existingSecret`
 

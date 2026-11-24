@@ -185,6 +185,15 @@ tests:
       - failedTemplate:
           errorPattern: "brCcs.secrets.LICENSE_KEY is required in every environment"
 
+  - it: does not take LICENSE_FILE_PATH for the license, the chart mounts no license file
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.secrets.LICENSE_KEY: ""
+      brCcs.extraEnvVars.LICENSE_FILE_PATH: /etc/lerian/license.json
+    asserts:
+      - failedTemplate:
+          errorPattern: "brCcs.secrets.LICENSE_KEY is required in every environment"
+
   - it: requires CCS_CRYPTO_MASTER_KEY
     template: templates/boot-contract.yaml
     set:

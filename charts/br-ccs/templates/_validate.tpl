@@ -161,8 +161,9 @@ secret values are skipped and the app stays the last gate for them.
 
 {{- if not $useExisting -}}
 {{- /* 4. License, in every environment (config_validation.go:130-139). The chart
-       mounts no license file, so LICENSE_KEY is the supported route. */ -}}
-{{- if and (not (include "br-ccs.secretValue" (dict "context" $ctx "key" "LICENSE_KEY"))) (not (include "br-ccs.envValue" (dict "context" $ctx "key" "LICENSE_FILE_PATH"))) -}}
+       mounts no license file, so a LICENSE_FILE_PATH set through extraEnvVars
+       points at nothing: LICENSE_KEY is the only route it can deliver. */ -}}
+{{- if not (include "br-ccs.secretValue" (dict "context" $ctx "key" "LICENSE_KEY")) -}}
 {{- fail "br-ccs: brCcs.secrets.LICENSE_KEY is required in every environment (the app refuses to boot without a license)." -}}
 {{- end -}}
 {{- /* 5. Crypto master key: hex AES-256, 64 chars (factory_crypto.go:70-77).

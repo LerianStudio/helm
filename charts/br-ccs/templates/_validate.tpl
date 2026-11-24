@@ -106,9 +106,11 @@ secret values are skipped and the app stays the last gate for them.
 
 {{- /* 0. Secret keys belong in brCcs.secrets: every brCcs.extraEnvVars entry is
        rendered into the ConfigMap, in plaintext for anyone who reads it. Checked
-       with useExistingSecret too. The list is the Secret keys of
-       templates/secrets.yaml. */ -}}
-{{- $secretKeys := list "LICENSE_KEY" "CCS_CRYPTO_MASTER_KEY" "FETCHER_CRYPTO_KEY" "POSTGRES_PASSWORD" "POSTGRES_REPLICA_PASSWORD" "REDIS_PASSWORD" "STA_EVENT_HMAC_MASTER_KEYS" "SD_TOKEN" "MULTI_TENANT_SERVICE_API_KEY" "OBJECT_STORAGE_STA_SECRET_KEY" "OBJECT_STORAGE_CCS_SECRET_KEY" "OBJECT_STORAGE_FETCHER_SECRET_KEY" "FETCHER_API_KEY" "REPORTER_API_KEY" "STA_API_KEY" "FETCHER_CLIENT_SECRET" "REPORTER_CLIENT_SECRET" "STA_CLIENT_SECRET" "CRM_CLIENT_SECRET" "IDP_M2M_CLIENT_SECRET" -}}
+       with useExistingSecret too. The list is every credential the Secret
+       renders (templates/secrets.yaml and the lerian-common streaming and
+       multi-tenant blocks it includes): passwords, keys, tokens, client
+       secrets. Ids, access-key ids and CA certificates are not credentials. */ -}}
+{{- $secretKeys := list "LICENSE_KEY" "CCS_CRYPTO_MASTER_KEY" "FETCHER_CRYPTO_KEY" "POSTGRES_PASSWORD" "POSTGRES_REPLICA_PASSWORD" "REDIS_PASSWORD" "MULTI_TENANT_REDIS_PASSWORD" "STREAMING_SASL_PASSWORD" "STA_EVENT_HMAC_MASTER_KEYS" "SD_TOKEN" "MULTI_TENANT_SERVICE_API_KEY" "OBJECT_STORAGE_STA_SECRET_KEY" "OBJECT_STORAGE_CCS_SECRET_KEY" "OBJECT_STORAGE_FETCHER_SECRET_KEY" "FETCHER_API_KEY" "REPORTER_API_KEY" "STA_API_KEY" "FETCHER_CLIENT_SECRET" "REPORTER_CLIENT_SECRET" "STA_CLIENT_SECRET" "CRM_CLIENT_SECRET" "IDP_M2M_CLIENT_SECRET" -}}
 {{- range $k := $secretKeys -}}
 {{- if hasKey $extra $k -}}
 {{- fail (printf "br-ccs: %s is a secret: set it in brCcs.secrets, not brCcs.extraEnvVars (extraEnvVars renders into the ConfigMap in plaintext)." $k) -}}

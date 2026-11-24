@@ -314,6 +314,14 @@ tests:
       - failedTemplate:
           errorPattern: "LICENSE_KEY is a secret: set it in brCcs.secrets"
 
+  - it: refuses the streaming SASL password in extraEnvVars
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.extraEnvVars.STREAMING_SASL_PASSWORD: placeholder
+    asserts:
+      - failedTemplate:
+          errorPattern: "STREAMING_SASL_PASSWORD is a secret: set it in brCcs.secrets"
+
   - it: accepts a client id in extraEnvVars
     template: templates/boot-contract.yaml
     set:

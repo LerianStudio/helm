@@ -201,6 +201,14 @@ tests:
       - failedTemplate:
           errorPattern: "must be 64 hex chars"
 
+  - it: accepts an argocd-vault-plugin placeholder for CCS_CRYPTO_MASTER_KEY
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.secrets.CCS_CRYPTO_MASTER_KEY: "<path:secret/data/client/br-ccs#CCS_CRYPTO_MASTER_KEY>"
+    asserts:
+      - hasDocuments:
+          count: 0
+
   - it: skips the secret checks with useExistingSecret
     template: templates/configmap.yaml
     set:

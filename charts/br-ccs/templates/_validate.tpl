@@ -141,12 +141,14 @@ secret values are skipped and the app stays the last gate for them.
 {{- if and (not (include "br-ccs.secretValue" (dict "context" $ctx "key" "LICENSE_KEY"))) (not (include "br-ccs.envValue" (dict "context" $ctx "key" "LICENSE_FILE_PATH"))) -}}
 {{- fail "br-ccs: brCcs.secrets.LICENSE_KEY is required in every environment (the app refuses to boot without a license)." -}}
 {{- end -}}
-{{- /* 5. Crypto master key: hex AES-256, 64 chars (factory_crypto.go:70-77). */ -}}
+{{- /* 5. Crypto master key: hex AES-256, 64 chars (factory_crypto.go:70-77).
+       The shape check skips an argocd-vault-plugin placeholder (<path:...>):
+       the plugin replaces it after the render, and the app sees the key. */ -}}
 {{- $masterKey := include "br-ccs.secretValue" (dict "context" $ctx "key" "CCS_CRYPTO_MASTER_KEY") -}}
 {{- if not $masterKey -}}
 {{- fail "br-ccs: brCcs.secrets.CCS_CRYPTO_MASTER_KEY is required: AES-256 key, 64 hex chars (openssl rand -hex 32)." -}}
 {{- end -}}
-{{- if not (regexMatch "^[0-9a-fA-F]{64}$" $masterKey) -}}
+{{- if and (not (hasPrefix "<path:" $masterKey)) (not (regexMatch "^[0-9a-fA-F]{64}$" $masterKey)) -}}
 {{- fail (printf "br-ccs: brCcs.secrets.CCS_CRYPTO_MASTER_KEY must be 64 hex chars (openssl rand -hex 32); got %d chars or a non-hex value." (len $masterKey)) -}}
 {{- end -}}
 {{- end -}}

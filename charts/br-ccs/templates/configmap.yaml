@@ -149,13 +149,13 @@ data:
   # =====================================================================
   # CIRCUIT BREAKER (passthrough — prerequisite for object storage adapters)
   # =====================================================================
-  CIRCUIT_BREAKER_ENABLED: {{ $cm.CIRCUIT_BREAKER_ENABLED | default "true" | quote }}
+  CIRCUIT_BREAKER_ENABLED: {{ include "br-ccs.cmValue" (dict "context" $ "key" "CIRCUIT_BREAKER_ENABLED") | default "true" | quote }}
 
   # =====================================================================
   # OUTBOX (passthrough). Must stay on: the Reporter registers its dispatch
   # handler on the outbox at boot.
   # =====================================================================
-  OUTBOX_ENABLED: {{ $cm.OUTBOX_ENABLED | default "true" | quote }}
+  OUTBOX_ENABLED: {{ include "br-ccs.cmValue" (dict "context" $ "key" "OUTBOX_ENABLED") | default "true" | quote }}
   OUTBOX_TABLE_NAME: {{ $cm.OUTBOX_TABLE_NAME | default "outbox_events" | quote }}
   OUTBOX_DISPATCH_INTERVAL_SEC: {{ $cm.OUTBOX_DISPATCH_INTERVAL_SEC | default "2" | quote }}
   OUTBOX_BATCH_SIZE: {{ $cm.OUTBOX_BATCH_SIZE | default "50" | quote }}
@@ -326,8 +326,9 @@ data:
   # DETAIL RESPONSE TUNING (optional)
   # =====================================================================
   {{- range $k := (list "CCS_DETAIL_MESSAGE_EMIT_ENABLED" "CCS_DETAIL_MESSAGE_VALIDATION_ENABLED" "CCS_BACEN_DESTINATARIO_CNPJ_BASE" "CCS_ACCS005_OVERFLOW_THRESHOLD" "CCS_ACCS005_SECRECY_SITUACAO") }}
-  {{- if index $cm $k }}
-  {{ $k }}: {{ index $cm $k | quote }}
+  {{- $v := include "br-ccs.cmValue" (dict "context" $ "key" $k) }}
+  {{- if $v }}
+  {{ $k }}: {{ $v | quote }}
   {{- end }}
   {{- end }}
 

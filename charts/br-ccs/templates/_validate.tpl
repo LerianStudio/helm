@@ -28,6 +28,15 @@ secret values are skipped and the app stays the last gate for them.
 {{- end -}}
 {{- end -}}
 
+{{/* br-ccs.cmValue — one brCcs.configmap key as the ConfigMap renders it: a
+     present value as a string, a YAML boolean false included; "" when unset. */}}
+{{- define "br-ccs.cmValue" -}}
+{{- $cm := .context.Values.brCcs.configmap | default dict -}}
+{{- if and (hasKey $cm .key) (not (kindIs "invalid" (index $cm .key))) -}}
+{{- toString (index $cm .key) -}}
+{{- end -}}
+{{- end -}}
+
 {{/* br-ccs.secretValue — effective value of one key the app reads from the Secret.
      A non-secret key (a client id) may come from extraEnvVars; a secret key in
      extraEnvVars is refused by check 0. */}}

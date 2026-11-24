@@ -406,6 +406,29 @@ tests:
           count: 0
         template: templates/boot-contract.yaml
 
+  - it: renders emission off written as a YAML boolean, so only ACCS005 is needed
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.CCS_DETAIL_MESSAGE_EMIT_ENABLED: false
+      brCcs.configmap.REPORTER_TEMPLATE_NAME_CCS0002: ""
+      brCcs.configmap.REPORTER_TEMPLATE_NAME_CCS0004: ""
+    asserts:
+      - equal:
+          path: data.CCS_DETAIL_MESSAGE_EMIT_ENABLED
+          value: "false"
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: refuses OUTBOX_ENABLED false written as a YAML boolean, as rendered
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.OUTBOX_ENABLED: false
+    asserts:
+      - failedTemplate:
+          errorPattern: "OUTBOX_ENABLED must be \"true\""
+        template: templates/boot-contract.yaml
+
   # --- 8. Redis TLS ---------------------------------------------------------
   - it: refuses plaintext external Redis without the bypass
     template: templates/boot-contract.yaml

@@ -397,21 +397,11 @@ Called with a component's values (.Values.ledger / .Values.tracer).
 {{- end }}
 {{- end }}
 
-{{/*
-midaz-ledger.validateLicense — render-time mirror of the ledger license gate.
-From 4.5.0-beta.59 on, the ledger image exits at start without LICENSE_KEY or
-LICENSE_FILE_PATH, and so does the partition runner that shares the image. On
-plain Helm the reconcile hook runs after the migration Job, so a missing license
-would stop the upgrade with the schema already migrated: fail the render instead.
-The check is skipped whenever the chart cannot see the license (useExistingSecret)
-or either variable is named in extraEnvVars, and for a tag that is not SemVer;
-those are left to the ledger's own boot check.
-*/}}
+{{/* The ledger and its partition hook exit without a license, and the hook runs after the migrations:
+     fail the render first. Skipped when the chart cannot see the license or the tag is not SemVer. */}}
 {{- define "midaz-ledger.validateLicense" -}}
 {{- $ledger := .Values.ledger -}}
 {{- $tag := $ledger.image.tag | default .Chart.AppVersion | toString | trimPrefix "v" -}}
-{{- /* Same anchored SemVer 2.0.0 guard as midaz.tagIsV4: semverCompare aborts the
-       render on a malformed version instead of resolving to "not checked". */ -}}
 {{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag -}}
 {{- if semverCompare ">=4.5.0-beta.59" $tag -}}
 {{- $found := false -}}

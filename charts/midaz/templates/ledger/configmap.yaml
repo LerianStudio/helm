@@ -7,8 +7,6 @@
    the ledger init container. See midaz.validateManagedMongo in _helpers.tpl and
    docs/UPGRADE-9.1.md section 6. No-op on the packaged path (mongodb.enabled=true). */ -}}
 {{- include "midaz.validateManagedMongo" (dict "context" $) }}
-{{- /* Fail-fast: a ledger image that requires a license, with none the chart can
-   see. See midaz-ledger.validateLicense in _helpers.tpl. */ -}}
 {{- include "midaz-ledger.validateLicense" . }}
 {{- /* Single-sourced env name so ENV_NAME/OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT
    can't drift from one another; resolved once via global.env, consumed below

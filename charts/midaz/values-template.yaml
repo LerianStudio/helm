@@ -179,8 +179,6 @@ ledger:
     REDIS_PASSWORD: ""
     RABBITMQ_DEFAULT_PASS: ""
     RABBITMQ_CONSUMER_PASS: ""
-    # -- Product license key. Required for ledger images from 4.5.0-beta.59 on, unless
-    # ledger.licenseFile.existingSecret or ledger.useExistingSecret provides the license.
     LICENSE_KEY: ""
     # -- RI permission declaration M2M client secret. Operator-provided; only set
     # when IDP_DECLARATION_ENABLED=true. Rendered into the ledger Secret, never the ConfigMap.

@@ -765,13 +765,13 @@
           "properties": {
             "limits": {
               "type": "object",
-              "description": "CPU and memory limits for pods",
+              "description": "CPU and memory limits for pods. The worker holds the rows of a report in memory while it renders, so the memory limit bounds the size of the report it can generate.",
               "properties": {
                 "cpu": {
-                  "default": "200m"
+                  "default": "1000m"
                 },
                 "memory": {
-                  "default": "256Mi"
+                  "default": "4Gi"
                 }
               },
               "additionalProperties": true

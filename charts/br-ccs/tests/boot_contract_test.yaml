@@ -97,6 +97,30 @@ tests:
       - failedTemplate:
           errorPattern: "CCS_DETAIL_MESSAGE_EMIT_ENABLED must be exactly"
 
+  - it: refuses an ENV_NAME the app logger does not accept
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.ENV_NAME: homolog
+    asserts:
+      - failedTemplate:
+          errorPattern: "ENV_NAME=\"homolog\" is not accepted by the app logger"
+
+  - it: refuses a mis-cased production ENV_NAME
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.ENV_NAME: Production
+    asserts:
+      - failedTemplate:
+          errorPattern: "ENV_NAME=\"Production\" is not accepted"
+
+  - it: accepts staging
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.ENV_NAME: staging
+    asserts:
+      - hasDocuments:
+          count: 0
+
   - it: refuses PLUGIN_AUTH_ENABLED=false in production
     template: templates/boot-contract.yaml
     set:

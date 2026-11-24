@@ -80,8 +80,16 @@ secret values are skipped and the app stays the last gate for them.
 {{- $ctx := . -}}
 {{- $useExisting := .Values.brCcs.useExistingSecret -}}
 {{- $devNames := list "development" "develop" "dev" "local" "test" -}}
-{{- $envName := lower (include "br-ccs.envValue" (dict "context" $ctx "key" "ENV_NAME" "default" "production")) -}}
+{{- $envRaw := include "br-ccs.envValue" (dict "context" $ctx "key" "ENV_NAME" "default" "production") -}}
+{{- $envName := lower $envRaw -}}
 {{- $isDev := has $envName $devNames -}}
+{{- /* ENV_NAME feeds the logger (shared/envclass LoggerEnvironment): a
+       development-class name in any case, otherwise one of the zap profiles
+       lib-observability accepts, byte-exact. "homolog" or "Production" render
+       fine and the boot fails with "invalid environment". */ -}}
+{{- if not (or $isDev (has $envRaw (list "production" "staging" "uat" "local"))) -}}
+{{- fail (printf "br-ccs: ENV_NAME=%q is not accepted by the app logger. Use production, staging or uat (lowercase), or a development name (development, develop, dev, local, test)." $envRaw) -}}
+{{- end -}}
 {{- $isProd := eq $envName "production" -}}
 {{- $isSaaS := eq (lower (include "br-ccs.envValue" (dict "context" $ctx "key" "DEPLOYMENT_MODE" "default" "byoc"))) "saas" -}}
 {{- $extra := .Values.brCcs.extraEnvVars | default dict -}}

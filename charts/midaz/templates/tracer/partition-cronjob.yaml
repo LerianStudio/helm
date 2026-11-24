@@ -1,0 +1,2 @@
+{{- if and .Values.tracer.enabled (include "midaz.partitionEnabled" (dict "context" . "product" "tracer")) }}
+{{ include "midaz.partitionCronJob" (dict "context" . "product" "tracer") | trim }}{{- end -}}

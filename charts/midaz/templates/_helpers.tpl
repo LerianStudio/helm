@@ -16,7 +16,7 @@ Create chart name and version as used by the chart label.
 Common labels without the chart version, safe for pod templates
 */}}
 {{- define "midaz.podLabels" -}}
-{{ include "midaz.selectorLabels" (dict "context" .context "component" .component "name" .name) }}
+{{ include "midaz.selectorLabels" (dict "context" .context "component" .component "name" .name "fit" .fit) }}
 app.kubernetes.io/version: {{ include "ledger.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -29,12 +29,22 @@ helm.sh/chart: {{ include "midaz.chart" .context }}
 {{ include "midaz.podLabels" . }}
 {{- end }}
 
+{{/* The name label is <midaz.name>-<name>. With "fit" a value past 63 characters becomes prefix, hash of the whole value, tail. */}}
+{{- define "midaz.labelName" -}}
+{{- $full := printf "%s-%s" (include "midaz.name" .context) .name -}}
+{{- if and .fit (gt (len $full) 63) -}}
+{{- printf "%s-%s-%s" ($full | trunc 27 | trimAll "-._") (sha256sum $full | trunc 8) ($full | trunc -26 | trimAll "-._") -}}
+{{- else -}}
+{{- $full -}}
+{{- end -}}
+{{- end }}
+
 {{/*
 Selector labels
 */}}
 {{- define "midaz.selectorLabels" -}}
 {{- if .name -}}
-app.kubernetes.io/name: {{ include "midaz.name" .context }}-{{ .name }}
+app.kubernetes.io/name: {{ include "midaz.labelName" . }}
 {{- end }}
 app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- if .component }}
@@ -236,7 +246,7 @@ Return valid Tracer version label
 Tracer Common labels
 */}}
 {{- define "midaz-tracer.podLabels" -}}
-{{ include "midaz-tracer.selectorLabels" (dict "context" .context "name" .name) }}
+{{ include "midaz-tracer.selectorLabels" (dict "context" .context "name" .name "fit" .fit) }}
 app.kubernetes.io/version: {{ include "tracer.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -254,7 +264,7 @@ Tracer Selector labels
 */}}
 {{- define "midaz-tracer.selectorLabels" -}}
 {{- if .name -}}
-app.kubernetes.io/name: {{ include "midaz.name" .context }}-{{ .name }}
+app.kubernetes.io/name: {{ include "midaz.labelName" . }}
 {{- end }}
 app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}
@@ -352,21 +362,6 @@ true
 {{- end -}}
 {{- end -}}
 
-{{/* Explicit settings win; auto enables from 4.5.0-beta.1; every ledger image from that tag on ships the runner. */}}
-{{- define "midaz.ledgerPartitionEnabled" -}}
-{{- $enabled := dig "partition" "enabled" nil (.Values.ledger | default dict) -}}
-{{- if kindIs "invalid" $enabled -}}
-{{- $tag := .Values.ledger.image.tag | default .Chart.AppVersion | toString | trimPrefix "v" -}}
-{{- /* Same anchored SemVer 2.0.0 guard as midaz.tagIsV4: semverCompare aborts the
-       render on a malformed version instead of resolving to "off". */ -}}
-{{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag -}}
-{{- if semverCompare ">=4.5.0-beta.1" $tag -}}true{{- end -}}
-{{- end -}}
-{{- else if eq (toString $enabled) "true" -}}
-true
-{{- end -}}
-{{- end -}}
-
 {{/*
 Licence file (optional). licenseFile.existingSecret is mounted as a directory (never
 subPath, so rotations propagate) at /etc/lerian/license; LICENSE_FILE_PATH points at its key.
@@ -402,120 +397,6 @@ Called with a component's values (.Values.ledger / .Values.tracer).
 {{- end }}
 {{- end }}
 
-{{/* Both partition workloads use ledger connections and migration credentials. */}}
-{{- define "midaz-ledger.partitionPodSpec" -}}
-{{- $ctx := .context -}}
-{{- $values := $ctx.Values -}}
-{{- $partition := $values.ledger.partition | default dict -}}
-{{- $pg := $values.postgresql | default dict -}}
-{{- $pgInternal := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) (include "midaz.operatorSecret" (dict "context" $ctx "subchart" "postgresql")) -}}
-{{- $secretName := ternary $values.ledger.existingSecretName (include "midaz-ledger.fullname" $ctx) $values.ledger.useExistingSecret -}}
-restartPolicy: Never
-automountServiceAccountToken: false
-{{- with $values.ledger.imagePullSecrets }}
-imagePullSecrets:
-  {{- toYaml . | nindent 2 }}
-{{- end }}
-securityContext:
-  {{- toYaml $values.ledger.podSecurityContext | nindent 2 }}
-containers:
-  - name: partition
-    image: "{{ $values.ledger.image.repository }}:{{ $values.ledger.image.tag | default $ctx.Chart.AppVersion }}"
-    imagePullPolicy: {{ $values.ledger.image.pullPolicy }}
-    command: ["/partition"]
-    args: {{ toJson .args }}
-    securityContext:
-      {{- toYaml $values.ledger.securityContext | nindent 6 }}
-    envFrom:
-      - secretRef:
-          name: {{ $secretName }}
-      - configMapRef:
-          name: {{ include "midaz-ledger.fullname" $ctx }}
-    env:
-      {{- with include "midaz.licenseFileEnv" $values.ledger }}
-      {{- . | nindent 6 }}
-      {{- end }}
-      {{- /* The reconcile hook runs before the chart Secret is updated: read the key from its hook Secret. */}}
-      {{- if and .licenseHook $values.ledger.secrets.LICENSE_KEY (not $values.ledger.useExistingSecret) }}
-      - name: LICENSE_KEY
-        valueFrom:
-          secretKeyRef:
-            name: {{ include "midaz-ledger.licenseHookSecretName" $ctx }}
-            key: LICENSE_KEY
-            optional: true
-      {{- end }}
-      {{- /* Inline settings override stale ConfigMaps during pre-upgrade hooks. */}}
-      {{- range $name, $value := include "midaz-ledger.partitionInlineEnv" $ctx | fromYaml }}
-      - name: {{ $name }}
-        value: {{ $value | toString | quote }}
-      {{- end }}
-      {{- /* Single-tenant runners use the same PostgreSQL Secret as migrations. */}}
-      {{- if ne (include "midaz.isTrue" ($values.ledger.configmap.MULTI_TENANT_ENABLED | default "false")) "true" }}
-      {{- if $pgInternal }}
-      {{- include "midaz.infraSecretRef" (dict "context" $ctx "subchart" "postgresql" "key" "password" "envName" "DB_TRANSACTION_PASSWORD") | nindent 6 }}
-      {{- else if or $values.ledger.useExistingSecret $values.ledger.secrets.DB_TRANSACTION_PASSWORD }}
-      - name: DB_TRANSACTION_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: {{ $secretName }}
-            key: DB_TRANSACTION_PASSWORD
-      {{- end }}
-      {{- else }}
-      {{- /* Multi-tenant: the licence store lives in Valkey, as for the ledger Deployment. */}}
-      {{- $vk := $values.valkey | default dict }}
-      {{- $vkAuth := $vk.auth | default dict }}
-      {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
-      {{- include "midaz.infraSecretRef" (dict "context" $ctx "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 6 }}
-      {{- end }}
-      {{- end }}
-    {{- with include "midaz.licenseFileVolumeMount" $values.ledger }}
-    volumeMounts:
-      {{- . | nindent 6 }}
-    {{- end }}
-    resources:
-      {{- toYaml $partition.resources | nindent 6 }}
-{{- with include "midaz.licenseFileVolume" $values.ledger }}
-volumes:
-  {{- . | nindent 2 }}
-{{- end }}
-{{- with $values.ledger.nodeSelector }}
-nodeSelector:
-  {{- toYaml . | nindent 2 }}
-{{- end }}
-{{- with $values.ledger.affinity }}
-affinity:
-  {{- toYaml . | nindent 2 }}
-{{- end }}
-{{- with $values.ledger.tolerations }}
-tolerations:
-  {{- toYaml . | nindent 2 }}
-{{- end }}
-{{- end -}}
-
-{{/* Inline values override stale ConfigMaps during pre-upgrade hooks. */}}
-{{- define "midaz-ledger.partitionInlineEnv" -}}
-{{- $cm := .Values.ledger.configmap | default dict -}}
-{{- $dsl := .Values.ledger.datastores -}}
-{{- $dv := "lerian-common.datastore.value" -}}
-{{- $mtEnabled := eq (include "midaz.isTrue" ($cm.MULTI_TENANT_ENABLED | default "false")) "true" }}
-DB_TRANSACTION_HOST: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "host" "nativeKey" "DB_TRANSACTION_HOST" "default" "midaz-postgresql-primary") | quote }}
-DB_TRANSACTION_PORT: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "port" "nativeKey" "DB_TRANSACTION_PORT" "default" "5432") | quote }}
-DB_TRANSACTION_NAME: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "name" "nativeKey" "DB_TRANSACTION_NAME" "default" "transaction") | quote }}
-DB_TRANSACTION_USER: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "user" "nativeKey" "DB_TRANSACTION_USER" "default" "midaz") | quote }}
-DB_TRANSACTION_SSLMODE: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_TRANSACTION_SSLMODE" "default" "disable") | quote }}
-MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
-{{ include "lerian-common.multiTenant.env" (dict "context" . "configmap" $cm "enabled" $mtEnabled "serviceName" "ledger" "emitRedis" true "requiredUrl" true "requiredRedisHost" true) }}
-{{- end -}}
-
-{{- define "midaz-ledger.licenseHookSecretName" -}}
-{{- printf "%s-license-hook" (include "midaz-ledger.fullname" .) -}}
-{{- end -}}
-
-{{/* Include the image tag in the immutable reconcile Job name. */}}
-{{- define "midaz-ledger.partitionReconcileJobName" -}}
-{{- include "midaz.migrationsJobName" (dict "base" (include "midaz-ledger.fullname" .) "tag" (.Values.ledger.image.tag | default .Chart.AppVersion | toString) "suffix" "partition-reconcile") -}}
-{{- end -}}
-
 {{/*
 midaz-tracer.migrationsFullname — one Job name per rendered Job spec
 (dict "context" . "spec" <rendered spec>). The tracer Job is a regular release
@@ -542,7 +423,11 @@ golang-migrate tracks progress in the schema_migrations table.
 {{- else -}}
 {{- /* base + "-" + suffix + "-" + 8-char hash stays within 62 characters
        (42 for the "migrations" suffix, as before). */ -}}
-{{- printf "%s-%s-%s" (trunc (int (sub 52 (len $suffix))) .base | trimSuffix "-" | trimSuffix ".") $suffix (sha256sum $tag | trunc 8) -}}
+{{- $base := trunc (int (sub 52 (len $suffix))) .base | trimSuffix "-" | trimSuffix "." -}}
+{{- if .hashBase -}}
+{{- $base = printf "%s-%s" (trunc (int (sub 43 (len $suffix))) .base | trimSuffix "-" | trimSuffix ".") (sha256sum .base | trunc 8) -}}
+{{- end -}}
+{{- printf "%s-%s-%s" $base $suffix (sha256sum $tag | trunc 8) -}}
 {{- end -}}
 {{- end -}}
 

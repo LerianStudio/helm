@@ -1,0 +1,404 @@
+suite: tracer partition runner
+templates:
+  - templates/tracer/partition-cronjob.yaml
+  - templates/tracer/partition-reconcile-job.yaml
+  - templates/ledger/partition-cronjob.yaml
+  - templates/ledger/partition-reconcile-job.yaml
+release:
+  name: midaz
+  namespace: midaz
+set:
+  tracer.enabled: true
+  tracer.image.tag: 4.6.0-beta.30
+  ledger.image.tag: 4.5.2
+  ledger.configmap.ENV_NAME: development
+  ledger.secrets.RABBITMQ_DEFAULT_PASS: sample
+  ledger.secrets.RABBITMQ_CONSUMER_PASS: sample
+  ledger.secrets.LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  rabbitmq.authentication.erlangCookie.value: "0123456789abcdef0123456789abcdef"
+tests:
+  - it: renders nothing on the stable tag below the range
+    set:
+      tracer.image.tag: 4.5.1
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/tracer/partition-cronjob.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: renders nothing on the last beta below the range
+    set:
+      tracer.image.tag: 4.6.0-beta.29
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/tracer/partition-cronjob.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: renders both workloads on the first tag of the range
+    asserts:
+      - hasDocuments:
+          count: 1
+        template: templates/tracer/partition-cronjob.yaml
+      - hasDocuments:
+          count: 1
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: renders both workloads on a later stable tag
+    set:
+      tracer.image.tag: 4.6.0
+    asserts:
+      - hasDocuments:
+          count: 1
+        template: templates/tracer/partition-cronjob.yaml
+      - hasDocuments:
+          count: 1
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: renders nothing with the Tracer disabled
+    set:
+      tracer.enabled: false
+      tracer.image.tag: 4.6.0
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/tracer/partition-cronjob.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: renders nothing when disabled explicitly
+    set:
+      tracer.image.tag: 4.6.0
+      tracer.partition.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/tracer/partition-cronjob.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: renders nothing on a non-SemVer tag without an explicit enable
+    set:
+      tracer.image.tag: latest
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/tracer/partition-cronjob.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: renders both workloads on a non-SemVer tag when enabled explicitly
+    set:
+      tracer.image.tag: latest
+      tracer.partition.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+        template: templates/tracer/partition-cronjob.yaml
+      - hasDocuments:
+          count: 1
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: schedules the daily ensure pass from the Tracer image
+    asserts:
+      - equal:
+          path: metadata.name
+          value: midaz-tracer-partition
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: spec.schedule
+          value: "0 6 * * *"
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: spec.concurrencyPolicy
+          value: Forbid
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: spec.jobTemplate.spec.backoffLimit
+          value: 0
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].image
+          value: lerianstudio/midaz-tracer:4.6.0-beta.30
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          value: [/partition]
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].args
+          value: [ensure, --reconcile-indexes]
+        template: templates/tracer/partition-cronjob.yaml
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].envFrom
+          content:
+            secretRef:
+              name: midaz-tracer
+        template: templates/tracer/partition-cronjob.yaml
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].envFrom
+          content:
+            configMapRef:
+              name: midaz-tracer
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: midaz-tracer-partition
+        template: templates/tracer/partition-cronjob.yaml
+      - notExists:
+          path: metadata.labels["app.kubernetes.io/component"]
+        template: templates/tracer/partition-cronjob.yaml
+  - it: runs the reconcile hook after the Tracer is installed or upgraded
+    asserts:
+      - equal:
+          path: metadata.name
+          value: midaz-tracer-partition-reconcile-4.6.0-beta.30
+        template: templates/tracer/partition-reconcile-job.yaml
+      - equal:
+          path: metadata.annotations["helm.sh/hook"]
+          value: post-install,post-upgrade
+        template: templates/tracer/partition-reconcile-job.yaml
+      - equal:
+          path: metadata.annotations["helm.sh/hook-weight"]
+          value: "10"
+        template: templates/tracer/partition-reconcile-job.yaml
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "1"
+        template: templates/tracer/partition-reconcile-job.yaml
+      - equal:
+          path: spec.backoffLimit
+          value: 2
+        template: templates/tracer/partition-reconcile-job.yaml
+      - equal:
+          path: spec.template.spec.containers[0].command
+          value: [/partition]
+        template: templates/tracer/partition-reconcile-job.yaml
+      - equal:
+          path: spec.template.spec.containers[0].args
+          value: [reconcile-indexes, --tolerate-unavailable]
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: carries no ledger inline settings, the Tracer ConfigMap supplies them
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].env[?(@.name == "MULTI_TENANT_ENABLED")]
+        template: templates/tracer/partition-reconcile-job.yaml
+      - notExists:
+          path: spec.template.spec.containers[0].env[?(@.name == "DB_TRANSACTION_HOST")]
+        template: templates/tracer/partition-reconcile-job.yaml
+      - notExists:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env[?(@.name == "MULTI_TENANT_ENABLED")]
+        template: templates/tracer/partition-cronjob.yaml
+      - notExists:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env[?(@.name == "DB_TRANSACTION_HOST")]
+        template: templates/tracer/partition-cronjob.yaml
+  - it: reads the bundled PostgreSQL password
+    asserts:
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: midaz-postgresql
+                key: password
+        template: templates/tracer/partition-cronjob.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: midaz-postgresql
+                key: password
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: reads an external PostgreSQL password through the Tracer Secret
+    set:
+      postgresql.enabled: false
+      postgresql.external: true
+      tracer.configmap.DB_HOST: db.example.internal
+      tracer.secrets.DB_PASSWORD: sample
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].env[?(@.name == "DB_PASSWORD")]
+        template: templates/tracer/partition-reconcile-job.yaml
+      - notExists:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env[?(@.name == "DB_PASSWORD")]
+        template: templates/tracer/partition-cronjob.yaml
+      - contains:
+          path: spec.template.spec.containers[0].envFrom
+          content:
+            secretRef:
+              name: midaz-tracer
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: adds no password variable in multi-tenant mode with an existing Secret
+    set:
+      tracer.useExistingSecret: true
+      tracer.existingSecretName: tracer-credentials
+      tracer.configmap.MULTI_TENANT_ENABLED: "true"
+      tracer.configmap.PLUGIN_AUTH_ENABLED: "true"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].envFrom
+          content:
+            secretRef:
+              name: tracer-credentials
+        template: templates/tracer/partition-reconcile-job.yaml
+      - notExists:
+          path: spec.template.spec.containers[0].env[?(@.name == "DB_PASSWORD")]
+        template: templates/tracer/partition-reconcile-job.yaml
+      - notExists:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env[?(@.name == "DB_PASSWORD")]
+        template: templates/tracer/partition-cronjob.yaml
+  - it: mounts the licence file in both workloads
+    set:
+      tracer.licenseFile.existingSecret: tracer-licence
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_FILE_PATH
+            value: /etc/lerian/license/license
+        template: templates/tracer/partition-reconcile-job.yaml
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.volumes[0].secret.secretName
+          value: tracer-licence
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: spec.template.spec.volumes[0].secret.secretName
+          value: tracer-licence
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: ships no licence hook Secret, the Tracer Secret exists before the hook runs
+    set:
+      tracer.secrets.LICENSE_KEY: placeholder-key
+    asserts:
+      - hasDocuments:
+          count: 1
+        template: templates/tracer/partition-reconcile-job.yaml
+      - isKind:
+          of: Job
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: keeps only the CronJob when reconcile is off
+    set:
+      tracer.partition.reconcile.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+        template: templates/tracer/partition-cronjob.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: applies both CronJobs in the same last wave
+    asserts:
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "2"
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "2"
+        template: templates/ledger/partition-cronjob.yaml
+  - it: follows the Tracer reconcile wave on both CronJobs
+    set:
+      tracer.partition.reconcile.syncWave: "6"
+    asserts:
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "6"
+        template: templates/tracer/partition-reconcile-job.yaml
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "7"
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "7"
+        template: templates/ledger/partition-cronjob.yaml
+  - it: follows the ledger reconcile wave on both CronJobs
+    set:
+      ledger.partition.reconcile.syncWave: "6"
+    asserts:
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "7"
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "7"
+        template: templates/ledger/partition-cronjob.yaml
+  - it: keeps the ledger CronJob wave when the Tracer partition does not render
+    set:
+      tracer.image.tag: 4.5.1
+      tracer.partition.reconcile.syncWave: "6"
+    asserts:
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "2"
+        template: templates/ledger/partition-cronjob.yaml
+  - it: keeps the default ledger reconcile name
+    asserts:
+      - equal:
+          path: metadata.name
+          value: midaz-ledger-partition-reconcile-4.5.2
+        template: templates/ledger/partition-reconcile-job.yaml
+  - it: keeps the four partition names apart under a 41-character nameOverride
+    set:
+      nameOverride: acme-banking-core-platform-production-eu1
+      ledger.image.tag: 4.6.0
+      tracer.image.tag: 4.6.0
+    asserts:
+      - equal:
+          path: metadata.name
+          value: acme-banking-core-platform-production-eu1-partition
+        template: templates/ledger/partition-cronjob.yaml
+      - equal:
+          path: metadata.name
+          value: acme-banking-core-platform-produc-partition-reconcile-aab86e1d
+        template: templates/ledger/partition-reconcile-job.yaml
+      - equal:
+          path: metadata.name
+          value: acme-banking-core-platform-produc-c0a852e7-partition
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: metadata.name
+          value: acme-banking-core-platfo-c0a852e7-partition-reconcile-aab86e1d
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: bounds the name label of both Tracer workloads under a 56-character nameOverride with the ledger off
+    set:
+      nameOverride: acme-banking-core-platform-production-eu1-sao-paulo-blue
+      ledger.enabled: false
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: acme-banking-core-platform-482381fb-aulo-blue-tracer-partition
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: spec.jobTemplate.spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: acme-banking-core-platform-482381fb-aulo-blue-tracer-partition
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: acme-banking-core-platform-91045b9a-tracer-partition-reconcile
+        template: templates/tracer/partition-reconcile-job.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: acme-banking-core-platform-91045b9a-tracer-partition-reconcile
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: keeps the name label of a short name as it was
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: midaz-tracer-partition
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: spec.jobTemplate.spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: midaz-tracer-partition
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: midaz-ledger-partition-reconcile
+        template: templates/ledger/partition-reconcile-job.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: midaz-ledger-partition-reconcile
+        template: templates/ledger/partition-reconcile-job.yaml

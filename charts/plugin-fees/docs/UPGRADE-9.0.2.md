@@ -48,7 +48,7 @@ Before you uninstall this release, follow [Moving to Midaz](https://github.com/L
 
 **No configuration changes required:**
 
-This is a patch release that only updates metadata. All existing configuration values remain unchanged and compatible. If you choose to upgrade to v9.0.2, no changes to your `values.yaml` are required.
+This is a patch release that only updates metadata. All existing configuration values remain unchanged and compatible. If you choose to upgrade to v9.0.2, no changes to your `values.yaml` are required. The pods still restart once: the chart version is part of the `helm.sh/chart` label in the pod template.
 
 ## Preview changes before upgrading
 

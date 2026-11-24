@@ -1,5 +1,31 @@
 # Reporter Changelog
 
+## [5.4.4](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.4.4)
+
+Fixes:
+- Raise default worker limits to 1 CPU and 4Gi. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.4.3...reporter-v5.4.4)
+
+---
+
+## [5.4.3](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.4.3)
+
+Fixes:
+
+- Count an empty Secret value as a Secret route when the collector is off. (@guimoreirar)
+- Allow the modeled `ALLOW_INSECURE_OTEL` to override a Secret reason when the collector is off. (@guimoreirar)
+- Carry the global `allowInsecureOtel` setting into the ConfigMaps. (@guimoreirar)
+- Enable the node-local OTEL hop to boot in production. (@guimoreirar)
+
+Improvements:
+
+- Correct the `5.4.2` upgrade guide for app `4.10.0`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.4.2...reporter-v5.4.3)
+
+---
+
 ## [5.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.4.2)
 
 Features:

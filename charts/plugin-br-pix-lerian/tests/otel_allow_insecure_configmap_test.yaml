@@ -1,0 +1,1127 @@
+suite: ALLOW_INSECURE_OTEL in the ConfigMap (collector off / operator endpoint)
+release: {name: test, namespace: test}
+templates:
+  - templates/spi/configmap.yaml
+  - templates/spi-systemplane/configmap.yaml
+  - templates/dict-hub/configmap.yaml
+  - templates/dict-hub-vsync/configmap.yaml
+  - templates/dict-proxy/configmap.yaml
+  - templates/dict-systemplane/configmap.yaml
+  - templates/cob-hub/configmap.yaml
+  - templates/cob-proxy/configmap.yaml
+  - templates/cob-systemplane/configmap.yaml
+  - templates/pixauto/configmap.yaml
+  - templates/pixauto-systemplane/configmap.yaml
+  - templates/adapter-lerian/configmap.yaml
+  - templates/adapter-lerian-systemplane/configmap.yaml
+  - templates/adapter-provider-mock/configmap.yaml
+set:
+  global.observability.enabled: true
+  spi.enabled: true
+  spiSystemplane.enabled: true
+  dictHub.enabled: true
+  dictHubVsync.enabled: true
+  dictProxy.enabled: true
+  dictSystemplane.enabled: true
+  cobHub.enabled: true
+  cobProxy.enabled: true
+  cobSystemplane.enabled: true
+  pixauto.enabled: true
+  pixautoSystemplane.enabled: true
+  adapterLerian.enabled: true
+  adapterLerianSystemplane.enabled: true
+  adapterProviderMock.enabled: true
+  dictHubVsync.secrets.RABBITMQ_URI: amqp://guest:fixture@rabbitmq.example.invalid:5672/
+tests:
+  - it: 'spi: an operator endpoint carries the global value'
+    template: templates/spi/configmap.yaml
+    set:
+      spi.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'spi: the node-local default carries the global value too'
+    template: templates/spi/configmap.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'spi: a global refusal reaches the ConfigMap as is'
+    template: templates/spi/configmap.yaml
+    set:
+      spi.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: ''
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ''
+  - it: 'spi: the component configmap value wins over the global'
+    template: templates/spi/configmap.yaml
+    set:
+      spi.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      spi.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'component reason'
+  - it: 'spi: an extraEnvVars key keeps the global out of the ConfigMap'
+    template: templates/spi/configmap.yaml
+    set:
+      spi.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      spi.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'spi: nothing set renders no key'
+    template: templates/spi/configmap.yaml
+    set:
+      spi.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'spi: a null global renders no key'
+    template: templates/spi/configmap.yaml
+    set:
+      spi.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'spi: a null component value falls through to the global'
+    template: templates/spi/configmap.yaml
+    set:
+      spi.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      spi.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'spi: a null component value with no global renders no key'
+    template: templates/spi/configmap.yaml
+    set:
+      spi.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      spi.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'spi-systemplane: an operator endpoint carries the global value'
+    template: templates/spi-systemplane/configmap.yaml
+    set:
+      spiSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'spi-systemplane: the node-local default carries the global value too'
+    template: templates/spi-systemplane/configmap.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'spi-systemplane: a global refusal reaches the ConfigMap as is'
+    template: templates/spi-systemplane/configmap.yaml
+    set:
+      spiSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: ''
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ''
+  - it: 'spi-systemplane: the component configmap value wins over the global'
+    template: templates/spi-systemplane/configmap.yaml
+    set:
+      spiSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      spiSystemplane.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'component reason'
+  - it: 'spi-systemplane: an extraEnvVars key keeps the global out of the ConfigMap'
+    template: templates/spi-systemplane/configmap.yaml
+    set:
+      spiSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      spiSystemplane.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'spi-systemplane: nothing set renders no key'
+    template: templates/spi-systemplane/configmap.yaml
+    set:
+      spiSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'spi-systemplane: a null global renders no key'
+    template: templates/spi-systemplane/configmap.yaml
+    set:
+      spiSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'spi-systemplane: a null component value falls through to the global'
+    template: templates/spi-systemplane/configmap.yaml
+    set:
+      spiSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      spiSystemplane.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'spi-systemplane: a null component value with no global renders no key'
+    template: templates/spi-systemplane/configmap.yaml
+    set:
+      spiSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      spiSystemplane.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'dict-hub: an operator endpoint carries the global value'
+    template: templates/dict-hub/configmap.yaml
+    set:
+      dictHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'dict-hub: the node-local default carries the global value too'
+    template: templates/dict-hub/configmap.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'dict-hub: a global refusal reaches the ConfigMap as is'
+    template: templates/dict-hub/configmap.yaml
+    set:
+      dictHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: ''
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ''
+  - it: 'dict-hub: the component configmap value wins over the global'
+    template: templates/dict-hub/configmap.yaml
+    set:
+      dictHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictHub.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'component reason'
+  - it: 'dict-hub: an extraEnvVars key keeps the global out of the ConfigMap'
+    template: templates/dict-hub/configmap.yaml
+    set:
+      dictHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictHub.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'dict-hub: nothing set renders no key'
+    template: templates/dict-hub/configmap.yaml
+    set:
+      dictHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'dict-hub: a null global renders no key'
+    template: templates/dict-hub/configmap.yaml
+    set:
+      dictHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'dict-hub: a null component value falls through to the global'
+    template: templates/dict-hub/configmap.yaml
+    set:
+      dictHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictHub.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'dict-hub: a null component value with no global renders no key'
+    template: templates/dict-hub/configmap.yaml
+    set:
+      dictHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      dictHub.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'dict-hub-vsync: an operator endpoint carries the global value'
+    template: templates/dict-hub-vsync/configmap.yaml
+    set:
+      dictHubVsync.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'dict-hub-vsync: the node-local default carries the global value too'
+    template: templates/dict-hub-vsync/configmap.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'dict-hub-vsync: a global refusal reaches the ConfigMap as is'
+    template: templates/dict-hub-vsync/configmap.yaml
+    set:
+      dictHubVsync.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: ''
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ''
+  - it: 'dict-hub-vsync: the component configmap value wins over the global'
+    template: templates/dict-hub-vsync/configmap.yaml
+    set:
+      dictHubVsync.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictHubVsync.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'component reason'
+  - it: 'dict-hub-vsync: an extraEnvVars key keeps the global out of the ConfigMap'
+    template: templates/dict-hub-vsync/configmap.yaml
+    set:
+      dictHubVsync.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictHubVsync.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'dict-hub-vsync: nothing set renders no key'
+    template: templates/dict-hub-vsync/configmap.yaml
+    set:
+      dictHubVsync.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'dict-hub-vsync: a null global renders no key'
+    template: templates/dict-hub-vsync/configmap.yaml
+    set:
+      dictHubVsync.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'dict-hub-vsync: a null component value falls through to the global'
+    template: templates/dict-hub-vsync/configmap.yaml
+    set:
+      dictHubVsync.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictHubVsync.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'dict-hub-vsync: a null component value with no global renders no key'
+    template: templates/dict-hub-vsync/configmap.yaml
+    set:
+      dictHubVsync.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      dictHubVsync.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'dict-proxy: an operator endpoint carries the global value'
+    template: templates/dict-proxy/configmap.yaml
+    set:
+      dictProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'dict-proxy: the node-local default carries the global value too'
+    template: templates/dict-proxy/configmap.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'dict-proxy: a global refusal reaches the ConfigMap as is'
+    template: templates/dict-proxy/configmap.yaml
+    set:
+      dictProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: ''
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ''
+  - it: 'dict-proxy: the component configmap value wins over the global'
+    template: templates/dict-proxy/configmap.yaml
+    set:
+      dictProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictProxy.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'component reason'
+  - it: 'dict-proxy: an extraEnvVars key keeps the global out of the ConfigMap'
+    template: templates/dict-proxy/configmap.yaml
+    set:
+      dictProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictProxy.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'dict-proxy: nothing set renders no key'
+    template: templates/dict-proxy/configmap.yaml
+    set:
+      dictProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'dict-proxy: a null global renders no key'
+    template: templates/dict-proxy/configmap.yaml
+    set:
+      dictProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'dict-proxy: a null component value falls through to the global'
+    template: templates/dict-proxy/configmap.yaml
+    set:
+      dictProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictProxy.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'dict-proxy: a null component value with no global renders no key'
+    template: templates/dict-proxy/configmap.yaml
+    set:
+      dictProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      dictProxy.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'dict-systemplane: an operator endpoint carries the global value'
+    template: templates/dict-systemplane/configmap.yaml
+    set:
+      dictSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'dict-systemplane: the node-local default carries the global value too'
+    template: templates/dict-systemplane/configmap.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'dict-systemplane: a global refusal reaches the ConfigMap as is'
+    template: templates/dict-systemplane/configmap.yaml
+    set:
+      dictSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: ''
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ''
+  - it: 'dict-systemplane: the component configmap value wins over the global'
+    template: templates/dict-systemplane/configmap.yaml
+    set:
+      dictSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictSystemplane.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'component reason'
+  - it: 'dict-systemplane: an extraEnvVars key keeps the global out of the ConfigMap'
+    template: templates/dict-systemplane/configmap.yaml
+    set:
+      dictSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictSystemplane.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'dict-systemplane: nothing set renders no key'
+    template: templates/dict-systemplane/configmap.yaml
+    set:
+      dictSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'dict-systemplane: a null global renders no key'
+    template: templates/dict-systemplane/configmap.yaml
+    set:
+      dictSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'dict-systemplane: a null component value falls through to the global'
+    template: templates/dict-systemplane/configmap.yaml
+    set:
+      dictSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      dictSystemplane.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'dict-systemplane: a null component value with no global renders no key'
+    template: templates/dict-systemplane/configmap.yaml
+    set:
+      dictSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      dictSystemplane.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'cob-hub: an operator endpoint carries the global value'
+    template: templates/cob-hub/configmap.yaml
+    set:
+      cobHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'cob-hub: the node-local default carries the global value too'
+    template: templates/cob-hub/configmap.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'cob-hub: a global refusal reaches the ConfigMap as is'
+    template: templates/cob-hub/configmap.yaml
+    set:
+      cobHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: ''
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ''
+  - it: 'cob-hub: the component configmap value wins over the global'
+    template: templates/cob-hub/configmap.yaml
+    set:
+      cobHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      cobHub.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'component reason'
+  - it: 'cob-hub: an extraEnvVars key keeps the global out of the ConfigMap'
+    template: templates/cob-hub/configmap.yaml
+    set:
+      cobHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      cobHub.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'cob-hub: nothing set renders no key'
+    template: templates/cob-hub/configmap.yaml
+    set:
+      cobHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'cob-hub: a null global renders no key'
+    template: templates/cob-hub/configmap.yaml
+    set:
+      cobHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'cob-hub: a null component value falls through to the global'
+    template: templates/cob-hub/configmap.yaml
+    set:
+      cobHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      cobHub.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'cob-hub: a null component value with no global renders no key'
+    template: templates/cob-hub/configmap.yaml
+    set:
+      cobHub.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      cobHub.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'cob-proxy: an operator endpoint carries the global value'
+    template: templates/cob-proxy/configmap.yaml
+    set:
+      cobProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'cob-proxy: the node-local default carries the global value too'
+    template: templates/cob-proxy/configmap.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'cob-proxy: a global refusal reaches the ConfigMap as is'
+    template: templates/cob-proxy/configmap.yaml
+    set:
+      cobProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: ''
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ''
+  - it: 'cob-proxy: the component configmap value wins over the global'
+    template: templates/cob-proxy/configmap.yaml
+    set:
+      cobProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      cobProxy.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'component reason'
+  - it: 'cob-proxy: an extraEnvVars key keeps the global out of the ConfigMap'
+    template: templates/cob-proxy/configmap.yaml
+    set:
+      cobProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      cobProxy.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'cob-proxy: nothing set renders no key'
+    template: templates/cob-proxy/configmap.yaml
+    set:
+      cobProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'cob-proxy: a null global renders no key'
+    template: templates/cob-proxy/configmap.yaml
+    set:
+      cobProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'cob-proxy: a null component value falls through to the global'
+    template: templates/cob-proxy/configmap.yaml
+    set:
+      cobProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      cobProxy.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'cob-proxy: a null component value with no global renders no key'
+    template: templates/cob-proxy/configmap.yaml
+    set:
+      cobProxy.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      cobProxy.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'cob-systemplane: an operator endpoint carries the global value'
+    template: templates/cob-systemplane/configmap.yaml
+    set:
+      cobSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'cob-systemplane: the node-local default carries the global value too'
+    template: templates/cob-systemplane/configmap.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'cob-systemplane: a global refusal reaches the ConfigMap as is'
+    template: templates/cob-systemplane/configmap.yaml
+    set:
+      cobSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: ''
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ''
+  - it: 'cob-systemplane: the component configmap value wins over the global'
+    template: templates/cob-systemplane/configmap.yaml
+    set:
+      cobSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      cobSystemplane.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'component reason'
+  - it: 'cob-systemplane: an extraEnvVars key keeps the global out of the ConfigMap'
+    template: templates/cob-systemplane/configmap.yaml
+    set:
+      cobSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      cobSystemplane.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'cob-systemplane: nothing set renders no key'
+    template: templates/cob-systemplane/configmap.yaml
+    set:
+      cobSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'cob-systemplane: a null global renders no key'
+    template: templates/cob-systemplane/configmap.yaml
+    set:
+      cobSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'cob-systemplane: a null component value falls through to the global'
+    template: templates/cob-systemplane/configmap.yaml
+    set:
+      cobSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      cobSystemplane.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'cob-systemplane: a null component value with no global renders no key'
+    template: templates/cob-systemplane/configmap.yaml
+    set:
+      cobSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      cobSystemplane.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'pixauto: an operator endpoint carries the global value'
+    template: templates/pixauto/configmap.yaml
+    set:
+      pixauto.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'pixauto: the node-local default carries the global value too'
+    template: templates/pixauto/configmap.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'pixauto: a global refusal reaches the ConfigMap as is'
+    template: templates/pixauto/configmap.yaml
+    set:
+      pixauto.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: ''
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ''
+  - it: 'pixauto: the component configmap value wins over the global'
+    template: templates/pixauto/configmap.yaml
+    set:
+      pixauto.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      pixauto.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'component reason'
+  - it: 'pixauto: an extraEnvVars key keeps the global out of the ConfigMap'
+    template: templates/pixauto/configmap.yaml
+    set:
+      pixauto.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      pixauto.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'pixauto: nothing set renders no key'
+    template: templates/pixauto/configmap.yaml
+    set:
+      pixauto.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'pixauto: a null global renders no key'
+    template: templates/pixauto/configmap.yaml
+    set:
+      pixauto.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'pixauto: a null component value falls through to the global'
+    template: templates/pixauto/configmap.yaml
+    set:
+      pixauto.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      pixauto.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'pixauto: a null component value with no global renders no key'
+    template: templates/pixauto/configmap.yaml
+    set:
+      pixauto.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      pixauto.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'pixauto-systemplane: an operator endpoint carries the global value'
+    template: templates/pixauto-systemplane/configmap.yaml
+    set:
+      pixautoSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'pixauto-systemplane: the node-local default carries the global value too'
+    template: templates/pixauto-systemplane/configmap.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'pixauto-systemplane: a global refusal reaches the ConfigMap as is'
+    template: templates/pixauto-systemplane/configmap.yaml
+    set:
+      pixautoSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: ''
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ''
+  - it: 'pixauto-systemplane: the component configmap value wins over the global'
+    template: templates/pixauto-systemplane/configmap.yaml
+    set:
+      pixautoSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      pixautoSystemplane.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'component reason'
+  - it: 'pixauto-systemplane: an extraEnvVars key keeps the global out of the ConfigMap'
+    template: templates/pixauto-systemplane/configmap.yaml
+    set:
+      pixautoSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      pixautoSystemplane.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'pixauto-systemplane: nothing set renders no key'
+    template: templates/pixauto-systemplane/configmap.yaml
+    set:
+      pixautoSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'pixauto-systemplane: a null global renders no key'
+    template: templates/pixauto-systemplane/configmap.yaml
+    set:
+      pixautoSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'pixauto-systemplane: a null component value falls through to the global'
+    template: templates/pixauto-systemplane/configmap.yaml
+    set:
+      pixautoSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      pixautoSystemplane.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'pixauto-systemplane: a null component value with no global renders no key'
+    template: templates/pixauto-systemplane/configmap.yaml
+    set:
+      pixautoSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      pixautoSystemplane.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'adapter-lerian: an operator endpoint carries the global value'
+    template: templates/adapter-lerian/configmap.yaml
+    set:
+      adapterLerian.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'adapter-lerian: the node-local default carries the global value too'
+    template: templates/adapter-lerian/configmap.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'adapter-lerian: a global refusal reaches the ConfigMap as is'
+    template: templates/adapter-lerian/configmap.yaml
+    set:
+      adapterLerian.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: ''
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ''
+  - it: 'adapter-lerian: the component configmap value wins over the global'
+    template: templates/adapter-lerian/configmap.yaml
+    set:
+      adapterLerian.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      adapterLerian.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'component reason'
+  - it: 'adapter-lerian: an extraEnvVars key keeps the global out of the ConfigMap'
+    template: templates/adapter-lerian/configmap.yaml
+    set:
+      adapterLerian.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      adapterLerian.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'adapter-lerian: nothing set renders no key'
+    template: templates/adapter-lerian/configmap.yaml
+    set:
+      adapterLerian.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'adapter-lerian: a null global renders no key'
+    template: templates/adapter-lerian/configmap.yaml
+    set:
+      adapterLerian.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'adapter-lerian: a null component value falls through to the global'
+    template: templates/adapter-lerian/configmap.yaml
+    set:
+      adapterLerian.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      adapterLerian.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'adapter-lerian: a null component value with no global renders no key'
+    template: templates/adapter-lerian/configmap.yaml
+    set:
+      adapterLerian.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      adapterLerian.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'adapter-lerian-systemplane: an operator endpoint carries the global value'
+    template: templates/adapter-lerian-systemplane/configmap.yaml
+    set:
+      adapterLerianSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'adapter-lerian-systemplane: the node-local default carries the global value too'
+    template: templates/adapter-lerian-systemplane/configmap.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'adapter-lerian-systemplane: a global refusal reaches the ConfigMap as is'
+    template: templates/adapter-lerian-systemplane/configmap.yaml
+    set:
+      adapterLerianSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: ''
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ''
+  - it: 'adapter-lerian-systemplane: the component configmap value wins over the global'
+    template: templates/adapter-lerian-systemplane/configmap.yaml
+    set:
+      adapterLerianSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      adapterLerianSystemplane.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'component reason'
+  - it: 'adapter-lerian-systemplane: an extraEnvVars key keeps the global out of the ConfigMap'
+    template: templates/adapter-lerian-systemplane/configmap.yaml
+    set:
+      adapterLerianSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      adapterLerianSystemplane.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'adapter-lerian-systemplane: nothing set renders no key'
+    template: templates/adapter-lerian-systemplane/configmap.yaml
+    set:
+      adapterLerianSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'adapter-lerian-systemplane: a null global renders no key'
+    template: templates/adapter-lerian-systemplane/configmap.yaml
+    set:
+      adapterLerianSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'adapter-lerian-systemplane: a null component value falls through to the global'
+    template: templates/adapter-lerian-systemplane/configmap.yaml
+    set:
+      adapterLerianSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      adapterLerianSystemplane.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'adapter-lerian-systemplane: a null component value with no global renders no key'
+    template: templates/adapter-lerian-systemplane/configmap.yaml
+    set:
+      adapterLerianSystemplane.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      adapterLerianSystemplane.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'adapter-provider-mock: an operator endpoint carries the global value'
+    template: templates/adapter-provider-mock/configmap.yaml
+    set:
+      adapterProviderMock.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'adapter-provider-mock: the node-local default carries the global value too'
+    template: templates/adapter-provider-mock/configmap.yaml
+    set:
+      global.observability.allowInsecureOtel: 'env-wide reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'adapter-provider-mock: a global refusal reaches the ConfigMap as is'
+    template: templates/adapter-provider-mock/configmap.yaml
+    set:
+      adapterProviderMock.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: ''
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ''
+  - it: 'adapter-provider-mock: the component configmap value wins over the global'
+    template: templates/adapter-provider-mock/configmap.yaml
+    set:
+      adapterProviderMock.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      adapterProviderMock.configmap.ALLOW_INSECURE_OTEL: 'component reason'
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'component reason'
+  - it: 'adapter-provider-mock: an extraEnvVars key keeps the global out of the ConfigMap'
+    template: templates/adapter-provider-mock/configmap.yaml
+    set:
+      adapterProviderMock.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      adapterProviderMock.extraEnvVars.ALLOW_INSECURE_OTEL: 'operator reason'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'adapter-provider-mock: nothing set renders no key'
+    template: templates/adapter-provider-mock/configmap.yaml
+    set:
+      adapterProviderMock.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'adapter-provider-mock: a null global renders no key'
+    template: templates/adapter-provider-mock/configmap.yaml
+    set:
+      adapterProviderMock.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+  - it: 'adapter-provider-mock: a null component value falls through to the global'
+    template: templates/adapter-provider-mock/configmap.yaml
+    set:
+      adapterProviderMock.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      global.observability.allowInsecureOtel: 'env-wide reason'
+      adapterProviderMock.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: 'env-wide reason'
+  - it: 'adapter-provider-mock: a null component value with no global renders no key'
+    template: templates/adapter-provider-mock/configmap.yaml
+    set:
+      adapterProviderMock.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.example.invalid:4317'
+      adapterProviderMock.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL

@@ -1,5 +1,21 @@
 # Plugin-br-pix-jd Changelog
 
+## [0.8.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.8.1)
+
+Features:
+
+- Update `plugin-br-pix-jd` to `1.7.0`. (@lerian-studio)
+
+Improvements:
+
+- Add Helm upgrade guide for `v0.8.0`. (@dy-shimizu)
+- Complete Courier prerequisites in the `0.8` upgrade guide. (@gandalf-at-lerian)
+- Fix `v0.7.0` upgrade guide license file claims. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.8.0...plugin-br-pix-jd-v0.8.1)
+
+---
+
 ## [0.8.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.8.0)
 
 Features:

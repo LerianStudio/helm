@@ -64,7 +64,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `5.4.2` | 4.10.0 | 4.10.0 |
+| `5.4.4` | 4.10.0 | 4.10.0 |
 -----------------
 
 ### Plugin BR Bank Transfer 
@@ -95,7 +95,7 @@ component that changed, so their tags may legitimately differ.
 
 | Chart Version | API Version | Worker Version |
 | :---: | :---: | :---: |
-| `0.8.0` | 1.6.1 | 1.6.1 |
+| `0.8.1` | 1.7.0 | 1.7.0 |
 -----------------
 
 ### BR JD Courier
@@ -121,7 +121,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.2.1` | 1.6.0 |
+| `2.2.2` | 1.6.0 |
 -----------------
 
 ### Plugin BR Pix Indirect BTG
@@ -134,7 +134,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `5.5.0` | 1.15.0 | 1.15.0 | 1.15.0 | 1.15.0 | 1.15.0 |
+| `5.5.2` | 1.15.0 | 1.15.0 | 1.15.0 | 1.15.0 | 1.15.0 |
 
 -----------------
 
@@ -146,7 +146,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.7.1` | 1.5.1 |
+| `2.7.2` | 1.6.0 |
 -----------------
 
 ### Fetcher
@@ -157,7 +157,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `4.2.0` | 4.1.0 | 4.1.0 |
+| `4.2.1` | 4.1.0 | 4.1.0 |
 -----------------
 
 ### Tracer
@@ -248,7 +248,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version | Migrations Version |
 | :---: | :---: | :---: |
-| `1.5.1` | 1.1.0 | 1.1.0 |
+| `1.6.0` | 1.1.0 | 1.1.0 |
 | `1.1.0` | `1.0.0-beta.109` | `1.0.0-beta.109` |
 -----------------
 

@@ -1,5 +1,20 @@
 # Br-sisbajud Changelog
 
+## [1.6.0](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.6.0)
+
+Features:
+- Serve the probes on the health port behind a switch, allowing for more flexible configuration. (@fredcamaral)
+
+Improvements:
+- Document when the main port serves the `/readyz` endpoint to provide better clarity on service readiness. (@fredcamaral)
+
+Fixes:
+- Remove the redundant assertion that the environment variable at index 0 repeats, streamlining the test process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.5.1...br-sisbajud-v1.6.0)
+
+---
+
 ## [1.5.1](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.5.1)
 
 Features:

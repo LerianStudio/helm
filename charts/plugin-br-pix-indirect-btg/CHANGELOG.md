@@ -1,5 +1,39 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [5.5.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.5.2)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-pix-indirect-btg` `v5.4.0`. (@guimoreirar)
+
+Fixes:
+- Rendered API docs notes without ingress TLS. (@gandalf-at-lerian)
+
+Improvements:
+- Applied review fixes to chart documentation and upgrade guides. (@guimoreirar, @gandalf-at-lerian)
+- Documented the location of the API reference starting from app `1.10.0`. (@guimoreirar, @gandalf-at-lerian)
+- Reset and applied values in documentation. (@victorlazari)
+- Clarified Pix BTG `5.4` license limits. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.5.1...plugin-br-pix-indirect-btg-v5.5.2)
+
+---
+
+## [5.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.5.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-pix-indirect-btg` `v5.5.0`. (@victorlazari)
+
+Fixes:
+- Allow the node-local OTEL hop to boot in production. (@guimoreirar)
+
+Improvements:
+- Remove the inert enabled line from the observability example. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-indirect-btg` `v5.4.1`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.5.0...plugin-br-pix-indirect-btg-v5.5.1)
+
+---
+
 ## [5.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.5.0)
 
 Features:

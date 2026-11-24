@@ -1,0 +1,2148 @@
+suite: node-local OTEL hop in production (ALLOW_INSECURE_OTEL)
+templates:
+- templates/manager/deployment.yaml
+- templates/worker/deployment.yaml
+- templates/manager/configmap.yaml
+- templates/manager/secrets.yaml
+- templates/worker/configmap.yaml
+- templates/worker/secrets.yaml
+- templates/common/configmap.yaml
+- templates/common/secrets.yaml
+release:
+  name: fetcher
+  namespace: fetcher
+tests:
+- it: 'manager: emits the node-local reason with telemetry on and the $(HOST_IP) endpoint'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://$(HOST_IP):4317
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: the legacy common.configmap.ENABLE_TELEMETRY switch emits it too'
+  template: templates/manager/deployment.yaml
+  set:
+    common.configmap.ENABLE_TELEMETRY: 'true'
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: takes global.observability.allowInsecureOtel env-wide'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    global.observability.allowInsecureOtel: env-wide reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: common.configmap wins over the global'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    global.observability.allowInsecureOtel: env-wide reason
+    common.configmap.ALLOW_INSECURE_OTEL: shared reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: the component configmap wins over common.configmap and the global'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    global.observability.allowInsecureOtel: env-wide reason
+    common.configmap.ALLOW_INSECURE_OTEL: shared reason
+    manager.configmap.ALLOW_INSECURE_OTEL: component reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: an explicit refusal stands as the one entry'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    manager.configmap.ALLOW_INSECURE_OTEL: ''
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: a "false" refusal stands as the one entry'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    global.observability.allowInsecureOtel: 'false'
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: a null component value falls through to the global'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    global.observability.allowInsecureOtel: env-wide reason
+    manager.configmap.ALLOW_INSECURE_OTEL: null
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: a null global leaves the node-local reason'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    global.observability.allowInsecureOtel: null
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: a legacy extraEnvVars key stands, with no chart entry'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    manager.extraEnvVars.ALLOW_INSECURE_OTEL: operator reason
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'manager: a non-empty value in the component Secret stands (legacy route), with no env entry'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    manager.secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'manager: a non-empty value in the shared Secret stands (legacy route), with no env entry'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'manager: an empty Secret value is not a route, so the entry stays'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    manager.secrets.ALLOW_INSECURE_OTEL: ''
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: a refusal in the model wins over a Secret reason'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    manager.secrets.ALLOW_INSECURE_OTEL: secret reason
+    manager.configmap.ALLOW_INSECURE_OTEL: ''
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: a global value wins over a Secret reason'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    manager.secrets.ALLOW_INSECURE_OTEL: secret reason
+    global.observability.allowInsecureOtel: env-wide reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: with an existing Secret the chart cannot see the value, so the entry is emitted'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    manager.useExistingSecret: true
+    manager.existingSecretName: operator-secret
+    manager.secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: an explicit endpoint gets neither the node hop nor the variable'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    global.observability.otlpEndpoint: http://otel-collector:4317
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://$(HOST_IP):4317
+- it: 'manager: an https endpoint gets no variable'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    global.observability.otlpEndpoint: https://otel.example.com:4317
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'manager: telemetry off emits nothing'
+  template: templates/manager/deployment.yaml
+  set: {}
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'worker: emits the node-local reason with telemetry on and the $(HOST_IP) endpoint'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://$(HOST_IP):4317
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: the legacy common.configmap.ENABLE_TELEMETRY switch emits it too'
+  template: templates/worker/deployment.yaml
+  set:
+    common.configmap.ENABLE_TELEMETRY: 'true'
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: takes global.observability.allowInsecureOtel env-wide'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    global.observability.allowInsecureOtel: env-wide reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: common.configmap wins over the global'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    global.observability.allowInsecureOtel: env-wide reason
+    common.configmap.ALLOW_INSECURE_OTEL: shared reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: the component configmap wins over common.configmap and the global'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    global.observability.allowInsecureOtel: env-wide reason
+    common.configmap.ALLOW_INSECURE_OTEL: shared reason
+    worker.configmap.ALLOW_INSECURE_OTEL: component reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: an explicit refusal stands as the one entry'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    worker.configmap.ALLOW_INSECURE_OTEL: ''
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: a "false" refusal stands as the one entry'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    global.observability.allowInsecureOtel: 'false'
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: a null component value falls through to the global'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    global.observability.allowInsecureOtel: env-wide reason
+    worker.configmap.ALLOW_INSECURE_OTEL: null
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: a null global leaves the node-local reason'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    global.observability.allowInsecureOtel: null
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: a legacy extraEnvVars key stands, with no chart entry'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    worker.extraEnvVars.ALLOW_INSECURE_OTEL: operator reason
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'worker: a non-empty value in the component Secret stands (legacy route), with no env entry'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    worker.secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'worker: a non-empty value in the shared Secret stands (legacy route), with no env entry'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'worker: an empty Secret value is not a route, so the entry stays'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    worker.secrets.ALLOW_INSECURE_OTEL: ''
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: a refusal in the model wins over a Secret reason'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    worker.secrets.ALLOW_INSECURE_OTEL: secret reason
+    worker.configmap.ALLOW_INSECURE_OTEL: ''
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: a global value wins over a Secret reason'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    worker.secrets.ALLOW_INSECURE_OTEL: secret reason
+    global.observability.allowInsecureOtel: env-wide reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: with an existing Secret the chart cannot see the value, so the entry is emitted'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    worker.useExistingSecret: true
+    worker.existingSecretName: operator-secret
+    worker.secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: an explicit endpoint gets neither the node hop nor the variable'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    global.observability.otlpEndpoint: http://otel-collector:4317
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://$(HOST_IP):4317
+- it: 'worker: an https endpoint gets no variable'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    global.observability.otlpEndpoint: https://otel.example.com:4317
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'worker: telemetry off emits nothing'
+  template: templates/worker/deployment.yaml
+  set: {}
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'manager: ConfigMap: the global reaches the app with the node-local hop off'
+  template: templates/manager/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: env-wide reason
+- it: 'common: ConfigMap: the global is rendered once, not in the common ConfigMap'
+  template: templates/common/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+  asserts:
+  - &id001
+    notExists:
+      path: data.ALLOW_INSECURE_OTEL
+- it: 'manager: ConfigMap: a global refusal renders as the empty value'
+  template: templates/manager/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: ''
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: ''
+- it: 'manager: ConfigMap: the component configmap wins: only its value renders'
+  template: templates/manager/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    manager.configmap.ALLOW_INSECURE_OTEL: component reason
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: component reason
+- it: 'manager: ConfigMap: a common.configmap value is rendered by the common ConfigMap only'
+  template: templates/manager/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    common.configmap.ALLOW_INSECURE_OTEL: shared reason
+  asserts:
+  - *id001
+- it: 'common: ConfigMap: a common.configmap value stays in the common ConfigMap'
+  template: templates/common/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    common.configmap.ALLOW_INSECURE_OTEL: shared reason
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: shared reason
+- it: 'manager: ConfigMap: a legacy extraEnvVars key renders once, from extraEnvVars'
+  template: templates/manager/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    manager.extraEnvVars.ALLOW_INSECURE_OTEL: operator reason
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: operator reason
+- it: 'manager: ConfigMap: a null component value falls through to the global'
+  template: templates/manager/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    manager.configmap.ALLOW_INSECURE_OTEL: null
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: env-wide reason
+- it: 'manager: ConfigMap: a null common value falls through to the global'
+  template: templates/manager/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    common.configmap.ALLOW_INSECURE_OTEL: null
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: env-wide reason
+- it: 'common: ConfigMap: a null common value renders nothing in the common ConfigMap'
+  template: templates/common/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    common.configmap.ALLOW_INSECURE_OTEL: null
+  asserts:
+  - *id001
+- it: 'manager: ConfigMap: a null global renders nothing'
+  template: templates/manager/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: null
+  asserts:
+  - *id001
+- it: 'manager: ConfigMap: nothing set renders no key'
+  template: templates/manager/configmap.yaml
+  set: {}
+  asserts:
+  - *id001
+- it: 'worker: ConfigMap: the global reaches the app with the node-local hop off'
+  template: templates/worker/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: env-wide reason
+- it: 'worker: ConfigMap: a global refusal renders as the empty value'
+  template: templates/worker/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: ''
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: ''
+- it: 'worker: ConfigMap: the component configmap wins: only its value renders'
+  template: templates/worker/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    worker.configmap.ALLOW_INSECURE_OTEL: component reason
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: component reason
+- it: 'worker: ConfigMap: a common.configmap value is rendered by the common ConfigMap only'
+  template: templates/worker/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    common.configmap.ALLOW_INSECURE_OTEL: shared reason
+  asserts:
+  - *id001
+- it: 'worker: ConfigMap: a legacy extraEnvVars key renders once, from extraEnvVars'
+  template: templates/worker/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    worker.extraEnvVars.ALLOW_INSECURE_OTEL: operator reason
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: operator reason
+- it: 'worker: ConfigMap: a null component value falls through to the global'
+  template: templates/worker/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    worker.configmap.ALLOW_INSECURE_OTEL: null
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: env-wide reason
+- it: 'worker: ConfigMap: a null common value falls through to the global'
+  template: templates/worker/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    common.configmap.ALLOW_INSECURE_OTEL: null
+  asserts:
+  - equal:
+      path: data.ALLOW_INSECURE_OTEL
+      value: env-wide reason
+- it: 'worker: ConfigMap: a null global renders nothing'
+  template: templates/worker/configmap.yaml
+  set:
+    global.observability.allowInsecureOtel: null
+  asserts:
+  - *id001
+- it: 'worker: ConfigMap: nothing set renders no key'
+  template: templates/worker/configmap.yaml
+  set: {}
+  asserts:
+  - *id001
+- it: 'manager: a YAML false in the component Secret renders "false" there, so it stands with no entry'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    manager.secrets.ALLOW_INSECURE_OTEL: false
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'manager: a YAML 0 in the component Secret renders "0" there, so it stands with no entry'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    manager.secrets.ALLOW_INSECURE_OTEL: 0
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'manager: a YAML false in the shared Secret renders "false" there, so it stands with no entry'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    secrets.ALLOW_INSECURE_OTEL: false
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'manager: a null component Secret value is unset, so the entry stays'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.enabled: true
+    manager.secrets.ALLOW_INSECURE_OTEL: null
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: hop off: a model refusal beats a component Secret reason through an env entry'
+  template: templates/manager/deployment.yaml
+  set:
+    manager.configmap.ALLOW_INSECURE_OTEL: ''
+    manager.secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: hop off: a common.configmap value beats a shared Secret reason through an env entry'
+  template: templates/manager/deployment.yaml
+  set:
+    common.configmap.ALLOW_INSECURE_OTEL: 'false'
+    secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: hop off: a global value beats a Secret reason through an env entry'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    manager.secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: hop off: the model beats an existing Secret the chart cannot see'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    manager.useExistingSecret: true
+    manager.existingSecretName: operator-secret
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'manager: hop off: a Secret reason with no model gets no entry'
+  template: templates/manager/deployment.yaml
+  set:
+    manager.secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'manager: hop off: a model value with no Secret gets no entry (the ConfigMap carries it)'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'manager: hop off: a legacy extraEnvVars key stands, with no entry'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    manager.extraEnvVars.ALLOW_INSECURE_OTEL: operator reason
+    manager.secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'manager: hop off: the HOST_IP endpoint is not emitted'
+  template: templates/manager/deployment.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    manager.secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://$(HOST_IP):4317
+- it: 'worker: a YAML false in the component Secret renders "false" there, so it stands with no entry'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    worker.secrets.ALLOW_INSECURE_OTEL: false
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'worker: a YAML 0 in the component Secret renders "0" there, so it stands with no entry'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    worker.secrets.ALLOW_INSECURE_OTEL: 0
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'worker: a YAML false in the shared Secret renders "false" there, so it stands with no entry'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    secrets.ALLOW_INSECURE_OTEL: false
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'worker: a null component Secret value is unset, so the entry stays'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.enabled: true
+    worker.secrets.ALLOW_INSECURE_OTEL: null
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: hop off: a model refusal beats a component Secret reason through an env entry'
+  template: templates/worker/deployment.yaml
+  set:
+    worker.configmap.ALLOW_INSECURE_OTEL: ''
+    worker.secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: hop off: a common.configmap value beats a shared Secret reason through an env entry'
+  template: templates/worker/deployment.yaml
+  set:
+    common.configmap.ALLOW_INSECURE_OTEL: 'false'
+    secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: hop off: a global value beats a Secret reason through an env entry'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    worker.secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: hop off: the model beats an existing Secret the chart cannot see'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    worker.useExistingSecret: true
+    worker.existingSecretName: operator-secret
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: 'false'
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: shared reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: secret reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: operator reason
+- it: 'worker: hop off: a Secret reason with no model gets no entry'
+  template: templates/worker/deployment.yaml
+  set:
+    worker.secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'worker: hop off: a model value with no Secret gets no entry (the ConfigMap carries it)'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'worker: hop off: a legacy extraEnvVars key stands, with no entry'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    worker.extraEnvVars.ALLOW_INSECURE_OTEL: operator reason
+    worker.secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+      any: true
+- it: 'worker: hop off: the HOST_IP endpoint is not emitted'
+  template: templates/worker/deployment.yaml
+  set:
+    global.observability.allowInsecureOtel: env-wide reason
+    worker.secrets.ALLOW_INSECURE_OTEL: secret reason
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://$(HOST_IP):4317

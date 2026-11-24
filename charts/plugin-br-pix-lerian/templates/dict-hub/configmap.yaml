@@ -145,8 +145,15 @@ data:
   {{- $_ := set $enumerated $k 1 }}
   {{- end }}
   {{- range $key, $value := $cm }}
-  {{- if not (hasKey $enumerated $key) }}
+  {{- /* A null ALLOW_INSECURE_OTEL is unset, not a refusal: skip it so the global
+     value below (or the Deployment's default) applies. Other keys are untouched. */}}
+  {{- if and (not (hasKey $enumerated $key)) (not (and (eq $key "ALLOW_INSECURE_OTEL") (kindIs "invalid" $value))) }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
+  {{- end }}
+  {{- /* ALLOW_INSECURE_OTEL from global.observability.allowInsecureOtel, for the case
+     the Deployment does not ship the node-local endpoint (operator endpoint). */}}
+  {{- with (include "plugin-br-pix-lerian.otelAllowInsecure.configmap" (dict "context" $ "values" $values "configmap" $cm)) }}
+  {{ . }}
   {{- end }}
 {{- end }}

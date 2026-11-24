@@ -143,7 +143,7 @@ New `LICENSE_KEY` secret fields were added to the `secrets` block of each compon
 
 **Why it matters:**
 
-This change enables per-component license key configuration while maintaining backward compatibility with the existing global license key pattern. Operators can now set different license keys for individual components if required, or continue using a single global key.
+The chart now delivers `LICENSE_KEY` to every worker Secret. The `1.12.0` worker images this chart deploys do not read it. From app `1.14.0-beta.6` (chart `5.3.0`) every worker refuses to boot without a `LICENSE_KEY`.
 
 **Operational impact:**
 
@@ -179,10 +179,10 @@ schedule:
 
 | Variable | Component | Default | Description |
 |----------|-----------|---------|-------------|
-| `LICENSE_KEY` | inbound | Falls back to `pix.secrets.LICENSE_KEY` | License key for the inbound service |
-| `LICENSE_KEY` | outbound | Falls back to `pix.secrets.LICENSE_KEY` | License key for the outbound service |
-| `LICENSE_KEY` | reconciliation | Falls back to `pix.secrets.LICENSE_KEY` | License key for the reconciliation service |
-| `LICENSE_KEY` | schedule | Falls back to `pix.secrets.LICENSE_KEY` | License key for the schedule service |
+| `LICENSE_KEY` | inbound | Falls back to `pix.secrets.LICENSE_KEY` | Not read by the `1.12.0` inbound image |
+| `LICENSE_KEY` | outbound | Falls back to `pix.secrets.LICENSE_KEY` | Not read by the `1.12.0` outbound image |
+| `LICENSE_KEY` | reconciliation | Falls back to `pix.secrets.LICENSE_KEY` | Not read by the `1.12.0` reconciliation image |
+| `LICENSE_KEY` | schedule | Falls back to `pix.secrets.LICENSE_KEY` | Not read by the `1.12.0` schedule image |
 
 ## Configuration Changes
 
@@ -217,7 +217,7 @@ This upgrade requires no destructive migration steps.
 kubectl get pods -n plugin-br-pix-indirect-btg
 ```
 
-> **Note:** The upgrade triggers a rolling restart of all deployments because the probe `timeoutSeconds` changes in every pod template. Depending on your replica count and probe timing, this may cause brief service interruptions.
+> **Note:** The upgrade triggers a rolling restart of the five chart Deployments because the probe `timeoutSeconds` changes in their pod templates. Depending on your replica count and probe timing, this may cause brief service interruptions.
 
 ## Preview changes before upgrading
 

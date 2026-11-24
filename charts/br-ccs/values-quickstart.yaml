@@ -21,7 +21,6 @@ global:
   datastores: {}
     # postgres: { host: "postgresql.internal", port: "5432", user: "br-ccs", name: "br-ccs", ssl: "require" }
     # redis:    { host: "valkey.internal:6379" }
-    # broker:   { host: "rabbitmq.internal", port: "5672", user: "br-ccs" }   # only when RABBITMQ_ENABLED
   # -- OTel collector (leave empty to keep telemetry off / the bundled endpoint).
   observability: {}
     # enabled: "true"
@@ -63,7 +62,6 @@ brCcs:
     enabled: false      # STREAMING_ENABLED — then set global.streaming + secrets.STREAMING_SASL_PASSWORD
   # -- A few common non-dependency overrides live under the escape hatch:
   configmap: {}
-    # RABBITMQ_ENABLED: "true"          # then set global.datastores.broker + secrets.RABBITMQ_DEFAULT_PASS
     # OBJECT_STORAGE_CCS_ENDPOINT: "http://seaweedfs:8333"   # then set the *_ACCESS_KEY/*_SECRET_KEY secrets
     # PLUGIN_AUTH_ENABLED: "true"       # inbound auth; also set global.auth.host
   secrets:
@@ -76,7 +74,6 @@ brCcs:
     # POSTGRES_PASSWORD: "CHANGE_ME"
     # REDIS_PASSWORD: "CHANGE_ME"
     # -- Only when the matching feature is enabled:
-    # RABBITMQ_DEFAULT_PASS: "CHANGE_ME"          # RABBITMQ_ENABLED=true
     # MULTI_TENANT_SERVICE_API_KEY: "CHANGE_ME"   # multiTenant.enabled=true
     # STREAMING_SASL_PASSWORD: "CHANGE_ME"        # streaming.enabled=true (SASL)
     # SD_TOKEN: "CHANGE_ME"                        # serviceDiscovery.enabled=true (Consul ACL)

@@ -428,7 +428,6 @@
               "CCS_ACCS005_SECRECY_SITUACAO",
               "CCS_ACCS009_RETENTION_DAYS",
               "CCS_BACEN_DESTINATARIO_CNPJ_BASE",
-              "CCS_CONSUMER_MAX_REDELIVERIES",
               "CCS_CRYPTO_MASTER_KEY",
               "CCS_DETAIL_MESSAGE_EMIT_ENABLED",
               "CCS_DETAIL_MESSAGE_VALIDATION_ENABLED",
@@ -450,7 +449,6 @@
               "CCS_RUN_MODE",
               "CCS_SNAPSHOT_QUARANTINE_INVALID_ENABLED",
               "CCS_SNAPSHOT_QUARANTINE_MAX_INVALID_RATIO",
-              "CCS_STA_DLQ_TTL_SECONDS",
               "CIRCUIT_BREAKER_ENABLED",
               "CORS_ALLOWED_HEADERS",
               "CORS_ALLOWED_METHODS",
@@ -571,25 +569,6 @@
               "POSTGRES_REPLICA_USER",
               "POSTGRES_SSLMODE",
               "POSTGRES_USER",
-              "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK",
-              "RABBITMQ_ALLOW_INSECURE_TLS",
-              "RABBITMQ_DEFAULT_PASS",
-              "RABBITMQ_DEFAULT_USER",
-              "RABBITMQ_ENABLED",
-              "RABBITMQ_EXCHANGE",
-              "RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS",
-              "RABBITMQ_HEALTH_CHECK_URL",
-              "RABBITMQ_HOST",
-              "RABBITMQ_PORT_AMQP",
-              "RABBITMQ_PORT_HOST",
-              "RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS",
-              "RABBITMQ_PUBLISHER_MAX_RECOVERIES",
-              "RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS",
-              "RABBITMQ_PUBLISHER_RECOVERY_MAX_MS",
-              "RABBITMQ_QUEUE",
-              "RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS",
-              "RABBITMQ_URL",
-              "RABBITMQ_VHOST",
               "RATE_LIMIT_ENABLED",
               "RATE_LIMIT_MAX",
               "RATE_LIMIT_WINDOW_SEC",
@@ -699,7 +678,8 @@
               "SYSTEMPLANE_ENABLED",
               "TLS_TERMINATED_UPSTREAM",
               "TRUSTED_PROXIES",
-              "VERSION"
+              "VERSION",
+              "ALLOW_INSECURE_OTEL"
             ]
           }
         },
@@ -747,10 +727,6 @@
       "additionalProperties": true
     },
     "postgresql": {
-      "type": "object",
-      "additionalProperties": true
-    },
-    "rabbitmq": {
       "type": "object",
       "additionalProperties": true
     }

@@ -140,7 +140,6 @@ brCcs:
     # STA_EVENT_HMAC_MASTER_KEY_VERSION: ""
     # STA_EVENT_HMAC_TOLERANCE_SECONDS: ""
     # CCS runtime knobs
-    # CCS_CONSUMER_MAX_REDELIVERIES: ""
     # CCS_DETAIL_PII_RETENTION_BUSINESS_DAYS: ""
     # CCS_MOVEMENT_MAX_BUSINESS_DAYS_PAST: ""
     # CCS_MOVEMENT_SUBMIT_WINDOW_ALWAYS_OPEN: ""
@@ -201,9 +200,6 @@ brCcs:
     # Multi-tenant (tenant-manager)
     # MULTI_TENANT_SERVICE_API_KEY: ""
 
-    # RabbitMQ (when RABBITMQ_ENABLED=true)
-    # RABBITMQ_DEFAULT_PASS: ""
-
   useExistingSecret: false
   existingSecretName: ""
 
@@ -220,9 +216,6 @@ brCcs:
 #
 # Redis/Valkey:
 #   - Used for: rate limiting, idempotency keys, caching. No pre-config needed.
-#
-# RabbitMQ (OPTIONAL - event bus, disabled by default):
-#   - Exchange: events (topic, durable)
 # ==============================================================================
 
 # Disable internal dependencies for external infrastructure
@@ -231,9 +224,5 @@ valkey:
   external: true
 
 postgresql:
-  enabled: false
-  external: true
-
-rabbitmq:
   enabled: false
   external: true

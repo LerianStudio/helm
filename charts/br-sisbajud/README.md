@@ -117,6 +117,10 @@ With telemetry on and no explicit endpoint, the pod ships telemetry to the colle
 
 A key in `brSisbajud.extraEnvVars` or a non-empty `brSisbajud.secrets.ALLOW_INSECURE_OTEL` in the chart's own Secret is the legacy route, and the chart then adds no entry of its own. The Secret counts only while nothing in the order above is set: a configmap, knob or global value, a refusal included, keeps the chart's entry, which wins over the Secret. With `useExistingSecret: true` the chart cannot see the Secret, so the container entry overrides any `ALLOW_INSECURE_OTEL` held there; set `brSisbajud.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
 
+### Health port (`brSisbajud.serveHealthPort`)
+
+With `brSisbajud.serveHealthPort: true` the chart sets `HEALTH_PORT` to `8099`, declares the container port `health`, and probes liveness and readiness on it; the paths stay `brSisbajud.livenessProbe.path` and `readinessProbe.path`. A ClusterIP Service also lists `health` (8099); a LoadBalancer or NodePort Service never publishes it. The default is `false`: flip it in the same change as an image that serves 8099, never apart, and never set `HEALTH_PORT` by hand.
+
 ### Grouped parameters and defaults
 
 | Parameter | Env key | Default |

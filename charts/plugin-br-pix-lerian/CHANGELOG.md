@@ -1,5 +1,18 @@
 # Plugin-br-pix-lerian Changelog
 
+## [2.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.2.2)
+
+Fixes:
+
+- Allow the model to override an existing or empty Secret on the node-local hop. (@guimoreirar)
+- Prevent the node-local default on an operator `HOST_IP`, ensuring the model overrides the Secret. (@guimoreirar)
+- Include the global `ALLOW_INSECURE_OTEL` in the ConfigMap. (@guimoreirar)
+- Enable the node-local OTEL hop to boot in production environments. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.2.1...plugin-br-pix-lerian-v2.2.2)
+
+---
+
 ## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.2.1)
 
 Fixes:

@@ -1,5 +1,14 @@
 # Plugin-br-pix-jd Changelog
 
+## [0.9.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.9.0)
+
+Features:
+- Add an opt-in API service account to enhance the functionality of the plugin. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.8.1...plugin-br-pix-jd-v0.9.0)
+
+---
+
 ## [0.8.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.8.1)
 
 Features:

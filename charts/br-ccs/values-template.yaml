@@ -111,8 +111,10 @@ brCcs:
     # test) outside DEPLOYMENT_MODE=saas. With auth on, the Reporter and STA
     # M2M credentials in secrets are REQUIRED, even with STA_ENABLED=false.
     # =================================================================
-    PLUGIN_AUTH_ENABLED: "true"
-    PLUGIN_AUTH_HOST: ""  # REQUIRED - plugin-access-manager URL
+    # Left commented so global.auth.enabled / global.auth.host (umbrella) apply:
+    # a key set here, even empty, wins over global.auth. Uncomment for standalone.
+    # PLUGIN_AUTH_ENABLED: "true"  # chart default "true"
+    # PLUGIN_AUTH_HOST: ""  # REQUIRED (here or global.auth.host) - plugin-access-manager URL
 
     # =================================================================
     # OpenTelemetry

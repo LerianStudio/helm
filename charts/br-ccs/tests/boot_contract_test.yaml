@@ -60,6 +60,19 @@ tests:
           errorPattern: "PLUGIN_AUTH_HOST is required"
 
   # --- 1. Inbound auth ------------------------------------------------------
+  - it: lets global.auth.host reach a values-template install
+    template: templates/configmap.yaml
+    values:
+      - ../values-template.yaml
+      - values/boot-contract.yaml
+    asserts:
+      - equal:
+          path: data.PLUGIN_AUTH_HOST
+          value: https://auth.example.com
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
   - it: refuses PLUGIN_AUTH_ENABLED=false in production
     template: templates/boot-contract.yaml
     set:

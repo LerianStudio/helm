@@ -361,6 +361,7 @@ tests:
     set:
       valkey.enabled: true
       valkey.external: false
+      brCcs.configmap.REDIS_HOST: ""
     asserts:
       - equal:
           path: data.REDIS_TLS
@@ -372,11 +373,42 @@ tests:
           count: 0
         template: templates/boot-contract.yaml
 
+  - it: treats a custom REDIS_HOST as external Redis with the bundled valkey left on
+    template: templates/configmap.yaml
+    set:
+      valkey.enabled: true
+      valkey.external: false
+      brCcs.configmap.REDIS_HOST: managed-redis.example.internal:6379
+    asserts:
+      - equal:
+          path: data.REDIS_HOST
+          value: managed-redis.example.internal:6379
+      - equal:
+          path: data.REDIS_TLS
+          value: "true"
+      - notExists:
+          path: data.ALLOW_INSECURE_REDIS
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: refuses plaintext to a custom REDIS_HOST without the bypass, bundled valkey on
+    template: templates/boot-contract.yaml
+    set:
+      valkey.enabled: true
+      valkey.external: false
+      brCcs.configmap.REDIS_HOST: managed-redis.example.internal:6379
+      brCcs.configmap.REDIS_TLS: "false"
+    asserts:
+      - failedTemplate:
+          errorPattern: "REDIS_TLS=false needs ALLOW_INSECURE_REDIS"
+
   - it: drops the bypass when the bundled valkey is set to TLS
     template: templates/configmap.yaml
     set:
       valkey.enabled: true
       valkey.external: false
+      brCcs.configmap.REDIS_HOST: ""
       brCcs.configmap.REDIS_TLS: "true"
     asserts:
       - equal:

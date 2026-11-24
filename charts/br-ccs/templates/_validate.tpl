@@ -38,10 +38,20 @@ secret values are skipped and the app stays the last gate for them.
 {{- end -}}
 {{- end -}}
 
-{{/* br-ccs.valkeyBundled — "true" when the bundled valkey subchart serves Redis. */}}
+{{/* br-ccs.valkeyBundled — "true" when the bundled valkey subchart serves Redis:
+     the subchart is on and REDIS_HOST resolves to its Service (or is left
+     empty). A REDIS_HOST
+     pointing elsewhere (configmap, datastores, global, extraEnvVars) is external
+     Redis, even with the subchart left on. */}}
 {{- define "br-ccs.valkeyBundled" -}}
 {{- $vk := .Values.valkey | default dict -}}
-{{- if and (ne (toString $vk.enabled) "false") (not $vk.external) -}}true{{- end -}}
+{{- if and (ne (toString $vk.enabled) "false") (not $vk.external) -}}
+{{- $defaultHost := include "br-ccs.valkey.defaultHost" . -}}
+{{- $host := include "lerian-common.datastore.value" (dict "context" . "dedicated" (.Values.brCcs.datastores | default dict) "configmap" (.Values.brCcs.configmap | default dict) "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" $defaultHost) -}}
+{{- $extra := .Values.brCcs.extraEnvVars | default dict -}}
+{{- if hasKey $extra "REDIS_HOST" -}}{{- $host = toString (index $extra "REDIS_HOST") -}}{{- end -}}
+{{- if has (trim $host) (list "" $defaultHost) -}}true{{- end -}}
+{{- end -}}
 {{- end -}}
 
 {{/* br-ccs.redisInsecureAllowed — "true" when the operator set a plaintext Redis

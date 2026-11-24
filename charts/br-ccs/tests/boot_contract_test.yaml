@@ -209,6 +209,33 @@ tests:
       - hasDocuments:
           count: 0
 
+  - it: refuses a secret key in extraEnvVars
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.extraEnvVars.CCS_CRYPTO_MASTER_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+    asserts:
+      - failedTemplate:
+          errorPattern: "CCS_CRYPTO_MASTER_KEY is a secret: set it in brCcs.secrets"
+
+  - it: refuses a secret key in extraEnvVars with useExistingSecret
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.useExistingSecret: true
+      brCcs.existingSecretName: br-ccs-external
+      brCcs.extraEnvVars.LICENSE_KEY: placeholder
+    asserts:
+      - failedTemplate:
+          errorPattern: "LICENSE_KEY is a secret: set it in brCcs.secrets"
+
+  - it: accepts a client id in extraEnvVars
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.secrets.REPORTER_CLIENT_ID: ""
+      brCcs.extraEnvVars.REPORTER_CLIENT_ID: reporter-client
+    asserts:
+      - hasDocuments:
+          count: 0
+
   - it: skips the secret checks with useExistingSecret
     template: templates/configmap.yaml
     set:

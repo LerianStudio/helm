@@ -10,6 +10,7 @@ ccs-v1.1.2 tag.
 
 Values are read the way templates/configmap.yaml renders them: a key in
 brCcs.extraEnvVars wins, then brCcs.configmap, then the chart default.
+Secret keys are refused in brCcs.extraEnvVars: it renders into the ConfigMap.
 With brCcs.useExistingSecret the Secret is not visible here, so the checks on
 secret values are skipped and the app stays the last gate for them.
 */}}
@@ -27,7 +28,9 @@ secret values are skipped and the app stays the last gate for them.
 {{- end -}}
 {{- end -}}
 
-{{/* br-ccs.secretValue — effective value of one Secret key (extraEnvVars > brCcs.secrets). */}}
+{{/* br-ccs.secretValue — effective value of one key the app reads from the Secret.
+     A non-secret key (a client id) may come from extraEnvVars; a secret key in
+     extraEnvVars is refused by check 0. */}}
 {{- define "br-ccs.secretValue" -}}
 {{- $extra := .context.Values.brCcs.extraEnvVars | default dict -}}
 {{- $s := .context.Values.brCcs.secrets | default dict -}}
@@ -84,6 +87,17 @@ secret values are skipped and the app stays the last gate for them.
 {{- $isSaaS := eq (lower (include "br-ccs.envValue" (dict "context" $ctx "key" "DEPLOYMENT_MODE" "default" "byoc"))) "saas" -}}
 {{- $extra := .Values.brCcs.extraEnvVars | default dict -}}
 {{- $cm := .Values.brCcs.configmap | default dict -}}
+
+{{- /* 0. Secret keys belong in brCcs.secrets: every brCcs.extraEnvVars entry is
+       rendered into the ConfigMap, in plaintext for anyone who reads it. Checked
+       with useExistingSecret too. The list is the Secret keys of
+       templates/secrets.yaml. */ -}}
+{{- $secretKeys := list "LICENSE_KEY" "CCS_CRYPTO_MASTER_KEY" "FETCHER_CRYPTO_KEY" "POSTGRES_PASSWORD" "POSTGRES_REPLICA_PASSWORD" "REDIS_PASSWORD" "STA_EVENT_HMAC_MASTER_KEYS" "SD_TOKEN" "MULTI_TENANT_SERVICE_API_KEY" "OBJECT_STORAGE_STA_SECRET_KEY" "OBJECT_STORAGE_CCS_SECRET_KEY" "OBJECT_STORAGE_FETCHER_SECRET_KEY" "FETCHER_API_KEY" "REPORTER_API_KEY" "STA_API_KEY" "FETCHER_CLIENT_SECRET" "REPORTER_CLIENT_SECRET" "STA_CLIENT_SECRET" "CRM_CLIENT_SECRET" "IDP_M2M_CLIENT_SECRET" -}}
+{{- range $k := $secretKeys -}}
+{{- if hasKey $extra $k -}}
+{{- fail (printf "br-ccs: %s is a secret: set it in brCcs.secrets, not brCcs.extraEnvVars (extraEnvVars renders into the ConfigMap in plaintext)." $k) -}}
+{{- end -}}
+{{- end -}}
 
 {{- /* 1. Inbound auth switch (shared/envclass ResolveAuthSwitch, config.go:957).
        Exactly "true" or "false"; "false" only in a development-class ENV_NAME

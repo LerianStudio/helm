@@ -133,6 +133,10 @@ plugin-br-ted-lerian:
 
 Non-secret values live in the ConfigMap, credentials in the Secret. A key the ConfigMap already renders can be overridden through `plugin-br-ted-lerian.configmap.<ENV_VAR_NAME>`, which wins over the productized parameter. The ConfigMap drops any other `configmap` key: add new keys with `plugin-br-ted-lerian.extraEnvVars` or `plugin-br-ted-lerian.secrets.<KEY>`. `MULTI_TENANT_ENABLED`, `VERSION`, `OTEL_RESOURCE_SERVICE_VERSION` and every `SD_*` and `STREAMING_*` key ignore `configmap`.
 
+### Partner antifraud
+
+`plugin-br-ted-lerian.configmap.ANTIFRAUD_SECRETS_BACKEND` (`aws` or `vault`) sets where the antifraud credentials live. The app has no default: unset means no secret reader, and a flow that is on denies with `INVALID_CONFIG`. The ConfigMap renders it only when set; a key of the same name in `extraEnvVars` renders instead, so it appears once.
+
 ### Required app settings
 
 App `1.0.0-beta.86` refuses to boot without these, and the chart does not set them:

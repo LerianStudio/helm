@@ -51,10 +51,9 @@ secret values are skipped and the app stays the last gate for them.
 {{- end -}}
 
 {{/* br-ccs.valkeyBundled — "true" when the bundled valkey subchart serves Redis:
-     the subchart is on and REDIS_HOST resolves to its Service (or is left
-     empty). A REDIS_HOST
-     pointing elsewhere (configmap, datastores, global, extraEnvVars) is external
-     Redis, even with the subchart left on. */}}
+     the subchart is on and REDIS_HOST is empty or exactly its Service name.
+     Any other REDIS_HOST (configmap, datastores, global, extraEnvVars) is
+     external Redis, even with the subchart left on. */}}
 {{- define "br-ccs.valkeyBundled" -}}
 {{- $vk := .Values.valkey | default dict -}}
 {{- if and (ne (toString $vk.enabled) "false") (not $vk.external) -}}
@@ -93,10 +92,10 @@ secret values are skipped and the app stays the last gate for them.
 {{- $envName := lower $envRaw -}}
 {{- $isDev := has $envName $devNames -}}
 {{- /* ENV_NAME feeds the logger (shared/envclass LoggerEnvironment): a
-       development-class name in any case, otherwise one of the zap profiles
-       lib-observability accepts, byte-exact. "homolog" or "Production" render
+       development-class name in any case (local included), otherwise one of
+       the zap profiles lib-observability accepts, byte-exact. "homolog" or "Production" render
        fine and the boot fails with "invalid environment". */ -}}
-{{- if not (or $isDev (has $envRaw (list "production" "staging" "uat" "local"))) -}}
+{{- if not (or $isDev (has $envRaw (list "production" "staging" "uat"))) -}}
 {{- fail (printf "br-ccs: ENV_NAME=%q is not accepted by the app logger. Use production, staging or uat (lowercase), or a development name (development, develop, dev, local, test)." $envRaw) -}}
 {{- end -}}
 {{- $isProd := eq $envName "production" -}}

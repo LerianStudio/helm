@@ -152,3 +152,24 @@ tests:
           path: metadata.annotations["argocd.argoproj.io/sync-wave"]
           value: "8"
         template: templates/ledger/partition-cronjob.yaml
+  - it: bounds the name label of both ledger workloads under a 56-character nameOverride
+    set:
+      nameOverride: acme-banking-core-platform-production-eu1-sao-paulo-blue
+      ledger.image.tag: 4.5.2
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: acme-banking-core-platform-3704cc2d-aulo-blue-ledger-partition
+        template: templates/ledger/partition-cronjob.yaml
+      - equal:
+          path: spec.jobTemplate.spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: acme-banking-core-platform-3704cc2d-aulo-blue-ledger-partition
+        template: templates/ledger/partition-cronjob.yaml
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: acme-banking-core-platform-29f75ff9-ledger-partition-reconcile
+        template: templates/ledger/partition-reconcile-job.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: acme-banking-core-platform-29f75ff9-ledger-partition-reconcile
+        template: templates/ledger/partition-reconcile-job.yaml

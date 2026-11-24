@@ -363,3 +363,42 @@ tests:
           path: metadata.name
           value: acme-banking-core-platfo-c0a852e7-partition-reconcile-aab86e1d
         template: templates/tracer/partition-reconcile-job.yaml
+  - it: bounds the name label of both Tracer workloads under a 56-character nameOverride with the ledger off
+    set:
+      nameOverride: acme-banking-core-platform-production-eu1-sao-paulo-blue
+      ledger.enabled: false
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: acme-banking-core-platform-482381fb-aulo-blue-tracer-partition
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: spec.jobTemplate.spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: acme-banking-core-platform-482381fb-aulo-blue-tracer-partition
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: acme-banking-core-platform-91045b9a-tracer-partition-reconcile
+        template: templates/tracer/partition-reconcile-job.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: acme-banking-core-platform-91045b9a-tracer-partition-reconcile
+        template: templates/tracer/partition-reconcile-job.yaml
+  - it: keeps the name label of a short name as it was
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: midaz-tracer-partition
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: spec.jobTemplate.spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: midaz-tracer-partition
+        template: templates/tracer/partition-cronjob.yaml
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: midaz-ledger-partition-reconcile
+        template: templates/ledger/partition-reconcile-job.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: midaz-ledger-partition-reconcile
+        template: templates/ledger/partition-reconcile-job.yaml

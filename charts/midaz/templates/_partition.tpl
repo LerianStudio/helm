@@ -55,7 +55,7 @@ true
 {{- $ctx := .context -}}
 {{- $partition := (index $ctx.Values .product).partition | default dict -}}
 {{- $component := printf "%s-partition" (index $ctx.Values .product).name -}}
-{{- $labels := dict "context" $ctx "component" $component "name" $component }}
+{{- $labels := dict "context" $ctx "component" $component "name" $component "fit" true }}
 {{- $labelsFn := ternary "midaz.labels" "midaz-tracer.labels" (eq .product "ledger") }}
 {{- $podLabelsFn := ternary "midaz.podLabels" "midaz-tracer.podLabels" (eq .product "ledger") }}
 apiVersion: batch/v1
@@ -96,7 +96,7 @@ spec:
 {{- $p := index $ctx.Values .product -}}
 {{- $reconcile := dig "partition" "reconcile" dict $p -}}
 {{- $component := printf "%s-partition-reconcile" $p.name -}}
-{{- $labels := dict "context" $ctx "component" $component "name" $component }}
+{{- $labels := dict "context" $ctx "component" $component "name" $component "fit" true }}
 {{- $labelsFn := ternary "midaz.labels" "midaz-tracer.labels" (eq .product "ledger") }}
 {{- $podLabelsFn := ternary "midaz.podLabels" "midaz-tracer.podLabels" (eq .product "ledger") }}
 {{- $hookSecret := and (eq .product "ledger") $p.secrets.LICENSE_KEY (not $p.useExistingSecret) }}

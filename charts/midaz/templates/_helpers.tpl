@@ -16,7 +16,7 @@ Create chart name and version as used by the chart label.
 Common labels without the chart version, safe for pod templates
 */}}
 {{- define "midaz.podLabels" -}}
-{{ include "midaz.selectorLabels" (dict "context" .context "component" .component "name" .name) }}
+{{ include "midaz.selectorLabels" (dict "context" .context "component" .component "name" .name "fit" .fit) }}
 app.kubernetes.io/version: {{ include "ledger.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -29,12 +29,22 @@ helm.sh/chart: {{ include "midaz.chart" .context }}
 {{ include "midaz.podLabels" . }}
 {{- end }}
 
+{{/* The name label is <midaz.name>-<name>. With "fit" a value past 63 characters becomes prefix, hash of the whole value, tail. */}}
+{{- define "midaz.labelName" -}}
+{{- $full := printf "%s-%s" (include "midaz.name" .context) .name -}}
+{{- if and .fit (gt (len $full) 63) -}}
+{{- printf "%s-%s-%s" ($full | trunc 27 | trimAll "-._") (sha256sum $full | trunc 8) ($full | trunc -26 | trimAll "-._") -}}
+{{- else -}}
+{{- $full -}}
+{{- end -}}
+{{- end }}
+
 {{/*
 Selector labels
 */}}
 {{- define "midaz.selectorLabels" -}}
 {{- if .name -}}
-app.kubernetes.io/name: {{ include "midaz.name" .context }}-{{ .name }}
+app.kubernetes.io/name: {{ include "midaz.labelName" . }}
 {{- end }}
 app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- if .component }}
@@ -236,7 +246,7 @@ Return valid Tracer version label
 Tracer Common labels
 */}}
 {{- define "midaz-tracer.podLabels" -}}
-{{ include "midaz-tracer.selectorLabels" (dict "context" .context "name" .name) }}
+{{ include "midaz-tracer.selectorLabels" (dict "context" .context "name" .name "fit" .fit) }}
 app.kubernetes.io/version: {{ include "tracer.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -254,7 +264,7 @@ Tracer Selector labels
 */}}
 {{- define "midaz-tracer.selectorLabels" -}}
 {{- if .name -}}
-app.kubernetes.io/name: {{ include "midaz.name" .context }}-{{ .name }}
+app.kubernetes.io/name: {{ include "midaz.labelName" . }}
 {{- end }}
 app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}

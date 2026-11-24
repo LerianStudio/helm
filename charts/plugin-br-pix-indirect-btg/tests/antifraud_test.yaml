@@ -1,0 +1,97 @@
+suite: antifraud backend key and pix service account
+templates:
+  - templates/pix/deployment.yaml
+  - templates/pix/configmap.yaml
+  - templates/pix/secrets.yaml
+  - templates/pix/serviceaccount.yaml
+  - templates/inbound/deployment.yaml
+  - templates/inbound/configmap.yaml
+  - templates/inbound/secrets.yaml
+  - templates/outbound/deployment.yaml
+  - templates/outbound/configmap.yaml
+  - templates/outbound/secrets.yaml
+  - templates/reconciliation/deployment.yaml
+  - templates/reconciliation/configmap.yaml
+  - templates/reconciliation/secrets.yaml
+  - templates/schedule/deployment.yaml
+  - templates/schedule/configmap.yaml
+  - templates/schedule/secrets.yaml
+set:
+  pix.configmap.BTG_BASE_URL: https://btg.example.test
+  pix.configmap.PIX_ISPB: "12345678"
+  pix.configmap.MIDAZ_ORGANIZATION_ID: org
+  pix.configmap.MIDAZ_LEDGER_ID: ledger
+  pix.secrets.BTG_CLIENT_ID: x
+  pix.secrets.BTG_CLIENT_SECRET: x
+  pix.secrets.INTERNAL_WEBHOOK_SECRET: "0123456789abcdef0123456789abcdef"
+  pix.secrets.MIDAZ_CLIENT_ID: x
+  pix.secrets.MIDAZ_CLIENT_SECRET: x
+  pix.secrets.LICENSE_KEY: x
+tests:
+  - it: renders no backend key and no service account by default
+    asserts:
+      - notExists:
+          path: data.ANTIFRAUD_SECRETS_BACKEND
+        template: templates/pix/configmap.yaml
+      - notExists:
+          path: spec.template.spec.serviceAccountName
+        template: templates/pix/deployment.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/pix/serviceaccount.yaml
+  - it: renders the backend key when set
+    template: templates/pix/configmap.yaml
+    set:
+      pix.configmap.ANTIFRAUD_SECRETS_BACKEND: vault
+    asserts:
+      - equal:
+          path: data.ANTIFRAUD_SECRETS_BACKEND
+          value: vault
+  - it: renders the backend key once when it is also in extraEnvVars
+    template: templates/pix/configmap.yaml
+    set:
+      pix.configmap.ANTIFRAUD_SECRETS_BACKEND: vault
+      pix.extraEnvVars.ANTIFRAUD_SECRETS_BACKEND: aws
+    asserts:
+      - equal:
+          path: data.ANTIFRAUD_SECRETS_BACKEND
+          value: aws
+  - it: creates the account and only the pix pod uses it
+    set:
+      pix.serviceAccount.create: true
+      pix.serviceAccount.annotations:
+        eks.amazonaws.com/role-arn: arn:aws:iam::000000000000:role/x
+    asserts:
+      - isKind: {of: ServiceAccount}
+        template: templates/pix/serviceaccount.yaml
+      - equal:
+          path: metadata.annotations["eks.amazonaws.com/role-arn"]
+          value: arn:aws:iam::000000000000:role/x
+        template: templates/pix/serviceaccount.yaml
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: plugin-br-pix-indirect-btg
+        template: templates/pix/deployment.yaml
+      - notExists:
+          path: spec.template.spec.serviceAccountName
+        template: templates/inbound/deployment.yaml
+      - notExists:
+          path: spec.template.spec.serviceAccountName
+        template: templates/outbound/deployment.yaml
+      - notExists:
+          path: spec.template.spec.serviceAccountName
+        template: templates/reconciliation/deployment.yaml
+      - notExists:
+          path: spec.template.spec.serviceAccountName
+        template: templates/schedule/deployment.yaml
+  - it: uses an existing account by name without creating one
+    set:
+      pix.serviceAccount.name: mine
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: mine
+        template: templates/pix/deployment.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/pix/serviceaccount.yaml

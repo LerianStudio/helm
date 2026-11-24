@@ -115,6 +115,10 @@ The Plugin BR PIX Indirect BTG system consists of five components: the PIX servi
 | `pix.configmap.*` | Environment variables for the service. | See `values.yaml` |
 | `pix.configmap.DB_SSL_MODE` | TLS to PostgreSQL: `disable`, `allow`, `prefer`, `require`, `verify-ca` or `verify-full`. Only `require` and stricter guarantee encryption; set one of them for an external database. | `"disable"` |
 | `pix.configmap.SWAGGER_ENABLED` | Serves the per-module API reference (`/v1/<module>/docs`, `openapi.json`, `openapi.yaml`). It does not turn off `/swagger/index.html`, `/docs/api` or `/docs/webhooks`. See [API Documentation (Swagger)](#api-documentation-swagger). | `"true"` |
+| `pix.configmap.ANTIFRAUD_SECRETS_BACKEND` | Store of the partner antifraud credentials: `aws` or `vault`. Rendered only when set; a key of the same name in `pix.extraEnvVars` wins. | `""` |
+| `pix.serviceAccount.create` | Creates a service account for the pix pod only, so a grant for the antifraud credential reaches no other component. Off, the pod runs on the namespace `default` account like the other four components. | `false` |
+| `pix.serviceAccount.name` | Name of the account; with `create: false` it names an existing one. | `""` |
+| `pix.serviceAccount.annotations` | Annotations of the created account, e.g. an IRSA or Roles Anywhere role ARN. | `{}` |
 | `pix.secrets.*` | Secrets for the service. | See `values.yaml` |
 | `pix.useExistingSecrets` | Use an existing secret instead of creating a new one. | `false` |
 | `pix.existingSecretName` | The name of the existing secret to use. | `""` |

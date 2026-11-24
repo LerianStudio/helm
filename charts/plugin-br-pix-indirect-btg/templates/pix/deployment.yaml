@@ -30,6 +30,9 @@ spec:
         {{- omit (include "plugin-br-pix-indirect-btg.labels" (dict "context" . "name" .Values.pix.name ) | fromYaml) "helm.sh/chart" | toYaml | nindent 8 }}
     spec:
       terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
+      {{- if or .Values.pix.serviceAccount.create .Values.pix.serviceAccount.name }}
+      serviceAccountName: {{ include "plugin-br-pix-indirect-btg.serviceAccountName" . }}
+      {{- end }}
     {{- with .Values.pix.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}

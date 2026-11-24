@@ -137,6 +137,14 @@ tests:
       - failedTemplate:
           errorPattern: "PLUGIN_AUTH_ENABLED=false is only accepted"
 
+  - it: refuses PLUGIN_AUTH_ENABLED=false from extraEnvVars in production
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.extraEnvVars.PLUGIN_AUTH_ENABLED: "false"
+    asserts:
+      - failedTemplate:
+          errorPattern: "PLUGIN_AUTH_ENABLED=false is only accepted with a development ENV_NAME"
+
   - it: accepts PLUGIN_AUTH_ENABLED=false in a development ENV_NAME
     template: templates/configmap.yaml
     set:
@@ -227,6 +235,15 @@ tests:
     asserts:
       - failedTemplate:
           errorPattern: "OBJECT_STORAGE_CCS_SSE_KMS_KEY_ID is required"
+
+  - it: accepts aws:kms with the KMS key id
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.OBJECT_STORAGE_CCS_SSE_ALGORITHM: aws:kms
+      brCcs.configmap.OBJECT_STORAGE_CCS_SSE_KMS_KEY_ID: arn:aws:kms:sa-east-1:000000000000:key/placeholder
+    asserts:
+      - hasDocuments:
+          count: 0
 
   - it: refuses an unknown SSE algorithm
     template: templates/boot-contract.yaml
@@ -336,6 +353,14 @@ tests:
     asserts:
       - failedTemplate:
           errorPattern: "CORS_ALLOWED_ORIGINS must not contain"
+
+  - it: refuses a wildcard TRUSTED_PROXIES in production
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.TRUSTED_PROXIES: "10.0.0.0/8, 0.0.0.0/0"
+    asserts:
+      - failedTemplate:
+          errorPattern: "TRUSTED_PROXIES must not contain 0.0.0.0/0"
 
   - it: requires TRUSTED_PROXIES in production
     template: templates/boot-contract.yaml

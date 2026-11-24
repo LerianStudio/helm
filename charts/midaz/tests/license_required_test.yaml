@@ -16,7 +16,7 @@ tests:
   - it: fails on the default image tag without a license
     asserts:
       - failedTemplate:
-          errorPattern: "ledger: no license is configured for ledger image 4\\.5\\.1\\. From 4\\.5\\.0-beta\\.59 on, the ledger and its partition reconcile hook refuse to run without a license, and that hook runs after the migrations"
+          errorPattern: "ledger: no license is configured for ledger image 4\\.5\\.1\\. The ledger refuses to boot without a license from 4\\.5\\.0-beta\\.59 on, and from 4\\.5\\.0-beta\\.220 on so does its partition reconcile hook, which runs after the migrations"
         template: templates/ledger/deployment.yaml
   - it: names the three ways out
     asserts:
@@ -72,6 +72,20 @@ tests:
       - failedTemplate:
           errorPattern: "no license is configured for ledger image"
         template: templates/ledger/deployment.yaml
+  - it: fails with LICENSE_KEY only in extraEnvVars
+    set:
+      ledger.extraEnvVars.LICENSE_KEY: placeholder-key
+    asserts:
+      - failedTemplate:
+          errorPattern: "A license in ledger\\.extraEnvVars does not count"
+        template: templates/ledger/deployment.yaml
+  - it: fails with LICENSE_FILE_PATH only in extraEnvVars
+    set:
+      ledger.extraEnvVars.LICENSE_FILE_PATH: /vault/secrets/license
+    asserts:
+      - failedTemplate:
+          errorPattern: "A license in ledger\\.extraEnvVars does not count"
+        template: templates/ledger/deployment.yaml
 
   - it: passes with secrets.LICENSE_KEY
     set:
@@ -110,24 +124,6 @@ tests:
             secretRef:
               name: ledger-credentials
         template: templates/ledger/deployment.yaml
-  - it: passes with LICENSE_KEY in extraEnvVars
-    set:
-      ledger.extraEnvVars.LICENSE_KEY: placeholder-key
-    asserts:
-      - notFailedTemplate: {}
-      - equal:
-          path: data.LICENSE_KEY
-          value: placeholder-key
-        template: templates/ledger/configmap.yaml
-  - it: passes with LICENSE_FILE_PATH in extraEnvVars
-    set:
-      ledger.extraEnvVars.LICENSE_FILE_PATH: /vault/secrets/license
-    asserts:
-      - notFailedTemplate: {}
-      - equal:
-          path: data.LICENSE_FILE_PATH
-          value: /vault/secrets/license
-        template: templates/ledger/configmap.yaml
 
   - it: passes on 4.4.3 without a license
     set:

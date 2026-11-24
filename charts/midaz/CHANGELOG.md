@@ -1,5 +1,38 @@
 # Midaz Changelog
 
+## [11.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.3.0)
+
+Features:
+- Start the Tracer partition passes at `4.6.0-beta.30`. (@fredcamaral)
+- Keep the Tracer partition names distinct from the ledger's. (@fredcamaral)
+- Run the Tracer partition passes from the chart. (@fredcamaral)
+
+Fixes:
+- Bound the partition name label to 63 characters. (@fredcamaral)
+
+Improvements:
+- Document that partition labels do not add a `nameOverride` limit. (@fredcamaral)
+- Drop an unreachable dot trim in the Tracer CronJob name. (@fredcamaral)
+- Render ledger partition documents to be byte-identical to the main version. (@fredcamaral)
+- Remove duplicate Tracer name assertions and pin the dot trim. (@fredcamaral)
+- Merge the main branch into the Tracer partition branch. (@fredcamaral)
+- Trim a dot from the cut Tracer CronJob name and note the label cap. (@fredcamaral)
+- Remove two Tracer partition assertions covered by another case. (@fredcamaral)
+- Scope the multi-tenant partition metric to the ledger. (@fredcamaral)
+- Clarify that a startup error still fails the Tracer reconcile hook. (@fredcamaral)
+- Drop the duplicate Tracer DB password reference. (@fredcamaral)
+- Point the Tracer bullet at the partition table and name its gauges. (@fredcamaral)
+- Pin the Tracer suite to the shared wave and environment guard. (@fredcamaral)
+- Count the Tracer reconcile wave only when it renders. (@fredcamaral)
+- Document the Tracer partition runner. (@fredcamaral)
+- Set the Tracer range tag once in the partition suite. (@fredcamaral)
+- Trim whitespace from the partition DB password fragment. (@fredcamaral)
+- Render partition workloads using shared helpers. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v11.2.2...midaz-v11.3.0)
+
+---
+
 ## [11.2.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.2.2)
 
 Features:

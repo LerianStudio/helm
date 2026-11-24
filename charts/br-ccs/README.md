@@ -63,19 +63,24 @@ license file, so use `LICENSE_KEY`.
 The app (CCS 1.1.x) refuses to boot on a set of values. The chart runs the same
 checks at render time (`templates/_validate.tpl`), so `helm template` and
 `helm install` fail with the variable to fix instead of a pod that crash-loops.
-A value in `brCcs.extraEnvVars` counts as set.
+A value in `brCcs.extraEnvVars` counts as set, except a secret key: a key of the
+chart Secret (passwords, `LICENSE_KEY`, `CCS_CRYPTO_MASTER_KEY`, `*_CLIENT_SECRET`,
+`*_API_KEY`, …) set there fails the render, because `extraEnvVars` is rendered
+into the ConfigMap in plaintext. Put it in `brCcs.secrets`.
 
 | Value | Rule |
 |-------|------|
+| `ENV_NAME` | `production`, `staging`, `uat` or `local` as written, or a development name in any case. Anything else (`homolog`, `Production`) is refused by the app logger. |
+| `REDIS_TLS`, `OUTBOX_ENABLED`, `CIRCUIT_BREAKER_ENABLED`, `CCS_DETAIL_MESSAGE_EMIT_ENABLED` | Exactly `"true"` or `"false"`: the app refuses `"1"`, `"t"` or `"TRUE"`. |
 | `PLUGIN_AUTH_ENABLED` | Default `"true"`. `"false"` only with a development `ENV_NAME` (`development`, `develop`, `dev`, `local`, `test`) outside `DEPLOYMENT_MODE=saas`. |
 | `PLUGIN_AUTH_HOST` (or `global.auth.host`) | Required with auth on. |
 | `REPORTER_CLIENT_ID/SECRET`, `STA_CLIENT_ID/SECRET` | Required with auth on, even with `STA_ENABLED=false`. |
 | `OBJECT_STORAGE_{STA,CCS}_SSE_ALGORITHM` | Required: both buckets are always bound. `AES256` (recommended), `aws:kms` with `*_SSE_KMS_KEY_ID`, or `none` in development only. |
-| `LICENSE_KEY` | Required in every environment. |
-| `CCS_CRYPTO_MASTER_KEY` | Required, 64 hex chars. |
+| `LICENSE_KEY` | Required in every environment. The chart mounts no license file, so `LICENSE_FILE_PATH` does not count. |
+| `CCS_CRYPTO_MASTER_KEY` | Required, 64 hex chars. An argocd-vault-plugin placeholder (`<path:...>`) passes the shape check; the plugin replaces it after the render. |
 | `TRUSTED_PROXIES`, `CORS_ALLOWED_ORIGINS` | Required with `ENV_NAME=production`; no `0.0.0.0/0` or `*`. |
 | `REPORTER_TEMPLATE_{NAME,ID}_<t>` | One per template: `CCS0002`, `CCS0004` and `ACCS005`; only `ACCS005` with `CCS_DETAIL_MESSAGE_EMIT_ENABLED=false`. |
-| `REDIS_TLS` | Default `"true"` for external Redis. The bundled valkey serves no TLS, so the chart renders `"false"` plus `ALLOW_INSECURE_REDIS="true"` for it. Plaintext needs one of the bypasses. |
+| `REDIS_TLS` | Unset, it renders `"true"` for external Redis, or `"false"` when `ALLOW_INSECURE_REDIS` or `ALLOW_INSECURE_TLS` is set. The bundled valkey serves no TLS, so when `REDIS_HOST` is its Service (or empty) the chart renders `"false"` plus `ALLOW_INSECURE_REDIS="true"`. Any other `REDIS_HOST` is external Redis, even with the subchart on. Plaintext needs one of the bypasses. |
 | `CRM_URL`, `CRM_ORGANIZATION_ID` | Required; `CRM_URL` absolute and https outside development. |
 | `REPORTER_URL` | Required. The app always dials the Reporter; `REPORTER_ENABLED` is no longer read or rendered. |
 | `OUTBOX_ENABLED`, `CIRCUIT_BREAKER_ENABLED` | Default `"true"`; `"false"` is refused (the Reporter needs both). |

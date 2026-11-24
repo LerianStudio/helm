@@ -1,5 +1,14 @@
 # Reporter Changelog
 
+## [5.4.4](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.4.4)
+
+Fixes:
+- Raise default worker limits to 1 CPU and 4Gi. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.4.3...reporter-v5.4.4)
+
+---
+
 ## [5.4.3](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.4.3)
 
 Fixes:

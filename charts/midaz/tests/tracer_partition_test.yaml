@@ -335,20 +335,12 @@ tests:
           path: metadata.annotations["argocd.argoproj.io/sync-wave"]
           value: "2"
         template: templates/ledger/partition-cronjob.yaml
-  - it: keeps the default names of both products
+  - it: keeps the default ledger reconcile name
     asserts:
       - equal:
           path: metadata.name
           value: midaz-ledger-partition-reconcile-4.5.2
         template: templates/ledger/partition-reconcile-job.yaml
-      - equal:
-          path: metadata.name
-          value: midaz-tracer-partition
-        template: templates/tracer/partition-cronjob.yaml
-      - equal:
-          path: metadata.name
-          value: midaz-tracer-partition-reconcile-4.6.0-beta.30
-        template: templates/tracer/partition-reconcile-job.yaml
   - it: keeps the four partition names apart under a 41-character nameOverride
     set:
       nameOverride: acme-banking-core-platform-production-eu1
@@ -371,3 +363,11 @@ tests:
           path: metadata.name
           value: acme-banking-core-platfo-c0a852e7-partition-reconcile-aab86e1d
         template: templates/tracer/partition-reconcile-job.yaml
+  - it: drops a dot left at the cut of a Tracer CronJob name
+    set:
+      tracer.fullnameOverride: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbb
+    asserts:
+      - equal:
+          path: metadata.name
+          value: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2e914f01-partition
+        template: templates/tracer/partition-cronjob.yaml

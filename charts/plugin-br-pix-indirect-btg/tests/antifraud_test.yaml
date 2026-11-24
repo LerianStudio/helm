@@ -84,6 +84,17 @@ tests:
       - notExists:
           path: spec.template.spec.serviceAccountName
         template: templates/schedule/deployment.yaml
+  - it: keeps the account in the pod's namespace when a namespace override is set
+    set:
+      pix.serviceAccount.create: true
+      pix.namespaceOverride: pix-runtime
+    asserts:
+      - notExists:
+          path: metadata.namespace
+        template: templates/pix/serviceaccount.yaml
+      - notExists:
+          path: metadata.namespace
+        template: templates/pix/deployment.yaml
   - it: uses an existing account by name without creating one
     set:
       pix.serviceAccount.name: mine

@@ -325,7 +325,7 @@ Both products run the same two workloads from their own image, ConfigMap, Secret
 | Reconcile hook on plain Helm | `post-install,pre-upgrade` | `post-install,post-upgrade` |
 | Gauge prefix | `ledger_partition_` | `tracer_partition_` |
 
-A name label past 63 characters (`<nameOverride>-<product>-partition[-reconcile]`) is shortened to a prefix, a hash of the whole value and a tail, so any `nameOverride` renders.
+A name label past 63 characters (`<nameOverride>-<product>-partition[-reconcile]`) is shortened to a prefix, a hash of the whole value and a tail, so the partition workloads add no `nameOverride` limit of their own.
 
 The hook timing differs because the Tracer is optional: the upgrade that turns it on creates its Secret and ConfigMap in the same release, so a `pre-upgrade` hook would start before they exist. The Tracer hook therefore runs after the release's resources are applied and carries no licence hook Secret and no inline environment. Both CronJobs sit in the same last Argo CD wave, one above the highest hook or Deployment wave of either product.
 

@@ -35,6 +35,11 @@ ledger:
     # Secrets, so they are intentionally omitted here.
     RABBITMQ_DEFAULT_PASS: "sample"
     RABBITMQ_CONSUMER_PASS: "sample"
+    # The chart refuses to render a ledger image from 4.5.0-beta.59 on without a
+    # license. This is the placeholder of ../helm-install-values/README.md, which
+    # install-test.sh replaces when the workflow passes HELM_CI_LICENSE_KEY_MIDAZ.
+    # The workflow passes none, so in kind the ledger refuses to boot as before.
+    LICENSE_KEY: "IT_LICENSE_KEY"
 rabbitmq:
   authentication:
     erlangCookie:

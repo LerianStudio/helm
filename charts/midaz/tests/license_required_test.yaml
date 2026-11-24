@@ -1,0 +1,181 @@
+suite: ledger license render check
+templates:
+  - templates/ledger/configmap.yaml
+  - templates/ledger/deployment.yaml
+  - templates/ledger/secrets.yaml
+release:
+  name: midaz
+  namespace: midaz
+set:
+  ledger.configmap.ENV_NAME: development
+  ledger.secrets.RABBITMQ_DEFAULT_PASS: sample
+  ledger.secrets.RABBITMQ_CONSUMER_PASS: sample
+  ledger.secrets.LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+tests:
+  # ---- fails: an image that requires a license, and none the chart can see ----
+  # The check lives in the ledger ConfigMap. Helm reports it at the first template
+  # that reaches it, the Deployment, which renders the ConfigMap for its checksum.
+  - it: fails on the default image tag without a license
+    asserts:
+      - failedTemplate:
+          errorPattern: "ledger: no license is configured for ledger image 4\\.5\\.1\\. From 4\\.5\\.0-beta\\.59 on, the ledger and its partition reconcile hook refuse to run without a license, and that hook runs after the migrations"
+        template: templates/ledger/deployment.yaml
+  - it: names the three ways out
+    asserts:
+      - failedTemplate:
+          errorPattern: "Set ledger\\.secrets\\.LICENSE_KEY, or ledger\\.licenseFile\\.existingSecret \\(.*\\), or ledger\\.useExistingSecret=true with LICENSE_KEY already in the Secret named by ledger\\.existingSecretName"
+        template: templates/ledger/deployment.yaml
+  - it: fails on 4.5.0-beta.59, the first image that requires a license
+    set:
+      ledger.image.tag: 4.5.0-beta.59
+    asserts:
+      - failedTemplate:
+          errorPattern: "no license is configured for ledger image 4\\.5\\.0-beta\\.59\\."
+        template: templates/ledger/deployment.yaml
+  - it: orders pre-release numbers numerically (beta.119 is after beta.59)
+    set:
+      ledger.image.tag: 4.5.0-beta.119
+    asserts:
+      - failedTemplate:
+          errorPattern: "no license is configured for ledger image"
+        template: templates/ledger/deployment.yaml
+  - it: fails on a pre-release of a later minor
+    set:
+      ledger.image.tag: 4.6.0-beta.1
+    asserts:
+      - failedTemplate:
+          errorPattern: "no license is configured for ledger image"
+        template: templates/ledger/deployment.yaml
+  - it: trims a leading v from the tag
+    set:
+      ledger.image.tag: v4.5.1
+    asserts:
+      - failedTemplate:
+          errorPattern: "no license is configured for ledger image 4\\.5\\.1\\."
+        template: templates/ledger/deployment.yaml
+  - it: falls back to the chart appVersion when the tag is empty
+    set:
+      ledger.image.tag: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "no license is configured for ledger image"
+        template: templates/ledger/deployment.yaml
+  - it: fails with licenseFile null and no other license
+    set:
+      ledger.licenseFile: null
+    asserts:
+      - failedTemplate:
+          errorPattern: "no license is configured for ledger image"
+        template: templates/ledger/deployment.yaml
+  - it: an empty LICENSE_KEY is no license
+    set:
+      ledger.secrets.LICENSE_KEY: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "no license is configured for ledger image"
+        template: templates/ledger/deployment.yaml
+
+  # ---- passes: every route that gives the ledger a license ----
+  - it: passes with secrets.LICENSE_KEY
+    set:
+      ledger.secrets.LICENSE_KEY: placeholder-key
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+        template: templates/ledger/configmap.yaml
+      - exists:
+          path: data.LICENSE_KEY
+        template: templates/ledger/secrets.yaml
+  - it: passes with licenseFile.existingSecret
+    set:
+      ledger.licenseFile.existingSecret: ledger-license
+    asserts:
+      - notFailedTemplate: {}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_FILE_PATH
+            value: /etc/lerian/license/license
+        template: templates/ledger/deployment.yaml
+  - it: passes with useExistingSecret, which the chart cannot read
+    set:
+      ledger.useExistingSecret: true
+      ledger.existingSecretName: ledger-credentials
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 0
+        template: templates/ledger/secrets.yaml
+      - contains:
+          path: spec.template.spec.containers[0].envFrom
+          content:
+            secretRef:
+              name: ledger-credentials
+        template: templates/ledger/deployment.yaml
+  - it: passes with LICENSE_KEY in extraEnvVars
+    set:
+      ledger.extraEnvVars.LICENSE_KEY: placeholder-key
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: data.LICENSE_KEY
+          value: placeholder-key
+        template: templates/ledger/configmap.yaml
+  - it: passes with LICENSE_FILE_PATH in extraEnvVars
+    set:
+      ledger.extraEnvVars.LICENSE_FILE_PATH: /vault/secrets/license
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: data.LICENSE_FILE_PATH
+          value: /vault/secrets/license
+        template: templates/ledger/configmap.yaml
+  # ledger.configmap has no case here: values.schema.json rejects LICENSE_KEY and
+  # LICENSE_FILE_PATH under it before any template runs.
+
+  # ---- passes: images and tags the check does not cover ----
+  - it: passes on 4.4.3 without a license
+    set:
+      ledger.image.tag: 4.4.3
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+        template: templates/ledger/configmap.yaml
+  - it: passes on 4.5.0-beta.58, the last image that boots without a license
+    set:
+      ledger.image.tag: 4.5.0-beta.58
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+        template: templates/ledger/configmap.yaml
+  - it: skips a tag that is not SemVer
+    set:
+      ledger.image.tag: latest
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+        template: templates/ledger/configmap.yaml
+  - it: skips a malformed version instead of aborting the render
+    set:
+      ledger.image.tag: 4.5.1.1
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+        template: templates/ledger/configmap.yaml
+  - it: passes with the ledger disabled
+    set:
+      ledger.enabled: false
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 0
+        template: templates/ledger/configmap.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/ledger/deployment.yaml

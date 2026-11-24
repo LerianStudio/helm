@@ -398,6 +398,40 @@ Called with a component's values (.Values.ledger / .Values.tracer).
 {{- end }}
 
 {{/*
+midaz-ledger.validateLicense — render-time mirror of the ledger license gate.
+From 4.5.0-beta.59 on, the ledger image exits at start without LICENSE_KEY or
+LICENSE_FILE_PATH, and so does the partition runner that shares the image. On
+plain Helm the reconcile hook runs after the migration Job, so a missing license
+would stop the upgrade with the schema already migrated: fail the render instead.
+The check is skipped whenever the chart cannot see the license (useExistingSecret)
+or either variable is named in extraEnvVars, and for a tag that is not SemVer;
+those are left to the ledger's own boot check.
+*/}}
+{{- define "midaz-ledger.validateLicense" -}}
+{{- $ledger := .Values.ledger -}}
+{{- $tag := $ledger.image.tag | default .Chart.AppVersion | toString | trimPrefix "v" -}}
+{{- /* Same anchored SemVer 2.0.0 guard as midaz.tagIsV4: semverCompare aborts the
+       render on a malformed version instead of resolving to "not checked". */ -}}
+{{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag -}}
+{{- if semverCompare ">=4.5.0-beta.59" $tag -}}
+{{- $found := false -}}
+{{- if or ($ledger.secrets | default dict).LICENSE_KEY (include "midaz.licenseFileSecret" $ledger) $ledger.useExistingSecret -}}
+{{- $found = true -}}
+{{- end -}}
+{{- $extra := $ledger.extraEnvVars -}}
+{{- if kindIs "map" $extra -}}
+{{- if or (hasKey $extra "LICENSE_KEY") (hasKey $extra "LICENSE_FILE_PATH") -}}
+{{- $found = true -}}
+{{- end -}}
+{{- end -}}
+{{- if not $found -}}
+{{- fail (printf "ledger: no license is configured for ledger image %s. From 4.5.0-beta.59 on, the ledger and its partition reconcile hook refuse to run without a license, and that hook runs after the migrations, so the upgrade would stop with the database already migrated. Set ledger.secrets.LICENSE_KEY, or ledger.licenseFile.existingSecret (a Secret holding the signed license file under the key \"license\"), or ledger.useExistingSecret=true with LICENSE_KEY already in the Secret named by ledger.existingSecretName" $tag) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 midaz-tracer.migrationsFullname — one Job name per rendered Job spec
 (dict "context" . "spec" <rendered spec>). The tracer Job is a regular release
 resource, and a Job spec is immutable, so the name has to change whenever the

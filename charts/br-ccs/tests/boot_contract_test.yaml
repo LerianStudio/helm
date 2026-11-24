@@ -301,6 +301,53 @@ tests:
           count: 0
         template: templates/boot-contract.yaml
 
+  - it: keeps plaintext external Redis with ALLOW_INSECURE_TLS when REDIS_TLS is unset
+    template: templates/configmap.yaml
+    set:
+      brCcs.extraEnvVars.ALLOW_INSECURE_TLS: "true"
+    asserts:
+      - equal:
+          path: data.REDIS_TLS
+          value: "false"
+      - notExists:
+          path: data.ALLOW_INSECURE_REDIS
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: keeps plaintext external Redis with ALLOW_INSECURE_REDIS when REDIS_TLS is unset
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.ALLOW_INSECURE_REDIS: "true"
+    asserts:
+      - equal:
+          path: data.REDIS_TLS
+          value: "false"
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: keeps an explicit REDIS_TLS false written as a YAML boolean
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.REDIS_TLS: false
+      brCcs.configmap.ALLOW_INSECURE_REDIS: "true"
+    asserts:
+      - equal:
+          path: data.REDIS_TLS
+          value: "false"
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: refuses a YAML boolean false REDIS_TLS without the bypass
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.REDIS_TLS: false
+    asserts:
+      - failedTemplate:
+          errorPattern: "REDIS_TLS=false needs ALLOW_INSECURE_REDIS"
+
   - it: renders plaintext plus the bypass for the bundled valkey subchart
     template: templates/configmap.yaml
     set:

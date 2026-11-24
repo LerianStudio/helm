@@ -20,8 +20,10 @@ secret values are skipped and the app stays the last gate for them.
 {{- $cm := .context.Values.brCcs.configmap | default dict -}}
 {{- if hasKey $extra .key -}}
 {{- $v := index $extra .key -}}{{- if not (kindIs "invalid" $v) -}}{{- toString $v | trim -}}{{- end -}}
+{{- else if and (hasKey $cm .key) (not (kindIs "invalid" (index $cm .key))) (ne (toString (index $cm .key)) "") -}}
+{{- toString (index $cm .key) | trim -}}
 {{- else -}}
-{{- toString (index $cm .key | default (.default | default "")) | trim -}}
+{{- toString (.default | default "") | trim -}}
 {{- end -}}
 {{- end -}}
 
@@ -36,18 +38,35 @@ secret values are skipped and the app stays the last gate for them.
 {{- end -}}
 {{- end -}}
 
-{{/* br-ccs.redisTLS — the REDIS_TLS the chart renders: "false" with the bundled
-     valkey subchart (it serves no TLS), "true" for external Redis. */}}
-{{- define "br-ccs.redisTLSDefault" -}}
+{{/* br-ccs.valkeyBundled — "true" when the bundled valkey subchart serves Redis. */}}
+{{- define "br-ccs.valkeyBundled" -}}
 {{- $vk := .Values.valkey | default dict -}}
-{{- if and (ne (toString $vk.enabled) "false") (not $vk.external) -}}false{{- else -}}true{{- end -}}
+{{- if and (ne (toString $vk.enabled) "false") (not $vk.external) -}}true{{- end -}}
+{{- end -}}
+
+{{/* br-ccs.redisInsecureAllowed — "true" when the operator set a plaintext Redis
+     bypass the app honours (lib-commons commons/security.go: ALLOW_INSECURE_REDIS
+     or ALLOW_INSECURE_TLS, trimmed, case-insensitive, true/1/yes/on). */}}
+{{- define "br-ccs.redisInsecureAllowed" -}}
+{{- $ctx := . -}}
+{{- range $k := list "ALLOW_INSECURE_REDIS" "ALLOW_INSECURE_TLS" -}}
+{{- if has (lower (include "br-ccs.envValue" (dict "context" $ctx "key" $k))) (list "1" "true" "yes" "on") -}}true{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/* br-ccs.redisTLSDefault — the REDIS_TLS the chart renders when the operator
+     leaves it unset: "false" with the bundled valkey subchart (it serves no TLS);
+     for external Redis, "false" when a plaintext bypass is set (an install that
+     booted on plaintext Redis before REDIS_TLS was rendered keeps booting),
+     "true" otherwise. */}}
+{{- define "br-ccs.redisTLSDefault" -}}
+{{- if or (include "br-ccs.valkeyBundled" .) (include "br-ccs.redisInsecureAllowed" .) -}}false{{- else -}}true{{- end -}}
 {{- end -}}
 
 {{- define "br-ccs.validateBootContract" -}}
 {{- $ctx := . -}}
 {{- $useExisting := .Values.brCcs.useExistingSecret -}}
 {{- $truthy := list "1" "t" "true" -}}
-{{- $insecureTruthy := list "1" "true" "yes" "on" -}}
 {{- $devNames := list "development" "develop" "dev" "local" "test" -}}
 {{- $envName := lower (include "br-ccs.envValue" (dict "context" $ctx "key" "ENV_NAME" "default" "production")) -}}
 {{- $isDev := has $envName $devNames -}}
@@ -169,9 +188,7 @@ secret values are skipped and the app stays the last gate for them.
        only with ALLOW_INSECURE_REDIS or ALLOW_INSECURE_TLS. */ -}}
 {{- $redisTLS := lower (include "br-ccs.envValue" (dict "context" $ctx "key" "REDIS_TLS" "default" (include "br-ccs.redisTLSDefault" $ctx))) -}}
 {{- if not (has $redisTLS $truthy) -}}
-{{- $allowRedis := lower (include "br-ccs.envValue" (dict "context" $ctx "key" "ALLOW_INSECURE_REDIS" "default" (ternary "true" "" (eq (include "br-ccs.redisTLSDefault" $ctx) "false")))) -}}
-{{- $allowAll := lower (include "br-ccs.envValue" (dict "context" $ctx "key" "ALLOW_INSECURE_TLS")) -}}
-{{- if not (or (has $allowRedis $insecureTruthy) (has $allowAll $insecureTruthy)) -}}
+{{- if not (or (include "br-ccs.valkeyBundled" $ctx) (include "br-ccs.redisInsecureAllowed" $ctx)) -}}
 {{- fail "br-ccs: REDIS_TLS=false needs ALLOW_INSECURE_REDIS=\"true\" (the app refuses plaintext Redis otherwise). Prefer REDIS_TLS=\"true\", with brCcs.secrets.REDIS_CA_CERT (base64 PEM) for a private CA." -}}
 {{- end -}}
 {{- end -}}

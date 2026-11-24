@@ -125,16 +125,20 @@ data:
   REDIS_MAX_RETRY_BACKOFF: {{ $cm.REDIS_MAX_RETRY_BACKOFF | default "1" | quote }}
   {{- /* The app defaults REDIS_TLS to false and lib-commons then refuses the
      plaintext connection, so the chart always states the posture: TLS for
-     external Redis, plaintext plus ALLOW_INSECURE_REDIS for the bundled valkey
-     subchart (it serves no TLS). REDIS_CA_CERT (base64 PEM) is a Secret. */}}
+     external Redis unless the operator set a plaintext bypass
+     (ALLOW_INSECURE_REDIS / ALLOW_INSECURE_TLS), plaintext plus
+     ALLOW_INSECURE_REDIS for the bundled valkey subchart (it serves no TLS).
+     An explicit REDIS_TLS wins, a YAML boolean false included.
+     REDIS_CA_CERT (base64 PEM) is a Secret. */}}
   {{- $redisTLSDefault := include "br-ccs.redisTLSDefault" . }}
+  {{- $redisTLS := include "br-ccs.envValue" (dict "context" $ "key" "REDIS_TLS" "default" $redisTLSDefault) }}
   {{- if not (hasKey (.Values.brCcs.extraEnvVars | default dict) "REDIS_TLS") }}
-  REDIS_TLS: {{ $cm.REDIS_TLS | default $redisTLSDefault | quote }}
+  REDIS_TLS: {{ $redisTLS | quote }}
   {{- end }}
   {{- if not (hasKey (.Values.brCcs.extraEnvVars | default dict) "ALLOW_INSECURE_REDIS") }}
   {{- if $cm.ALLOW_INSECURE_REDIS }}
   ALLOW_INSECURE_REDIS: {{ $cm.ALLOW_INSECURE_REDIS | quote }}
-  {{- else if and (eq $redisTLSDefault "false") (not (has (lower (toString ($cm.REDIS_TLS | default "false"))) (list "1" "t" "true"))) }}
+  {{- else if and (include "br-ccs.valkeyBundled" .) (not (has (lower $redisTLS) (list "1" "t" "true"))) }}
   ALLOW_INSECURE_REDIS: "true"
   {{- end }}
   {{- end }}

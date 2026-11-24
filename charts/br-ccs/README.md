@@ -63,10 +63,11 @@ license file, so use `LICENSE_KEY`.
 The app (CCS 1.1.x) refuses to boot on a set of values. The chart runs the same
 checks at render time (`templates/_validate.tpl`), so `helm template` and
 `helm install` fail with the variable to fix instead of a pod that crash-loops.
-A value in `brCcs.extraEnvVars` counts as set, except a secret key: a key of the
-chart Secret (passwords, `LICENSE_KEY`, `CCS_CRYPTO_MASTER_KEY`, `*_CLIENT_SECRET`,
-`*_API_KEY`, …) set there fails the render, because `extraEnvVars` is rendered
-into the ConfigMap in plaintext. Put it in `brCcs.secrets`.
+A value in `brCcs.extraEnvVars` counts as set, except a credential the chart
+Secret renders (passwords, `LICENSE_KEY`, `CCS_CRYPTO_MASTER_KEY`, `*_CLIENT_SECRET`,
+`*_API_KEY`, `*_SECRET_KEY`, `STREAMING_SASL_PASSWORD`, …): set there, it fails the
+render, because `extraEnvVars` is rendered into the ConfigMap in plaintext. Put it in
+`brCcs.secrets`. Ids, access-key ids and CA certificates are not refused.
 
 | Value | Rule |
 |-------|------|
@@ -80,7 +81,7 @@ into the ConfigMap in plaintext. Put it in `brCcs.secrets`.
 | `CCS_CRYPTO_MASTER_KEY` | Required, 64 hex chars. An argocd-vault-plugin placeholder (`<path:...>`) passes the shape check; the plugin replaces it after the render. |
 | `TRUSTED_PROXIES`, `CORS_ALLOWED_ORIGINS` | Required with `ENV_NAME=production`; no `0.0.0.0/0` or `*`. |
 | `REPORTER_TEMPLATE_{NAME,ID}_<t>` | One per template: `CCS0002`, `CCS0004` and `ACCS005`; only `ACCS005` with `CCS_DETAIL_MESSAGE_EMIT_ENABLED=false`. |
-| `REDIS_TLS` | Unset, it renders `"true"` for external Redis, or `"false"` when `ALLOW_INSECURE_REDIS` or `ALLOW_INSECURE_TLS` is set. The bundled valkey serves no TLS, so when `REDIS_HOST` is its Service (or empty) the chart renders `"false"` plus `ALLOW_INSECURE_REDIS="true"`. Any other `REDIS_HOST` is external Redis, even with the subchart on. Plaintext needs one of the bypasses. |
+| `REDIS_TLS` | Unset, it renders `"true"` for external Redis, or `"false"` when `ALLOW_INSECURE_REDIS` or `ALLOW_INSECURE_TLS` is true (`true`, `1`, `yes`, `on`). `ALLOW_INSECURE_TLS` relaxes every data store, so it turns Redis to plaintext too: set `REDIS_TLS` explicitly if Redis serves TLS. The bundled valkey serves no TLS: when `REDIS_HOST` is empty or exactly its Service name, the chart renders `"false"` plus `ALLOW_INSECURE_REDIS="true"`, unless you set `ALLOW_INSECURE_REDIS` yourself. Any other `REDIS_HOST`, a short Service name included, is external Redis, even with the subchart on. Plaintext needs a true bypass. |
 | `CRM_URL`, `CRM_ORGANIZATION_ID` | Required; `CRM_URL` absolute and https outside development. |
 | `REPORTER_URL` | Required. The app always dials the Reporter; `REPORTER_ENABLED` is no longer read or rendered. |
 | `OUTBOX_ENABLED`, `CIRCUIT_BREAKER_ENABLED` | Default `"true"`; `"false"` is refused (the Reporter needs both). |

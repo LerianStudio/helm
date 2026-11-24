@@ -79,7 +79,6 @@ secret values are skipped and the app stays the last gate for them.
 {{- define "br-ccs.validateBootContract" -}}
 {{- $ctx := . -}}
 {{- $useExisting := .Values.brCcs.useExistingSecret -}}
-{{- $truthy := list "1" "t" "true" -}}
 {{- $devNames := list "development" "develop" "dev" "local" "test" -}}
 {{- $envName := lower (include "br-ccs.envValue" (dict "context" $ctx "key" "ENV_NAME" "default" "production")) -}}
 {{- $isDev := has $envName $devNames -}}
@@ -96,6 +95,17 @@ secret values are skipped and the app stays the last gate for them.
 {{- range $k := $secretKeys -}}
 {{- if hasKey $extra $k -}}
 {{- fail (printf "br-ccs: %s is a secret: set it in brCcs.secrets, not brCcs.extraEnvVars (extraEnvVars renders into the ConfigMap in plaintext)." $k) -}}
+{{- end -}}
+{{- end -}}
+
+{{- /* 0b. Booleans the app parses strictly (lib-commons v7.26.0 commons/os.go
+        parseEnvBool): exactly "true" or "false" after trimming, so "1", "t",
+        "TRUE" or "yes" render fine and are refused at boot. Empty keeps the
+        chart or app default. */ -}}
+{{- range $b := list (dict "key" "REDIS_TLS" "default" (include "br-ccs.redisTLSDefault" $ctx)) (dict "key" "OUTBOX_ENABLED" "default" "true") (dict "key" "CIRCUIT_BREAKER_ENABLED" "default" "true") (dict "key" "CCS_DETAIL_MESSAGE_EMIT_ENABLED" "default" "") -}}
+{{- $v := include "br-ccs.envValue" (dict "context" $ctx "key" $b.key "default" $b.default) -}}
+{{- if and $v (not (has $v (list "true" "false"))) -}}
+{{- fail (printf "br-ccs: %s must be exactly \"true\" or \"false\" (the app refuses any other spelling at boot); got %q." $b.key $v) -}}
 {{- end -}}
 {{- end -}}
 
@@ -202,9 +212,9 @@ secret values are skipped and the app stays the last gate for them.
 {{- /* 7. Reporter detail templates, an ID or a NAME each: CCS0002, CCS0004 and
        ACCS005 with message emission on (default), ACCS005 alone with it off
        (config_detail_reporter.go:93-132). */ -}}
-{{- $emit := lower (include "br-ccs.envValue" (dict "context" $ctx "key" "CCS_DETAIL_MESSAGE_EMIT_ENABLED")) -}}
+{{- $emit := include "br-ccs.envValue" (dict "context" $ctx "key" "CCS_DETAIL_MESSAGE_EMIT_ENABLED") -}}
 {{- $needed := list "CCS0002" "CCS0004" "ACCS005" -}}
-{{- if has $emit (list "0" "f" "false") -}}{{- $needed = list "ACCS005" -}}{{- end -}}
+{{- if eq $emit "false" -}}{{- $needed = list "ACCS005" -}}{{- end -}}
 {{- range $t := $needed -}}
 {{- if and (not (include "br-ccs.envValue" (dict "context" $ctx "key" (printf "REPORTER_TEMPLATE_ID_%s" $t)))) (not (include "br-ccs.envValue" (dict "context" $ctx "key" (printf "REPORTER_TEMPLATE_NAME_%s" $t)))) -}}
 {{- fail (printf "br-ccs: brCcs.configmap.REPORTER_TEMPLATE_NAME_%s (or REPORTER_TEMPLATE_ID_%s) is required: the app renders the %s detail answer through the Reporter." $t $t $t) -}}
@@ -213,8 +223,8 @@ secret values are skipped and the app stays the last gate for them.
 
 {{- /* 8. Redis TLS (lib-commons v7.26.0 commons/redis/redis.go:520-533): plaintext
        only with ALLOW_INSECURE_REDIS or ALLOW_INSECURE_TLS. */ -}}
-{{- $redisTLS := lower (include "br-ccs.envValue" (dict "context" $ctx "key" "REDIS_TLS" "default" (include "br-ccs.redisTLSDefault" $ctx))) -}}
-{{- if not (has $redisTLS $truthy) -}}
+{{- $redisTLS := include "br-ccs.envValue" (dict "context" $ctx "key" "REDIS_TLS" "default" (include "br-ccs.redisTLSDefault" $ctx)) -}}
+{{- if ne $redisTLS "true" -}}
 {{- if not (or (include "br-ccs.valkeyBundled" $ctx) (include "br-ccs.redisInsecureAllowed" $ctx)) -}}
 {{- fail "br-ccs: REDIS_TLS=false needs ALLOW_INSECURE_REDIS=\"true\" (the app refuses plaintext Redis otherwise). Prefer REDIS_TLS=\"true\", with brCcs.secrets.REDIS_CA_CERT (base64 PEM) for a private CA." -}}
 {{- end -}}
@@ -239,10 +249,10 @@ secret values are skipped and the app stays the last gate for them.
 {{- if not (include "br-ccs.envValue" (dict "context" $ctx "key" "REPORTER_URL")) -}}
 {{- fail "br-ccs: brCcs.configmap.REPORTER_URL is required: the app always dials the Reporter (REPORTER_ENABLED is no longer read)." -}}
 {{- end -}}
-{{- if not (has (lower (include "br-ccs.envValue" (dict "context" $ctx "key" "OUTBOX_ENABLED" "default" "true"))) $truthy) -}}
+{{- if ne (include "br-ccs.envValue" (dict "context" $ctx "key" "OUTBOX_ENABLED" "default" "true")) "true" -}}
 {{- fail "br-ccs: OUTBOX_ENABLED must be \"true\": the Reporter registers its dispatch handler on the outbox at boot." -}}
 {{- end -}}
-{{- if not (has (lower (include "br-ccs.envValue" (dict "context" $ctx "key" "CIRCUIT_BREAKER_ENABLED" "default" "true"))) $truthy) -}}
+{{- if ne (include "br-ccs.envValue" (dict "context" $ctx "key" "CIRCUIT_BREAKER_ENABLED" "default" "true")) "true" -}}
 {{- fail "br-ccs: CIRCUIT_BREAKER_ENABLED must be \"true\": the Reporter integration refuses to boot without the circuit breaker." -}}
 {{- end -}}
 {{- end -}}

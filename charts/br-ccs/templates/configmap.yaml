@@ -138,7 +138,7 @@ data:
   {{- if not (hasKey (.Values.brCcs.extraEnvVars | default dict) "ALLOW_INSECURE_REDIS") }}
   {{- if $cm.ALLOW_INSECURE_REDIS }}
   ALLOW_INSECURE_REDIS: {{ $cm.ALLOW_INSECURE_REDIS | quote }}
-  {{- else if and (include "br-ccs.valkeyBundled" .) (not (has (lower $redisTLS) (list "1" "t" "true"))) }}
+  {{- else if and (include "br-ccs.valkeyBundled" .) (ne $redisTLS "true") }}
   ALLOW_INSECURE_REDIS: "true"
   {{- end }}
   {{- end }}

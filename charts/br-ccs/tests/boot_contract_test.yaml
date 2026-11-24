@@ -73,6 +73,30 @@ tests:
           count: 0
         template: templates/boot-contract.yaml
 
+  - it: refuses a boolean the app does not parse (OUTBOX_ENABLED "1")
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.OUTBOX_ENABLED: "1"
+    asserts:
+      - failedTemplate:
+          errorPattern: "OUTBOX_ENABLED must be exactly \"true\" or \"false\""
+
+  - it: refuses a boolean the app does not parse (REDIS_TLS "TRUE")
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.REDIS_TLS: "TRUE"
+    asserts:
+      - failedTemplate:
+          errorPattern: "REDIS_TLS must be exactly \"true\" or \"false\""
+
+  - it: refuses a boolean the app does not parse (CCS_DETAIL_MESSAGE_EMIT_ENABLED "False")
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.CCS_DETAIL_MESSAGE_EMIT_ENABLED: "False"
+    asserts:
+      - failedTemplate:
+          errorPattern: "CCS_DETAIL_MESSAGE_EMIT_ENABLED must be exactly"
+
   - it: refuses PLUGIN_AUTH_ENABLED=false in production
     template: templates/boot-contract.yaml
     set:

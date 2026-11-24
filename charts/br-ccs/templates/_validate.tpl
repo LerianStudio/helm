@@ -1,0 +1,204 @@
+{{/*
+br-ccs boot contract.
+
+The app (br-sfn services/ccs, 1.1.x) refuses to boot on a set of values that
+`helm lint` and `helm template` used to accept: the operator only found out
+when the pod crash-looped, one variable at a time. Each check below mirrors one
+boot refusal of the app, so the same mistake now fails at render time with the
+variable to fix. App references are to services/ccs/internal/bootstrap at the
+ccs-v1.1.2 tag.
+
+Values are read the way templates/configmap.yaml renders them: a key in
+brCcs.extraEnvVars wins, then brCcs.configmap, then the chart default.
+With brCcs.useExistingSecret the Secret is not visible here, so the checks on
+secret values are skipped and the app stays the last gate for them.
+*/}}
+
+{{/* br-ccs.envValue — effective value of one env key (extraEnvVars > configmap > default). */}}
+{{- define "br-ccs.envValue" -}}
+{{- $extra := .context.Values.brCcs.extraEnvVars | default dict -}}
+{{- $cm := .context.Values.brCcs.configmap | default dict -}}
+{{- if hasKey $extra .key -}}
+{{- $v := index $extra .key -}}{{- if not (kindIs "invalid" $v) -}}{{- toString $v | trim -}}{{- end -}}
+{{- else -}}
+{{- toString (index $cm .key | default (.default | default "")) | trim -}}
+{{- end -}}
+{{- end -}}
+
+{{/* br-ccs.secretValue — effective value of one Secret key (extraEnvVars > brCcs.secrets). */}}
+{{- define "br-ccs.secretValue" -}}
+{{- $extra := .context.Values.brCcs.extraEnvVars | default dict -}}
+{{- $s := .context.Values.brCcs.secrets | default dict -}}
+{{- if hasKey $extra .key -}}
+{{- $v := index $extra .key -}}{{- if not (kindIs "invalid" $v) -}}{{- toString $v | trim -}}{{- end -}}
+{{- else -}}
+{{- toString (index $s .key | default "") | trim -}}
+{{- end -}}
+{{- end -}}
+
+{{/* br-ccs.redisTLS — the REDIS_TLS the chart renders: "false" with the bundled
+     valkey subchart (it serves no TLS), "true" for external Redis. */}}
+{{- define "br-ccs.redisTLSDefault" -}}
+{{- $vk := .Values.valkey | default dict -}}
+{{- if and (ne (toString $vk.enabled) "false") (not $vk.external) -}}false{{- else -}}true{{- end -}}
+{{- end -}}
+
+{{- define "br-ccs.validateBootContract" -}}
+{{- $ctx := . -}}
+{{- $useExisting := .Values.brCcs.useExistingSecret -}}
+{{- $truthy := list "1" "t" "true" -}}
+{{- $insecureTruthy := list "1" "true" "yes" "on" -}}
+{{- $devNames := list "development" "develop" "dev" "local" "test" -}}
+{{- $envName := lower (include "br-ccs.envValue" (dict "context" $ctx "key" "ENV_NAME" "default" "production")) -}}
+{{- $isDev := has $envName $devNames -}}
+{{- $isProd := eq $envName "production" -}}
+{{- $isSaaS := eq (lower (include "br-ccs.envValue" (dict "context" $ctx "key" "DEPLOYMENT_MODE" "default" "byoc"))) "saas" -}}
+{{- $extra := .Values.brCcs.extraEnvVars | default dict -}}
+{{- $cm := .Values.brCcs.configmap | default dict -}}
+
+{{- /* 1. Inbound auth switch (shared/envclass ResolveAuthSwitch, config.go:957).
+       Exactly "true" or "false"; "false" only in a development-class ENV_NAME
+       outside DEPLOYMENT_MODE=saas. */ -}}
+{{- $auth := "" -}}
+{{- if hasKey $extra "PLUGIN_AUTH_ENABLED" -}}
+{{- $auth = toString (index $extra "PLUGIN_AUTH_ENABLED") | trim -}}
+{{- else -}}
+{{- $auth = include "lerian-common.globalValue" (dict "context" $ctx "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "true") | trim -}}
+{{- end -}}
+{{- if not (has $auth (list "true" "false")) -}}
+{{- fail (printf "br-ccs: PLUGIN_AUTH_ENABLED must be exactly \"true\" or \"false\" (got %q). Set brCcs.configmap.PLUGIN_AUTH_ENABLED or global.auth.enabled." $auth) -}}
+{{- end -}}
+{{- if and (eq $auth "false") (or (not $isDev) $isSaaS) -}}
+{{- fail (printf "br-ccs: PLUGIN_AUTH_ENABLED=false is only accepted with a development ENV_NAME (development, develop, dev, local, test) outside DEPLOYMENT_MODE=saas; got ENV_NAME=%q. Set PLUGIN_AUTH_ENABLED=\"true\" and PLUGIN_AUTH_HOST." $envName) -}}
+{{- end -}}
+
+{{- /* 2. With auth on: PLUGIN_AUTH_HOST and the Reporter and STA M2M pairs, even
+       with STA_ENABLED=false (config_validation.go:234-318). */ -}}
+{{- if eq $auth "true" -}}
+{{- $authHost := "" -}}
+{{- if hasKey $extra "PLUGIN_AUTH_HOST" -}}
+{{- $authHost = toString (index $extra "PLUGIN_AUTH_HOST") | trim -}}
+{{- else -}}
+{{- $authHost = include "lerian-common.globalValue" (dict "context" $ctx "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_HOST" "default" "") | trim -}}
+{{- end -}}
+{{- if not $authHost -}}
+{{- fail "br-ccs: PLUGIN_AUTH_HOST is required when PLUGIN_AUTH_ENABLED=true. Set brCcs.configmap.PLUGIN_AUTH_HOST or global.auth.host (the plugin-access-manager URL)." -}}
+{{- end -}}
+{{- if not $useExisting -}}
+{{- range $k := list "REPORTER_CLIENT_ID" "REPORTER_CLIENT_SECRET" "STA_CLIENT_ID" "STA_CLIENT_SECRET" -}}
+{{- if not (include "br-ccs.secretValue" (dict "context" $ctx "key" $k)) -}}
+{{- fail (printf "br-ccs: brCcs.secrets.%s is required when PLUGIN_AUTH_ENABLED=true (the app requires the Reporter and STA M2M credentials even with STA_ENABLED=false)." $k) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- /* 3. Object-storage encryption: a bound bucket needs an explicit SSE posture
+       (config_storage_encryption.go:148-200). The chart always binds both
+       buckets (default names), so both need it. */ -}}
+{{- range $b := list (dict "prefix" "OBJECT_STORAGE_STA" "bucket" "sta-files") (dict "prefix" "OBJECT_STORAGE_CCS" "bucket" "lerian-ccs") -}}
+{{- $bucket := include "br-ccs.envValue" (dict "context" $ctx "key" (printf "%s_BUCKET" $b.prefix) "default" $b.bucket) -}}
+{{- if $bucket -}}
+{{- $algVar := printf "%s_SSE_ALGORITHM" $b.prefix -}}
+{{- $alg := lower (include "br-ccs.envValue" (dict "context" $ctx "key" $algVar)) -}}
+{{- if not $alg -}}
+{{- fail (printf "br-ccs: brCcs.configmap.%s is required (bucket %q is bound). Accepted values: AES256 (recommended), aws:kms (with %s_SSE_KMS_KEY_ID), none (development only)." $algVar $bucket $b.prefix) -}}
+{{- end -}}
+{{- if not (has $alg (list "aes256" "aws:kms" "none")) -}}
+{{- fail (printf "br-ccs: %s=%q is not accepted. Accepted values: AES256, aws:kms, none." $algVar $alg) -}}
+{{- end -}}
+{{- if and (eq $alg "none") (or (not $isDev) $isSaaS) -}}
+{{- fail (printf "br-ccs: %s=none is only accepted with a development ENV_NAME outside DEPLOYMENT_MODE=saas; got ENV_NAME=%q. Use AES256 or aws:kms." $algVar $envName) -}}
+{{- end -}}
+{{- if and (eq $alg "aws:kms") (not (include "br-ccs.envValue" (dict "context" $ctx "key" (printf "%s_SSE_KMS_KEY_ID" $b.prefix)))) -}}
+{{- fail (printf "br-ccs: %s_SSE_KMS_KEY_ID is required when %s=aws:kms." $b.prefix $algVar) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- if not $useExisting -}}
+{{- /* 4. License, in every environment (config_validation.go:130-139). The chart
+       mounts no license file, so LICENSE_KEY is the supported route. */ -}}
+{{- if and (not (include "br-ccs.secretValue" (dict "context" $ctx "key" "LICENSE_KEY"))) (not (include "br-ccs.envValue" (dict "context" $ctx "key" "LICENSE_FILE_PATH"))) -}}
+{{- fail "br-ccs: brCcs.secrets.LICENSE_KEY is required in every environment (the app refuses to boot without a license)." -}}
+{{- end -}}
+{{- /* 5. Crypto master key: hex AES-256, 64 chars (factory_crypto.go:70-77). */ -}}
+{{- $masterKey := include "br-ccs.secretValue" (dict "context" $ctx "key" "CCS_CRYPTO_MASTER_KEY") -}}
+{{- if not $masterKey -}}
+{{- fail "br-ccs: brCcs.secrets.CCS_CRYPTO_MASTER_KEY is required: AES-256 key, 64 hex chars (openssl rand -hex 32)." -}}
+{{- end -}}
+{{- if not (regexMatch "^[0-9a-fA-F]{64}$" $masterKey) -}}
+{{- fail (printf "br-ccs: brCcs.secrets.CCS_CRYPTO_MASTER_KEY must be 64 hex chars (openssl rand -hex 32); got %d chars or a non-hex value." (len $masterKey)) -}}
+{{- end -}}
+{{- end -}}
+
+{{- /* 6. Production gates (config_validation.go:63-193): TRUSTED_PROXIES and
+       CORS_ALLOWED_ORIGINS, both non-empty and without a wildcard. */ -}}
+{{- if $isProd -}}
+{{- $proxies := list -}}
+{{- range $p := splitList "," (include "br-ccs.envValue" (dict "context" $ctx "key" "TRUSTED_PROXIES")) -}}{{- if trim $p -}}{{- $proxies = append $proxies (trim $p) -}}{{- end -}}{{- end -}}
+{{- if not $proxies -}}
+{{- fail "br-ccs: brCcs.configmap.TRUSTED_PROXIES is required when ENV_NAME=production (comma-separated IPs or CIDRs of the L7 proxies, e.g. 10.0.0.0/8)." -}}
+{{- end -}}
+{{- if or (has "0.0.0.0/0" $proxies) (has "::/0" $proxies) -}}
+{{- fail "br-ccs: TRUSTED_PROXIES must not contain 0.0.0.0/0 or ::/0 when ENV_NAME=production." -}}
+{{- end -}}
+{{- $origins := list -}}
+{{- range $o := splitList "," (include "br-ccs.envValue" (dict "context" $ctx "key" "CORS_ALLOWED_ORIGINS")) -}}{{- if trim $o -}}{{- $origins = append $origins (trim $o) -}}{{- end -}}{{- end -}}
+{{- if not $origins -}}
+{{- fail "br-ccs: brCcs.configmap.CORS_ALLOWED_ORIGINS is required when ENV_NAME=production (comma-separated origins, e.g. https://console.example.com)." -}}
+{{- end -}}
+{{- if has "*" $origins -}}
+{{- fail "br-ccs: CORS_ALLOWED_ORIGINS must not contain \"*\" when ENV_NAME=production." -}}
+{{- end -}}
+{{- end -}}
+
+{{- /* 7. Reporter detail templates, an ID or a NAME each: CCS0002, CCS0004 and
+       ACCS005 with message emission on (default), ACCS005 alone with it off
+       (config_detail_reporter.go:93-132). */ -}}
+{{- $emit := lower (include "br-ccs.envValue" (dict "context" $ctx "key" "CCS_DETAIL_MESSAGE_EMIT_ENABLED")) -}}
+{{- $needed := list "CCS0002" "CCS0004" "ACCS005" -}}
+{{- if has $emit (list "0" "f" "false") -}}{{- $needed = list "ACCS005" -}}{{- end -}}
+{{- range $t := $needed -}}
+{{- if and (not (include "br-ccs.envValue" (dict "context" $ctx "key" (printf "REPORTER_TEMPLATE_ID_%s" $t)))) (not (include "br-ccs.envValue" (dict "context" $ctx "key" (printf "REPORTER_TEMPLATE_NAME_%s" $t)))) -}}
+{{- fail (printf "br-ccs: brCcs.configmap.REPORTER_TEMPLATE_NAME_%s (or REPORTER_TEMPLATE_ID_%s) is required: the app renders the %s detail answer through the Reporter." $t $t $t) -}}
+{{- end -}}
+{{- end -}}
+
+{{- /* 8. Redis TLS (lib-commons v7.26.0 commons/redis/redis.go:520-533): plaintext
+       only with ALLOW_INSECURE_REDIS or ALLOW_INSECURE_TLS. */ -}}
+{{- $redisTLS := lower (include "br-ccs.envValue" (dict "context" $ctx "key" "REDIS_TLS" "default" (include "br-ccs.redisTLSDefault" $ctx))) -}}
+{{- if not (has $redisTLS $truthy) -}}
+{{- $allowRedis := lower (include "br-ccs.envValue" (dict "context" $ctx "key" "ALLOW_INSECURE_REDIS" "default" (ternary "true" "" (eq (include "br-ccs.redisTLSDefault" $ctx) "false")))) -}}
+{{- $allowAll := lower (include "br-ccs.envValue" (dict "context" $ctx "key" "ALLOW_INSECURE_TLS")) -}}
+{{- if not (or (has $allowRedis $insecureTruthy) (has $allowAll $insecureTruthy)) -}}
+{{- fail "br-ccs: REDIS_TLS=false needs ALLOW_INSECURE_REDIS=\"true\" (the app refuses plaintext Redis otherwise). Prefer REDIS_TLS=\"true\", with brCcs.secrets.REDIS_CA_CERT (base64 PEM) for a private CA." -}}
+{{- end -}}
+{{- end -}}
+
+{{- /* 9. CRM: absolute URL, https outside development, and the organization id
+       (extensions_crm.go:87-111). */ -}}
+{{- $crmURL := include "br-ccs.envValue" (dict "context" $ctx "key" "CRM_URL") -}}
+{{- if not (regexMatch "^[A-Za-z][A-Za-z0-9+.-]*://[^/?#]+" $crmURL) -}}
+{{- fail "br-ccs: brCcs.configmap.CRM_URL is required: the absolute URL of the Midaz CRM (https outside development)." -}}
+{{- end -}}
+{{- if and (not $isDev) (not (hasPrefix "https://" (lower $crmURL))) -}}
+{{- fail (printf "br-ccs: CRM_URL must use https outside a development ENV_NAME; got ENV_NAME=%q." $envName) -}}
+{{- end -}}
+{{- if not (include "br-ccs.envValue" (dict "context" $ctx "key" "CRM_ORGANIZATION_ID")) -}}
+{{- fail "br-ccs: brCcs.configmap.CRM_ORGANIZATION_ID is required (the Midaz organization the CRM reads)." -}}
+{{- end -}}
+
+{{- /* 10. Reporter: the app always dials it and no longer reads REPORTER_ENABLED
+        (extensions_reporter.go:445-456); its handler rides the outbox and the
+        circuit breaker. */ -}}
+{{- if not (include "br-ccs.envValue" (dict "context" $ctx "key" "REPORTER_URL")) -}}
+{{- fail "br-ccs: brCcs.configmap.REPORTER_URL is required: the app always dials the Reporter (REPORTER_ENABLED is no longer read)." -}}
+{{- end -}}
+{{- if not (has (lower (include "br-ccs.envValue" (dict "context" $ctx "key" "OUTBOX_ENABLED" "default" "true"))) $truthy) -}}
+{{- fail "br-ccs: OUTBOX_ENABLED must be \"true\": the Reporter registers its dispatch handler on the outbox at boot." -}}
+{{- end -}}
+{{- if not (has (lower (include "br-ccs.envValue" (dict "context" $ctx "key" "CIRCUIT_BREAKER_ENABLED" "default" "true"))) $truthy) -}}
+{{- fail "br-ccs: CIRCUIT_BREAKER_ENABLED must be \"true\": the Reporter integration refuses to boot without the circuit breaker." -}}
+{{- end -}}
+{{- end -}}

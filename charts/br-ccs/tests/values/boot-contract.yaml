@@ -1,0 +1,37 @@
+# A production install the CCS 1.1.x boot contract accepts: values-template.yaml
+# filled in with placeholders. Tests layer one change on top of it to prove each
+# gate in templates/_validate.tpl. Not a real credential anywhere.
+brCcs:
+  configmap:
+    ENV_NAME: production
+    TRUSTED_PROXIES: 10.0.0.0/8
+    CORS_ALLOWED_ORIGINS: https://console.example.com
+    POSTGRES_HOST: pg.example.internal
+    REDIS_HOST: redis.example.internal:6379
+    REPORTER_URL: https://reporter.example.com
+    REPORTER_TEMPLATE_NAME_CCS0002: ccs0002
+    REPORTER_TEMPLATE_NAME_CCS0004: ccs0004
+    REPORTER_TEMPLATE_NAME_ACCS005: accs005
+    CRM_URL: https://crm.example.com
+    CRM_ORGANIZATION_ID: org-placeholder
+    OBJECT_STORAGE_STA_SSE_ALGORITHM: AES256
+    OBJECT_STORAGE_CCS_SSE_ALGORITHM: AES256
+  secrets:
+    POSTGRES_PASSWORD: placeholder
+    REDIS_PASSWORD: placeholder
+    CCS_CRYPTO_MASTER_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+    LICENSE_KEY: placeholder
+    REPORTER_CLIENT_ID: reporter-client
+    REPORTER_CLIENT_SECRET: placeholder
+    STA_CLIENT_ID: sta-client
+    STA_CLIENT_SECRET: placeholder
+global:
+  # PLUGIN_AUTH_HOST through the env-wide auth block, as an umbrella sets it.
+  auth:
+    host: https://auth.example.com
+valkey:
+  enabled: false
+  external: true
+postgresql:
+  enabled: false
+  external: true

@@ -92,7 +92,7 @@ global:
     # saslUsername: ""            # STREAMING_SASL_USERNAME
   # -- Env-wide inbound auth (plugin-access-manager), consumed by lerian-common.globalValue
   # (block "auth"). A component brCcs.configmap.PLUGIN_AUTH_* still overrides.
-  # Leave empty ({}) for the chart defaults (PLUGIN_AUTH_ENABLED=false, HOST unset).
+  # Leave empty ({}) for the chart defaults (PLUGIN_AUTH_ENABLED=true, HOST unset; the chart then requires brCcs.configmap.PLUGIN_AUTH_HOST).
   auth: {}
     # enabled: "true"             # PLUGIN_AUTH_ENABLED
     # host: "http://plugin-access-manager:4000"  # PLUGIN_AUTH_HOST

@@ -1,6 +1,8 @@
 # Template values for br-ccs deployment.
 # Copy this file and fill in the required values for your environment.
-# REQUIRED fields must be set before deployment.
+# REQUIRED fields must be set before deployment. The chart checks every value
+# the app refuses to boot without (templates/_validate.tpl): `helm template` and
+# `helm install` fail with the variable to fix instead of a crash-looping pod.
 
 brCcs:
   name: br-ccs
@@ -39,7 +41,8 @@ brCcs:
     # TLS / proxy — TRUSTED_PROXIES REQUIRED when ENV_NAME=production
     # =================================================================
     TLS_TERMINATED_UPSTREAM: "true"
-    TRUSTED_PROXIES: ""  # e.g. 10.0.0.0/8,172.16.0.0/12
+    TRUSTED_PROXIES: ""  # REQUIRED in production - e.g. 10.0.0.0/8,172.16.0.0/12
+    CORS_ALLOWED_ORIGINS: ""  # REQUIRED in production - comma-separated origins, no "*" (e.g. https://console.example.com)
 
     # =================================================================
     # Multi-tenancy
@@ -67,27 +70,49 @@ brCcs:
     # or external; leave empty to use the bundled subchart Service.
     # =================================================================
     REDIS_HOST: ""  # REQUIRED for external infra (valkey disabled/external); host:port
+    # The app refuses plaintext Redis. The chart renders REDIS_TLS="true" for
+    # external Redis (put a private CA, base64 PEM, in secrets.REDIS_CA_CERT).
+    # Plaintext needs ALLOW_INSECURE_REDIS="true" as well.
+    # REDIS_TLS: "true"
 
     # =================================================================
-    # Circuit breaker (prerequisite for object storage)
+    # Circuit breaker and outbox. Both must stay "true": the Reporter
+    # integration refuses to boot without the breaker and registers its
+    # dispatch handler on the outbox.
     # =================================================================
     CIRCUIT_BREAKER_ENABLED: "true"
+    OUTBOX_ENABLED: "true"
 
     # =================================================================
-    # Integrations (master switches; URLs required when enabled)
+    # Integrations
     # =================================================================
     FETCHER_ENABLED: "false"
     # FETCHER_URL: ""
     STA_ENABLED: "false"
     # STA_BASE_URL: ""
-    REPORTER_ENABLED: "false"
-    # REPORTER_URL: ""
+    # Reporter: always on. The app no longer reads REPORTER_ENABLED.
+    REPORTER_URL: ""  # REQUIRED - Reporter base URL
+    # One template per detail answer, by NAME or by ID (REPORTER_TEMPLATE_ID_*).
+    # CCS0002 and CCS0004 are REQUIRED while CCS_DETAIL_MESSAGE_EMIT_ENABLED is
+    # "true" (app default); ACCS005 is always REQUIRED.
+    REPORTER_TEMPLATE_NAME_CCS0002: ""  # REQUIRED
+    REPORTER_TEMPLATE_NAME_CCS0004: ""  # REQUIRED
+    REPORTER_TEMPLATE_NAME_ACCS005: ""  # REQUIRED
+    # Midaz CRM (client id/secret go in secrets)
+    CRM_URL: ""  # REQUIRED - absolute URL, https outside a development ENV_NAME
+    CRM_ORGANIZATION_ID: ""  # REQUIRED - Midaz organization the CRM reads
+    # Base CNPJ (8 digits) of the BACEN recipient in the CCS/ACCS envelope.
+    # Unset, the app sends its placeholder 00000000. Confirm the value with BACEN.
+    # CCS_BACEN_DESTINATARIO_CNPJ_BASE: ""
 
     # =================================================================
-    # Authentication (inbound)
+    # Authentication (inbound). The app accepts PLUGIN_AUTH_ENABLED="false"
+    # only with a development ENV_NAME (development, develop, dev, local,
+    # test) outside DEPLOYMENT_MODE=saas. With auth on, the Reporter and STA
+    # M2M credentials in secrets are REQUIRED, even with STA_ENABLED=false.
     # =================================================================
-    PLUGIN_AUTH_ENABLED: "false"
-    # PLUGIN_AUTH_HOST: ""  # REQUIRED when PLUGIN_AUTH_ENABLED=true
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_HOST: ""  # REQUIRED - plugin-access-manager URL
 
     # =================================================================
     # OpenTelemetry
@@ -96,12 +121,18 @@ brCcs:
     OTEL_EXPORTER_OTLP_ENDPOINT: ""  # Set if ENABLE_TELEMETRY=true
 
     # =================================================================
-    # Object storage (per bucket; empty *_BUCKET marks readyz dep skipped)
+    # Object storage. An empty *_BUCKET renders the chart default bucket
+    # name (sta-files, lerian-ccs), so both buckets are always bound and
+    # each needs its server-side encryption posture.
     # =================================================================
     OBJECT_STORAGE_STA_ENDPOINT: ""
     OBJECT_STORAGE_STA_BUCKET: ""
+    OBJECT_STORAGE_STA_SSE_ALGORITHM: ""  # REQUIRED - AES256 (recommended) | aws:kms (+ _SSE_KMS_KEY_ID) | none (development only)
+    # OBJECT_STORAGE_STA_SSE_KMS_KEY_ID: ""
     OBJECT_STORAGE_CCS_ENDPOINT: ""
     OBJECT_STORAGE_CCS_BUCKET: ""
+    OBJECT_STORAGE_CCS_SSE_ALGORITHM: ""  # REQUIRED - AES256 (recommended) | aws:kms (+ _SSE_KMS_KEY_ID) | none (development only)
+    # OBJECT_STORAGE_CCS_SSE_KMS_KEY_ID: ""
     OBJECT_STORAGE_FETCHER_ENDPOINT: ""
     OBJECT_STORAGE_FETCHER_BUCKET: ""
 
@@ -109,22 +140,16 @@ brCcs:
     # Optional app knobs — rendered ONLY when set (unset = app default).
     # A key also set in brCcs.extraEnvVars is rendered from extraEnvVars.
     # =================================================================
-    # CRM upstream (client id/secret go in secrets)
-    # CRM_URL: ""
-    # CRM_ORGANIZATION_ID: ""
     # CRM_M2M_TARGET_SERVICE: ""
     # IdP (lib-auth; M2M client id/secret go in secrets)
     # IDP_DECLARATION_ENABLED: ""
     # IDP_HOST: ""
-    # Reporter templates
-    # REPORTER_TEMPLATE_ID_ACCS001: ""
-    # REPORTER_TEMPLATE_ID_ACCS005: ""
+    # Reporter templates by ID (each one replaces the matching NAME above)
     # REPORTER_TEMPLATE_ID_CCS0002: ""
     # REPORTER_TEMPLATE_ID_CCS0004: ""
+    # REPORTER_TEMPLATE_ID_ACCS005: ""
+    # REPORTER_TEMPLATE_ID_ACCS001: ""
     # REPORTER_TEMPLATE_NAME_ACCS001: ""
-    # REPORTER_TEMPLATE_NAME_ACCS005: ""
-    # REPORTER_TEMPLATE_NAME_CCS0002: ""
-    # REPORTER_TEMPLATE_NAME_CCS0004: ""
     # Reporter polling
     # CCS_REPORTER_POLL_INITIAL_DELAY_MS: ""
     # CCS_REPORTER_POLL_MAX_DELAY_MS: ""
@@ -145,15 +170,11 @@ brCcs:
     # CCS_MOVEMENT_SUBMIT_WINDOW_ALWAYS_OPEN: ""
     # CCS_NON_SUBMISSION_SCAN_INTERVAL_SEC: ""
     # CCS_OUTBOX_OVERRIDES_ENABLED: ""
-    # Idempotency / object-storage limits + SSE / swagger host
+    # Idempotency / object-storage limits / swagger host
     # IDEMPOTENCY_KEY_PREFIX: ""
     # IDEMPOTENCY_KEY_TTL_HRS: ""
     # OBJECT_STORAGE_CCS_MAX_OBJECT_BYTES: ""
     # OBJECT_STORAGE_STA_MAX_OBJECT_BYTES: ""
-    # OBJECT_STORAGE_CCS_SSE_ALGORITHM: ""
-    # OBJECT_STORAGE_CCS_SSE_KMS_KEY_ID: ""
-    # OBJECT_STORAGE_STA_SSE_ALGORITHM: ""
-    # OBJECT_STORAGE_STA_SSE_KMS_KEY_ID: ""
     # SWAGGER_HOST: ""
     # SWAGGER_SCHEMES: ""
 
@@ -164,12 +185,12 @@ brCcs:
     # Redis/Valkey - REQUIRED
     REDIS_PASSWORD: ""  # REQUIRED - Redis/Valkey password
 
-    # Crypto keys - REQUIRED in production (empty CCS_CRYPTO_MASTER_KEY fails fast at boot)
-    CCS_CRYPTO_MASTER_KEY: ""  # AES-256-GCM master key, 64 hex chars (openssl rand -hex 32)
+    # Crypto keys
+    CCS_CRYPTO_MASTER_KEY: ""  # REQUIRED - AES-256-GCM master key, 64 hex chars (openssl rand -hex 32)
     FETCHER_CRYPTO_KEY: ""     # Fetcher snapshot decryption key (base64; = Fetcher APP_ENC_KEY)
 
-    # License (lib-license-go; validated at boot, fail-closed)
-    # LICENSE_KEY: ""          # Lerian license key
+    # License (lib-license-go; validated at boot in every environment, fail-closed)
+    LICENSE_KEY: ""  # REQUIRED - Lerian license key
     # ORGANIZATION_IDS: ""     # enforcement scope (e.g. "global")
 
     # Object storage credentials (set alongside the matching *_BUCKET)
@@ -185,13 +206,14 @@ brCcs:
     # REPORTER_API_KEY: ""
     # STA_API_KEY: ""
 
-    # Per-upstream M2M OAuth2 client credentials (single-tenant; via plugin-auth token endpoint)
+    # Per-upstream M2M OAuth2 client credentials (via the plugin-auth token endpoint).
+    # Reporter and STA are REQUIRED with PLUGIN_AUTH_ENABLED=true, even with STA_ENABLED=false.
+    REPORTER_CLIENT_ID: ""  # REQUIRED with auth on
+    REPORTER_CLIENT_SECRET: ""  # REQUIRED with auth on
+    STA_CLIENT_ID: ""  # REQUIRED with auth on
+    STA_CLIENT_SECRET: ""  # REQUIRED with auth on
     # FETCHER_CLIENT_ID: ""
     # FETCHER_CLIENT_SECRET: ""
-    # REPORTER_CLIENT_ID: ""
-    # REPORTER_CLIENT_SECRET: ""
-    # STA_CLIENT_ID: ""
-    # STA_CLIENT_SECRET: ""
     # CRM_CLIENT_ID: ""
     # CRM_CLIENT_SECRET: ""
     # IDP_M2M_CLIENT_ID: ""
@@ -200,6 +222,8 @@ brCcs:
     # Multi-tenant (tenant-manager)
     # MULTI_TENANT_SERVICE_API_KEY: ""
 
+  # With useExistingSecret the chart cannot read the Secret, so it skips the
+  # checks on secret values; the app still refuses to boot without them.
   useExistingSecret: false
   existingSecretName: ""
 
@@ -216,6 +240,7 @@ brCcs:
 #
 # Redis/Valkey:
 #   - Used for: rate limiting, idempotency keys, caching. No pre-config needed.
+#   - TLS required by the app (REDIS_TLS="true", the chart default for external Redis).
 # ==============================================================================
 
 # Disable internal dependencies for external infrastructure

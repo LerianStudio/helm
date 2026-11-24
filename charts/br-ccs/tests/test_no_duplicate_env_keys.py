@@ -12,8 +12,13 @@ import sys
 
 CHART = pathlib.Path(__file__).resolve().parent.parent
 
+# The render starts from an install the boot contract accepts (the checks in
+# templates/_validate.tpl refuse an incomplete one).
+BASE_VALUES = CHART / "tests" / "values" / "boot-contract.yaml"
+
 # Every optional passthrough key this chart skips when extraEnvVars carries it,
-# plus REPORTER_URL (delivered without the retired REPORTER_ENABLED switch).
+# plus REPORTER_URL (delivered without the retired REPORTER_ENABLED switch) and
+# the Redis TLS posture keys.
 KEYS = [
     "CRM_URL", "CRM_ORGANIZATION_ID", "CRM_M2M_TARGET_SERVICE",
     "IDP_DECLARATION_ENABLED", "IDP_HOST",
@@ -25,7 +30,17 @@ KEYS = [
     "ALLOW_INSECURE_TLS", "OBJECT_STORAGE_CCS_SSE_ALGORITHM", "SWAGGER_HOST",
     "REPORTER_URL",
     "ALLOW_INSECURE_OTEL",
+    "REDIS_TLS", "ALLOW_INSECURE_REDIS", "REPORTER_HTTP_TIMEOUT_SEC",
 ]
+
+# Keys the boot contract validates need values it accepts. The effective value is
+# the extraEnvVars one, so only that side has to pass; it must still differ from
+# the configmap side so the test can tell which one rendered.
+VALUES = {
+    "CRM_URL": ("https://from-configmap", "https://from-extra"),
+    "OBJECT_STORAGE_CCS_SSE_ALGORITHM": ("aws:kms", "AES256"),
+    "REDIS_TLS": ("false", "true"),
+}
 
 
 def configmap_lines(render: str) -> list[str]:
@@ -36,12 +51,16 @@ def configmap_lines(render: str) -> list[str]:
 
 
 def main() -> None:
-    args = ["helm", "template", "br-ccs", str(CHART)]
+    args = ["helm", "template", "br-ccs", str(CHART), "-f", str(BASE_VALUES)]
     for key in KEYS:
-        args += ["--set-string", f"brCcs.configmap.{key}=from-configmap"]
-        args += ["--set-string", f"brCcs.extraEnvVars.{key}=from-extra"]
+        from_cm, from_extra = VALUES.get(key, ("from-configmap", "from-extra"))
+        args += ["--set-string", f"brCcs.configmap.{key}={from_cm}"]
+        args += ["--set-string", f"brCcs.extraEnvVars.{key}={from_extra}"]
 
-    render = subprocess.run(args, check=True, capture_output=True, text=True).stdout
+    result = subprocess.run(args, capture_output=True, text=True)
+    if result.returncode != 0:
+        sys.exit("helm template failed:\n" + result.stderr)
+    render = result.stdout
     lines = configmap_lines(render)
 
     failures = []
@@ -49,7 +68,7 @@ def main() -> None:
         hits = [line for line in lines if re.match(rf"^  {key}: ", line)]
         if len(hits) != 1:
             failures.append(f"{key}: rendered {len(hits)} times")
-        elif "from-extra" not in hits[0]:
+        elif VALUES.get(key, ("", "from-extra"))[1] not in hits[0]:
             failures.append(f"{key}: extraEnvVars did not win ({hits[0].strip()})")
 
     if failures:

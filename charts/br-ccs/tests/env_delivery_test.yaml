@@ -134,15 +134,19 @@ tests:
           path: data.REPORTER_URL
           value: http://from-extra
 
-  # The required() fires inside the configmap render; the deployment's checksum
-  # include evaluates it first, so the failure is reported on the deployment.
-  - it: still requires REPORTER_URL when REPORTER_ENABLED is true
-    template: templates/deployment.yaml
+  # The app does not read REPORTER_ENABLED; the chart accepts the key and drops
+  # it. REPORTER_URL itself is required by the boot contract (boot_contract_test).
+  - it: no longer renders the retired REPORTER_ENABLED switch
+    template: templates/configmap.yaml
     set:
       brCcs.configmap.REPORTER_ENABLED: "true"
+      brCcs.configmap.REPORTER_URL: http://reporter:4005
     asserts:
-      - failedTemplate:
-          errorPattern: "brCcs.configmap.REPORTER_URL is required when REPORTER_ENABLED=true"
+      - notExists:
+          path: data.REPORTER_ENABLED
+      - equal:
+          path: data.REPORTER_URL
+          value: http://reporter:4005
 
   # --- Checksums roll the pods ------------------------------------------------
   - it: annotates the pod with the configmap and secret checksums

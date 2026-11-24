@@ -548,6 +548,31 @@ tests:
       - failedTemplate:
           errorPattern: "REDIS_TLS=false needs ALLOW_INSECURE_REDIS"
 
+  - it: refuses plaintext to the bundled valkey when ALLOW_INSECURE_REDIS is set to false
+    template: templates/configmap.yaml
+    set:
+      valkey.enabled: true
+      valkey.external: false
+      brCcs.configmap.REDIS_HOST: ""
+      brCcs.configmap.ALLOW_INSECURE_REDIS: "false"
+    asserts:
+      - failedTemplate:
+          errorPattern: "REDIS_TLS=false needs ALLOW_INSECURE_REDIS"
+        template: templates/boot-contract.yaml
+
+  - it: keeps ALLOW_INSECURE_REDIS false written as a YAML boolean instead of the chart bypass
+    template: templates/configmap.yaml
+    set:
+      valkey.enabled: true
+      valkey.external: false
+      brCcs.configmap.REDIS_HOST: ""
+      brCcs.configmap.REDIS_TLS: "true"
+      brCcs.configmap.ALLOW_INSECURE_REDIS: false
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_REDIS
+          value: "false"
+
   - it: drops the bypass when the bundled valkey is set to TLS
     template: templates/configmap.yaml
     set:

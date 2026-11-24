@@ -239,10 +239,15 @@ secret values are skipped and the app stays the last gate for them.
 {{- end -}}
 
 {{- /* 8. Redis TLS (lib-commons v7.26.0 commons/redis/redis.go:520-533): plaintext
-       only with ALLOW_INSECURE_REDIS or ALLOW_INSECURE_TLS. */ -}}
+       only with ALLOW_INSECURE_REDIS or ALLOW_INSECURE_TLS set to a true value.
+       The bypass is read as templates/configmap.yaml renders it: the operator's
+       ALLOW_INSECURE_REDIS (extraEnvVars, then configmap) when set, otherwise the
+       "true" the chart adds for the bundled valkey. */ -}}
 {{- $redisTLS := include "br-ccs.envValue" (dict "context" $ctx "key" "REDIS_TLS" "default" (include "br-ccs.redisTLSDefault" $ctx)) -}}
 {{- if ne $redisTLS "true" -}}
-{{- if not (or (include "br-ccs.valkeyBundled" $ctx) (include "br-ccs.redisInsecureAllowed" $ctx)) -}}
+{{- $allowRedisSet := or (hasKey $extra "ALLOW_INSECURE_REDIS") (include "br-ccs.cmValue" (dict "context" $ctx "key" "ALLOW_INSECURE_REDIS")) -}}
+{{- $chartBypass := and (include "br-ccs.valkeyBundled" $ctx) (not $allowRedisSet) -}}
+{{- if not (or $chartBypass (include "br-ccs.redisInsecureAllowed" $ctx)) -}}
 {{- fail "br-ccs: REDIS_TLS=false needs ALLOW_INSECURE_REDIS=\"true\" (the app refuses plaintext Redis otherwise). Prefer REDIS_TLS=\"true\", with brCcs.secrets.REDIS_CA_CERT (base64 PEM) for a private CA." -}}
 {{- end -}}
 {{- end -}}

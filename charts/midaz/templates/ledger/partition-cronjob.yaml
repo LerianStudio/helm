@@ -1,3 +1,2 @@
 {{- if and .Values.ledger.enabled (include "midaz.partitionEnabled" (dict "context" . "product" "ledger")) }}
-{{ include "midaz.partitionCronJob" (dict "context" . "product" "ledger") }}
-{{- end }}
+{{ include "midaz.partitionCronJob" (dict "context" . "product" "ledger") | trim }}{{- end -}}

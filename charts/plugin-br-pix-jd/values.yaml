@@ -121,6 +121,12 @@ securityContext:
 api:
   # -- Enable the HTTP api component
   enabled: true
+  # -- A ServiceAccount for the api alone, so a grant to it does not reach the
+  # worker. Off and unnamed, the api keeps the shared account above.
+  serviceAccount:
+    create: false
+    name: ""
+    annotations: {}
   # -- Replicas when autoscaling is disabled (two, so a rollout or drain keeps one ready)
   replicaCount: 2
   # -- Number of old ReplicaSets retained for rollback

@@ -71,6 +71,7 @@ Set these only when your institution needs them.
 | `api.configmap.IDP_HOST` | only with `IDP_DECLARATION_ENABLED="true"` | Access Manager identity address, `http(s)://` URL without credentials | empty |
 | `api.configmap.IDP_M2M_CLIENT_ID` | only with `IDP_DECLARATION_ENABLED="true"`; may be set in `api.secrets` instead | client ID of the plugin's M2M application in the Access Manager | empty |
 | `api.secrets.IDP_M2M_CLIENT_SECRET` | only with `IDP_DECLARATION_ENABLED="true"` | client secret of that application | empty |
+| `api.serviceAccount.create` / `.name` / `.annotations` | only to give the API an account the worker does not share, so a cloud grant to it does not reach the worker | create flag, existing account name, annotations | off: the API uses the shared account |
 
 - **The encryption key** protects the delivery secret of each indirect participant. Create it with `openssl rand -hex 32`. The render fails on a value that is not 64 hex characters. See [Hosting indirect participants](https://docs.lerian.studio/en/interfaces/pix-jd/hosting-indirect-participants).
 - **The signing key and the certificate go together: set both or neither.** With only one, the render fails, because the plugin would refuse every payment order. With neither, the plugin sends unsigned orders, which a JD that does not require the signature accepts.

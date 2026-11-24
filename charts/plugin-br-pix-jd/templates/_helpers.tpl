@@ -1083,6 +1083,21 @@ COURIER_ACCOUNT_CLAIMS_ENABLED: "true"
 {{- end }}
 
 {{/*
+Service account of the api. Its own when api.serviceAccount creates or names one,
+else the shared account; the worker always keeps the shared one.
+*/}}
+{{- define "plugin-br-pix-jd.api.serviceAccountName" -}}
+{{- $sa := .Values.api.serviceAccount -}}
+{{- if $sa.create }}
+{{- default (include "plugin-br-pix-jd.componentFullname" (dict "root" . "name" "api")) $sa.name }}
+{{- else if $sa.name }}
+{{- $sa.name }}
+{{- else }}
+{{- include "plugin-br-pix-jd.serviceAccountName" . }}
+{{- end }}
+{{- end }}
+
+{{/*
 ------------------------------------------------------------------------------
 domainSecrets — the PIX credentials, shared by api and worker.
 

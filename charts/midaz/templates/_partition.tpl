@@ -36,7 +36,7 @@ true
 {{- printf "%s-partition" ($full | trunc 42 | trimSuffix "-") -}}
 {{- else -}}
 {{- /* Truncation drops the "-tracer" tail: a hash of the whole name keeps it apart from the ledger's. */ -}}
-{{- printf "%s-%s-partition" ($full | trunc 33 | trimSuffix "-" | trimSuffix ".") (sha256sum $full | trunc 8) -}}
+{{- printf "%s-%s-partition" ($full | trunc 33 | trimSuffix "-") (sha256sum $full | trunc 8) -}}
 {{- end -}}
 {{- end -}}
 
@@ -260,10 +260,9 @@ MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
 {{/* Password env: single-tenant runners read the bundled PostgreSQL Secret here (an external password arrives through envFrom); multi-tenant ones add nothing (the Tracer Secret carries the tenant settings). */}}
 {{- define "midaz-tracer.partitionSecretEnv" -}}
 {{- $ctx := .context -}}
-{{- $tracer := $ctx.Values.tracer -}}
 {{- $pg := $ctx.Values.postgresql | default dict -}}
 {{- $pgInternal := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) (include "midaz.operatorSecret" (dict "context" $ctx "subchart" "postgresql")) -}}
-{{- if ne (include "midaz.isTrue" (($tracer.configmap | default dict).MULTI_TENANT_ENABLED | default "false")) "true" }}
+{{- if ne (include "midaz.isTrue" (($ctx.Values.tracer.configmap | default dict).MULTI_TENANT_ENABLED | default "false")) "true" }}
 {{- if $pgInternal }}
 {{- include "midaz.infraSecretRef" (dict "context" $ctx "subchart" "postgresql" "key" "password" "envName" "DB_PASSWORD") }}
 {{- end }}

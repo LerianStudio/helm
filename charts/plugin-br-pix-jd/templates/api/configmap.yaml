@@ -71,7 +71,14 @@
 {{- $_ := set $http "SWAGGER_BASE_PATH" (include "plugin-br-pix-jd.cfg" (dict "configmap" $cfg "key" "SWAGGER_BASE_PATH" "default" "/")) -}}
 {{- $_ := set $http "SWAGGER_HOST" (required "\n\nERROR: api.configmap.SWAGGER_HOST is required when SWAGGER_ENABLED=true.\nThe app short-circuits on an empty host and emits an empty `servers` list, so the\ndocument renders but no request can be issued from it.\n" (index $cfg "SWAGGER_HOST" | default "")) -}}
 {{- $_ := set $http "SWAGGER_SCHEMES" (include "plugin-br-pix-jd.cfg" (dict "configmap" $cfg "key" "SWAGGER_SCHEMES" "default" "https")) -}}
+{{- /* Presentation keys the app owns defaults for (empty description, {{ }} template
+   delimiters): emitted only when an operator sets them. */ -}}
+{{- $http = mergeOverwrite $http (fromYaml (include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cfg "keys" (list "SWAGGER_DESCRIPTION" "SWAGGER_LEFT_DELIM" "SWAGGER_RIGHT_DELIM"))) | default dict) -}}
 {{- end -}}
+{{- /* REQUEST_TIMEOUT_SEC bounds every read (GET/HEAD); the app re-applies its 30s default
+   to a value <= 0. TRUSTED_PROXIES is read by lib-auth, not by an app struct: without it
+   the caller IP is not derived from X-Forwarded-For. Both api-only, emitted only when set. */ -}}
+{{- $http = mergeOverwrite $http (fromYaml (include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cfg "keys" (list "REQUEST_TIMEOUT_SEC" "TRUSTED_PROXIES"))) | default dict) -}}
 {{- /* Permission declaration — api-only, so it rides the api's own surface. */ -}}
 {{- $http = mergeOverwrite $http (fromYaml (include "plugin-br-pix-jd.declarationEnv" (dict "root" $ "authEnabled" (index $platform "PLUGIN_AUTH_ENABLED")))) -}}
 {{- /* Courier admission — api-only: the worker serves no Courier routes. */ -}}
@@ -79,7 +86,22 @@
 {{- /* Merge order IS the precedence contract: platform < rate-limit < CORS < http
    < courier < extraConfigmap. The escape hatch merges last and therefore wins —
    stated plainly in values.yaml rather than claimed otherwise. */ -}}
-{{- $data := mergeOverwrite $platform $domain $qrcode $signing $mt $streaming $rateLimit $corsEnv $http $courier (.Values.api.extraConfigmap | default dict) -}}
+{{- /* System Facts — validated against the map the pod actually gets: extraConfigmap
+   merges last and wins, so the gates must see it too. */ -}}
+{{- $sfEff := fromYaml (include "plugin-br-pix-jd.effectiveConfig" .) -}}
+{{- $systemFacts := fromYaml (include "plugin-br-pix-jd.systemFactsEnv" (dict "configmap" $sfEff "component" "api")) | default dict -}}
+{{- $data := mergeOverwrite $platform $domain $qrcode $signing $mt $streaming $systemFacts $rateLimit $corsEnv $http $courier (.Values.api.extraConfigmap | default dict) -}}
+{{- /* The pair (single-tenant) and every multi-tenant delivery are exchanged at the
+   Access Manager, so the app refuses an enabled producer without PLUGIN_AUTH_HOST in
+   both of those shapes. Checked on the RESOLVED value (global.auth included). The
+   dev-only static token is the one source that needs no host. */ -}}
+{{- if eq (index $sfEff "SYSTEM_FACTS_ENABLED" | default "false" | toString | lower) "true" -}}
+{{- $sfSec := mergeOverwrite (deepCopy (.Values.api.secrets | default dict)) (.Values.api.extraSecrets | default dict) -}}
+{{- $sfPair := and (index $sfSec "SYSTEM_FACTS_CLIENT_ID" | default "") (index $sfSec "SYSTEM_FACTS_CLIENT_SECRET" | default "") -}}
+{{- if and (or (eq (index $sfEff "MULTI_TENANT_ENABLED" | default "false" | toString) "true") $sfPair) (not (index $data "PLUGIN_AUTH_HOST" | default "" | toString | trim)) -}}
+{{- fail "\n\nERROR: PLUGIN_AUTH_HOST is required when SYSTEM_FACTS_ENABLED=true (multi-tenant, or with the\nSYSTEM_FACTS_CLIENT_ID/SYSTEM_FACTS_CLIENT_SECRET pair): the System Facts bearer is exchanged at the\nAccess Manager, and the app refuses to boot without its address.\n" -}}
+{{- end -}}
+{{- end -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

@@ -20,7 +20,11 @@
 {{- /* NO rate-limit, CORS, Swagger or SERVER_ADDRESS block here: cmd/worker has no HTTP
    listener at all, so those keys would be inert noise the operator has to reason about.
    The worker's own surface is the cron cadence. */ -}}
-{{- $data := mergeOverwrite $platform $domain $qrcode $cron $mt $streaming $courierClaims (.Values.worker.extraConfigmap | default dict) -}}
+{{- /* System Facts: the worker is record-only, so it carries the flag alone (delivery
+   settings and credentials ride the api). */ -}}
+{{- $sfEff := mergeOverwrite (deepCopy (.Values.api.configmap | default dict)) (.Values.worker.configmap | default dict) (.Values.worker.extraConfigmap | default dict) -}}
+{{- $systemFacts := fromYaml (include "plugin-br-pix-jd.systemFactsEnv" (dict "configmap" $sfEff "component" "worker")) | default dict -}}
+{{- $data := mergeOverwrite $platform $domain $qrcode $cron $mt $streaming $courierClaims $systemFacts (.Values.worker.extraConfigmap | default dict) -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

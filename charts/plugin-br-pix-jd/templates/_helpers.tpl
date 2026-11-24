@@ -261,6 +261,15 @@ Input: root context ($).
 {{- fail (printf "\n\nERROR: %s must not be set under ENVIRONMENT_NAME=production.\nThe app lists it in productionForbiddenBypassEnvVars and refuses to boot with it truthy,\nso this deploy would CrashLoop. It also disables a safe default: a wildcard CORS origin\nor a fail-OPEN money-path rate limiter.\n" $name) -}}
 {{- end -}}
 {{- end -}}
+{{- /* The same list carries the two System Facts rig-only knobs: SYSTEM_FACTS_INSECURE_HTTP
+   (refused when truthy) and the static SYSTEM_FACTS_TOKEN (refused when SET, any value). */ -}}
+{{- if has (index $cfg "SYSTEM_FACTS_INSECURE_HTTP" | default "false" | toString | lower) (list "true" "1" "t") -}}
+{{- fail "\n\nERROR: SYSTEM_FACTS_INSECURE_HTTP must not be true under ENVIRONMENT_NAME=production.\nThe app lists it in productionForbiddenBypassEnvVars and refuses to boot with it.\n" -}}
+{{- end -}}
+{{- $sfSecrets := mergeOverwrite (deepCopy (.Values.api.secrets | default dict)) (.Values.api.extraSecrets | default dict) -}}
+{{- if (index $sfSecrets "SYSTEM_FACTS_TOKEN" | default "" | toString | trim) -}}
+{{- fail "\n\nERROR: SYSTEM_FACTS_TOKEN must not be set under ENVIRONMENT_NAME=production.\nIt is the dev-only static bearer for the System Facts auth-stub; the app refuses to boot\nwith any value. Use api.secrets.SYSTEM_FACTS_CLIENT_ID/SYSTEM_FACTS_CLIENT_SECRET.\n" -}}
+{{- end -}}
 {{- end -}}
 {{- /* global.imageRegistry cannot be honored while the Bitnami subchart is bundled:
    Bitnami reads the same Helm-global key, substitutes its own image, and then its
@@ -554,7 +563,26 @@ POSTGRES_MAX_IDLE_CONNS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm
 POSTGRES_CONN_MAX_LIFETIME_MINS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "POSTGRES_CONN_MAX_LIFETIME_MINS" "default" "30") | quote }}
 POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "POSTGRES_CONN_MAX_IDLE_TIME_MINS" "default" "5") | quote }}
 POSTGRES_CONNECT_TIMEOUT_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "POSTGRES_CONNECT_TIMEOUT_SEC" "default" "10") | quote }}
+{{- /* Read replica. Empty POSTGRES_REPLICA_HOST means "no replica", and the app falls back
+   to the primary field by field for port/user/name/sslmode, so each key is emitted only
+   when the operator set it. POSTGRES_REPLICA_PASSWORD is a Secret key (domainSecrets). */}}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "POSTGRES_REPLICA_HOST" "POSTGRES_REPLICA_PORT" "POSTGRES_REPLICA_USER" "POSTGRES_REPLICA_NAME" "POSTGRES_REPLICA_SSLMODE")) }}
 MIGRATIONS_PATH: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIGRATIONS_PATH" "default" "/migrations") | quote }}
+{{- /* Antifraud partner integration, deploy-level half (the per-tenant switch and route
+   live in systemplane). Both binaries validate it at boot, so both get it. Every key is
+   optional and the zero value leaves every flow off. ANTIFRAUD_SECRETS_BACKEND accepts
+   only aws or vault (lib-commons secretsmanager.ParseBackend); anything else refuses the
+   boot, so it is checked here. */}}
+{{- with (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "ANTIFRAUD_SECRETS_BACKEND" "default" "") | trim) }}
+{{- if not (has (lower .) (list "aws" "vault")) }}
+{{- fail (printf "\n\nERROR: ANTIFRAUD_SECRETS_BACKEND must be aws or vault; got %q.\nThe app refuses any other value at boot. Leave it empty for no antifraud backend.\n" .) }}
+{{- end }}
+{{- end }}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "ANTIFRAUD_ALLOWED_PRIVATE_HOSTS" "ANTIFRAUD_SECRETS_BACKEND" "ANTIFRAUD_OUT_REVIEW_HOLD_ENABLED")) }}
+{{- /* LICENSE_FILE_PATH — for a licence file the operator mounts by other means. The
+   modeled route is <component>.licenseFile.existingSecret, which mounts the file and sets
+   this variable on the container itself (container env wins over this ConfigMap). */}}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "LICENSE_FILE_PATH")) }}
 {{- /* ALLOW_INSECURE_TLS — modeled as a first-class key, not left to the escape hatch,
    because test environments may run Postgres, Valkey and RabbitMQ WITHOUT TLS
    and lib-commons refuses a plaintext connection to any of them unless this is set.
@@ -768,6 +796,12 @@ MIDAZ_FEE_MODE: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "M
 MIDAZ_FEE_MODE_REFRESH: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_FEE_MODE_REFRESH" "default" "5m") | quote }}
 {{- /* CRM — alias resolution. */}}
 CRM_URL: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "CRM_URL" "default" "") | quote }}
+{{- /* Pix Automático §5.4 BLOQUEAR / ESTORNO, both default-off in the app. Single-tenant
+   only: multi-tenant reads them from systemplane tenant_policy and WARNs on a present
+   variable (PluginMultiTenantIgnoredEnvVars), so they are never emitted there. */}}
+{{- if ne (index $cm "MULTI_TENANT_ENABLED" | default "false" | toString) "true" }}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "PIX_AUTOMATICO_BLOQUEAR_ENABLED" "PIX_AUTOMATICO_ESTORNO_ENABLED")) }}
+{{- end }}
 {{- /* Courier ownership map, single-tenant only: multi-tenant reads it from the tenant's
    jd-spi bundle and WARNs on a present COURIER_URL, so it is emitted only when set.
    Must point at the Courier `admin` role, the only one that serves the lookup. */}}
@@ -1023,6 +1057,15 @@ JOBS_CRON_TRANSACTIONS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm 
    signal — it NEVER auto-settles, because the manual forbids any terminal state
    without an unequivocal SPI/JDPI confirmation. */}}
 JOBS_RECONCILE_STUCK_THRESHOLD_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JOBS_RECONCILE_STUCK_THRESHOLD_SEC" "default" "80") | quote }}
+{{- /* keys_claim_received_poll job, default off (never registered). On, the app refuses
+   the boot unless OUTBOX_ENABLED and STREAMING_ENABLED are both true: the
+   key.claim-received event has no other way out. */}}
+{{- if eq (index $cm "JOBS_CLAIM_RECEIVED_POLL_ENABLED" | default "false" | toString) "true" }}
+{{- if not (and (eq (index $cm "OUTBOX_ENABLED" | default "false" | toString) "true") (eq (index $cm "STREAMING_ENABLED" | default "false" | toString) "true")) }}
+{{- fail "\n\nERROR: JOBS_CLAIM_RECEIVED_POLL_ENABLED=true requires OUTBOX_ENABLED=true and STREAMING_ENABLED=true.\nThe worker refuses to boot otherwise: the key.claim-received event it emits has no other way out.\n" }}
+{{- end }}
+{{- end }}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "JOBS_CLAIM_RECEIVED_POLL_ENABLED")) }}
 {{- end }}
 
 {{/*
@@ -1105,7 +1148,7 @@ Input dict: root, comp (the component values block).
 {{- $s := mergeOverwrite (deepCopy $api) $own -}}
 {{- $mt := eq (index (.root.Values.api.configmap | default dict) "MULTI_TENANT_ENABLED" | default "false" | toString) "true" -}}
 {{- $lines := list -}}
-{{- range $k := (list "JD_CLIENT_ID" "JD_SECRET" "MIDAZ_CLIENT_ID" "MIDAZ_CLIENT_SECRET" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET" "COURIER_CLIENT_ID" "COURIER_CLIENT_SECRET" "SENDGRID_API_KEY" "TWILIO_ACCOUNT_SID" "TWILIO_AUTH_TOKEN") -}}
+{{- range $k := (list "JD_CLIENT_ID" "JD_SECRET" "MIDAZ_CLIENT_ID" "MIDAZ_CLIENT_SECRET" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET" "COURIER_CLIENT_ID" "COURIER_CLIENT_SECRET" "SENDGRID_API_KEY" "TWILIO_ACCOUNT_SID" "TWILIO_AUTH_TOKEN" "POSTGRES_REPLICA_PASSWORD") -}}
 {{- with (index $s $k) -}}
 {{- $lines = append $lines (printf "%s: %s" $k (. | b64enc | quote)) -}}
 {{- end -}}
@@ -1185,6 +1228,10 @@ Input dict: root, configmap.
         "MULTI_TENANT_REDIS_HOST" "api.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true")) }}
 {{- if $enabled }}
 READYZ_ISPB_SCAN_INTERVAL_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "READYZ_ISPB_SCAN_INTERVAL_SEC" "default" "600") | quote }}
+{{- /* Integration-resolver cache and worker fan-out tuning. The app owns the defaults
+   (600s / 512 tenants / pool 4 / 8s deadline / threshold 3) and re-applies them to a
+   value <= 0, so each key is passed through only when an operator sets it. */}}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "MULTI_TENANT_INTEGRATION_CACHE_TTL_SEC" "MULTI_TENANT_INTEGRATION_MAX_CACHED_TENANTS" "MULTI_TENANT_WORKER_TENANT_POOL_SIZE" "MULTI_TENANT_WORKER_TENANT_DEADLINE_SEC" "MULTI_TENANT_WORKER_DEGRADED_THRESHOLD")) }}
 M2M_LEDGER_TARGET_SERVICE: {{ index $cm "M2M_LEDGER_TARGET_SERVICE" | quote }}
 M2M_CRM_TARGET_SERVICE: {{ index $cm "M2M_CRM_TARGET_SERVICE" | quote }}
 M2M_CREDENTIAL_CACHE_TTL_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "M2M_CREDENTIAL_CACHE_TTL_SEC" "default" "300") | quote }}
@@ -1250,9 +1297,12 @@ OUTBOX_PROCESSING_TIMEOUT_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configma
 OUTBOX_MAX_FAILED_PER_BATCH: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "OUTBOX_MAX_FAILED_PER_BATCH" "default" "25") | quote }}
 OUTBOX_INCLUDE_TENANT_METRICS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "OUTBOX_INCLUDE_TENANT_METRICS" "default" "false") | quote }}
 OUTBOX_ALLOW_EMPTY_TENANT: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "OUTBOX_ALLOW_EMPTY_TENANT" "default" "true") | quote }}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "OUTBOX_PRIORITY_EVENT_TYPES")) }}
 CIRCUIT_BREAKER_ENABLED: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "CIRCUIT_BREAKER_ENABLED" "default" "false") | quote }}
 {{- end }}
 STREAMING_ENABLED: {{ index $cm "STREAMING_ENABLED" | default "false" | quote }}
+{{- /* Per-tenant Kafka publishing; the app honours it only with MULTI_TENANT_ENABLED. */}}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "STREAMING_TENANT_KAFKA")) }}
 {{- if $streaming }}
 STREAMING_HEALTH_CHECK_TIMEOUT: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "STREAMING_HEALTH_CHECK_TIMEOUT" "default" "2s") | quote }}
 STREAMING_CLOSE_TIMEOUT_S: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "STREAMING_CLOSE_TIMEOUT_S" "default" "30") | quote }}
@@ -1384,4 +1434,209 @@ at /etc/lerian/license, key `license`. Input: a component (.Values.api or .Value
 */}}
 {{- define "plugin-br-pix-jd.licenseFileSecret" -}}
 {{- ((.licenseFile | default dict).existingSecret | default "") -}}
+{{- end }}
+
+{{/*
+------------------------------------------------------------------------------
+optionalEnv — pass-through of keys the app reads but the chart gives no default of
+its own.
+
+A key is emitted ONLY when the operator set it to a non-empty value. The app owns
+these defaults (envDefault plus its own <= 0 / empty fixups), so the chart must not
+invent a second copy that can drift, and an unset key stays OUT of the container
+environment, which also keeps the app's ignored-env scanners quiet.
+
+Only list keys whose "off" value is empty, false or 0: an explicit `false`/`0`
+given as a YAML bool/int is dropped by `default ""` (the app reads the same zero
+value either way). Never list a key whose app default is true.
+
+Input dict: configmap (merged map), keys (list of names).
+------------------------------------------------------------------------------
+*/}}
+{{- define "plugin-br-pix-jd.optionalEnv" -}}
+{{- $cm := .configmap | default dict -}}
+{{- range $k := .keys -}}
+{{- if hasKey $cm $k -}}
+{{- with (index $cm $k | default "" | toString) }}
+{{ $k }}: {{ . | quote }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+------------------------------------------------------------------------------
+systemFactsEnv — the System Facts producer's non-secret environment.
+
+OFF by default, and nothing is emitted while no key is set: the app defaults
+SYSTEM_FACTS_ENABLED to false and wires the no-op emitter.
+
+The API delivers and registers the contract; cmd/worker is record-only
+(LoadConfigWithOptions SystemFactsRecordOnly) — it reads the flag and records facts in
+its own outbox, and the app skips every delivery check for it. So the worker gets the
+flag alone, and the delivery settings ride the api only.
+
+Gates on the api, each one a boot refusal in the app moved to render time
+(config_systemfacts.go / config_validation.go):
+  - SYSTEM_FACTS_URL is required once the producer is on.
+  - Multi-tenant: M2M_SYSTEM_FACTS_TARGET_SERVICE is required (each tenant's bearer is
+    minted from .../m2m/{target}/credentials).
+  - PLUGIN_AUTH_HOST and the credential rules are checked where the resolved values
+    are known: api/configmap.yaml and systemFactsSecrets.
+
+Input dict: configmap (the component's EFFECTIVE map, extraConfigmap included),
+component ("api" or "worker").
+------------------------------------------------------------------------------
+*/}}
+{{- define "plugin-br-pix-jd.systemFactsEnv" -}}
+{{- $cm := .configmap | default dict -}}
+{{- $enabled := eq (index $cm "SYSTEM_FACTS_ENABLED" | default "false" | toString | lower) "true" -}}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "SYSTEM_FACTS_ENABLED")) }}
+{{- if eq .component "api" }}
+{{- if $enabled }}
+{{- if not (index $cm "SYSTEM_FACTS_URL" | default "" | toString | trim) }}
+{{- fail "\n\nERROR: api.configmap.SYSTEM_FACTS_URL is required when SYSTEM_FACTS_ENABLED=true.\nThe app refuses to boot an enabled producer with no address to deliver to.\n" }}
+{{- end }}
+{{- if eq (index $cm "MULTI_TENANT_ENABLED" | default "false" | toString) "true" }}
+{{- if not (index $cm "M2M_SYSTEM_FACTS_TARGET_SERVICE" | default "" | toString | trim) }}
+{{- fail "\n\nERROR: api.configmap.M2M_SYSTEM_FACTS_TARGET_SERVICE is required when SYSTEM_FACTS_ENABLED=true and MULTI_TENANT_ENABLED=true.\nEach tenant's System Facts bearer is minted from\n  tenants/{env}/{tenantOrgID}/plugin-br-pix-jd/m2m/{targetService}/credentials\nand the segment is NOT derivable from the service name: copy it from the provisioned secret path.\n" }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "SYSTEM_FACTS_URL" "SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE" "SYSTEM_FACTS_INSECURE_HTTP" "M2M_SYSTEM_FACTS_TARGET_SERVICE")) }}
+{{- end }}
+{{- end }}
+
+{{/*
+------------------------------------------------------------------------------
+systemFactsSecrets — the System Facts credentials, API-ONLY (the record-only worker
+delivers and registers nothing, so it never carries them).
+
+  SYSTEM_FACTS_CLIENT_ID / _CLIENT_SECRET — exchanged for a bearer at PLUGIN_AUTH_HOST.
+    Single-tenant: the producer's credential (delivers and registers). Multi-tenant:
+    REQUIRED with the producer on, as the service credential that registers the
+    contract at boot; deliveries use the per-tenant M2M credential.
+  SYSTEM_FACTS_TOKEN — dev-only static bearer for the local rig. Single-tenant only
+    (multi-tenant ignores it and WARNs, so it is never emitted there); refused under
+    production by consistencyGates.
+
+Gates (single-tenant, producer on): exactly one source — the token, or the complete
+pair; a partial pair counts as no pair, and a pair beside the token as two. And
+SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE=true is refused beside the token, which no
+preflight reads. A partial pair is refused in both modes.
+
+Gates see api.secrets merged with api.extraSecrets (a token may arrive through the
+escape hatch); only api.secrets is EMITTED here — extraSecrets emits its own keys.
+
+Input: root context ($).
+------------------------------------------------------------------------------
+*/}}
+{{- define "plugin-br-pix-jd.systemFactsSecrets" -}}
+{{- $s := .Values.api.secrets | default dict -}}
+{{- $all := mergeOverwrite (deepCopy $s) (.Values.api.extraSecrets | default dict) -}}
+{{- $cm := fromYaml (include "plugin-br-pix-jd.effectiveConfig" .) -}}
+{{- $enabled := eq (index $cm "SYSTEM_FACTS_ENABLED" | default "false" | toString | lower) "true" -}}
+{{- $mt := eq (index $cm "MULTI_TENANT_ENABLED" | default "false" | toString) "true" -}}
+{{- $id := index $all "SYSTEM_FACTS_CLIENT_ID" | default "" | toString | trim -}}
+{{- $secret := index $all "SYSTEM_FACTS_CLIENT_SECRET" | default "" | toString | trim -}}
+{{- $token := index $all "SYSTEM_FACTS_TOKEN" | default "" | toString | trim -}}
+{{- $pair := and $id $secret -}}
+{{- if $enabled -}}
+{{- if and (or $id $secret) (not $pair) -}}
+{{- fail "\n\nERROR: api.secrets.SYSTEM_FACTS_CLIENT_ID and api.secrets.SYSTEM_FACTS_CLIENT_SECRET go together: set both or neither.\nA partial pair counts as no pair in the app, so the producer would refuse to boot.\n" -}}
+{{- end -}}
+{{- if $mt -}}
+{{- if not $pair -}}
+{{- fail "\n\nERROR: api.secrets.SYSTEM_FACTS_CLIENT_ID and api.secrets.SYSTEM_FACTS_CLIENT_SECRET are required when SYSTEM_FACTS_ENABLED=true and MULTI_TENANT_ENABLED=true.\nIn multi-tenant the pair is the service credential that registers the System Facts contract\nat boot; the app refuses to boot without it. Deliveries still use the per-tenant M2M credential.\n" -}}
+{{- end -}}
+{{- else -}}
+{{- if and $token $pair -}}
+{{- fail "\n\nERROR: set SYSTEM_FACTS_TOKEN or the SYSTEM_FACTS_CLIENT_ID/SYSTEM_FACTS_CLIENT_SECRET pair, not both.\nThe app refuses two bearer sources when SYSTEM_FACTS_ENABLED=true.\n" -}}
+{{- end -}}
+{{- if not (or $token $pair) -}}
+{{- fail "\n\nERROR: SYSTEM_FACTS_ENABLED=true in single-tenant requires api.secrets.SYSTEM_FACTS_CLIENT_ID and\napi.secrets.SYSTEM_FACTS_CLIENT_SECRET (or, dev only, SYSTEM_FACTS_TOKEN). The app refuses to boot without a bearer source.\n" -}}
+{{- end -}}
+{{- if and $token (eq (index $cm "SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE" | default "false" | toString | lower) "true") -}}
+{{- fail "\n\nERROR: SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE=true cannot be honoured with SYSTEM_FACTS_TOKEN.\nThe static bearer is never granted, so its sourceService claim is never checked; use the\nclient pair or turn the flag off. The app refuses to boot with both.\n" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- $lines := list -}}
+{{- with (index $s "SYSTEM_FACTS_CLIENT_ID") -}}
+{{- $lines = append $lines (printf "SYSTEM_FACTS_CLIENT_ID: %s" (. | b64enc | quote)) -}}
+{{- end -}}
+{{- with (index $s "SYSTEM_FACTS_CLIENT_SECRET") -}}
+{{- $lines = append $lines (printf "SYSTEM_FACTS_CLIENT_SECRET: %s" (. | b64enc | quote)) -}}
+{{- end -}}
+{{- if not $mt -}}
+{{- with (index $s "SYSTEM_FACTS_TOKEN") -}}
+{{- $lines = append $lines (printf "SYSTEM_FACTS_TOKEN: %s" (. | b64enc | quote)) -}}
+{{- end -}}
+{{- end -}}
+{{- join "\n" $lines -}}
+{{- end }}
+
+{{/*
+------------------------------------------------------------------------------
+otelPodEnv — wires the pod to the node-local OTLP collector, like the sibling Lerian
+plugins (plugin-br-bank-transfer, plugin-br-payments, plugin-br-pix-indirect-btg).
+
+The Lerian convention is a collector DaemonSet on every node, reached through the
+downward API (status.hostIP). With telemetry on and no endpoint configured this emits
+  HOST_IP                      <- status.hostIP
+  OTEL_EXPORTER_OTLP_ENDPOINT  <- http://$(HOST_IP):4317   (lerian-common.otel.podEnv)
+  ALLOW_INSECURE_OTEL          <- the node-local hop is plaintext gRPC by design
+Without it the ConfigMap carries OTEL_EXPORTER_OTLP_ENDPOINT="" and the app exports to
+nowhere — every span and metric is dropped with no error.
+
+Precedence (first match wins, so an explicit choice is never overridden):
+  1. telemetry off                                    -> nothing
+  2. an endpoint in configmap / extraConfigmap /
+     global.observability.otlpEndpoint                -> nothing (the ConfigMap carries it)
+  3. OTEL_EXPORTER_OTLP_ENDPOINT in extraEnvVars      -> nothing (the operator's wins)
+  4. otherwise                                        -> node-local collector; a HOST_IP
+     or ALLOW_INSECURE_OTEL already in extraEnvVars suppresses the chart's of that name.
+
+ALLOW_INSECURE_OTEL: lib-observability refuses a plaintext exporter when
+OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT is production unless it carries a reason. It is
+set ONLY on the node-local default path. Its value is the component's
+ALLOW_INSECURE_OTEL (configmap / extraConfigmap), then
+global.observability.allowInsecureOtel, then the node-local reason.
+
+Emitted AFTER extraEnvVars: Kubernetes expands $(HOST_IP) only against a variable
+defined EARLIER in the list, so an operator-supplied HOST_IP comes first. Container
+`env` also wins over the ConfigMap's empty OTEL_EXPORTER_OTLP_ENDPOINT.
+
+Input dict: root, comp (api or worker values block).
+------------------------------------------------------------------------------
+*/}}
+{{- define "plugin-br-pix-jd.otelPodEnv" -}}
+{{- $root := .root -}}
+{{- $comp := .comp -}}
+{{- $eff := mergeOverwrite (deepCopy ($root.Values.api.configmap | default dict)) ($comp.configmap | default dict) ($comp.extraConfigmap | default dict) -}}
+{{- $enabled := include "lerian-common.globalValue" (dict "context" $root "configmap" $eff "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | toString | lower -}}
+{{- $endpoint := include "lerian-common.globalValue" (dict "context" $root "configmap" $eff "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | toString | trim -}}
+{{- $names := list -}}
+{{- range ($comp.extraEnvVars | default list) -}}
+{{- $names = append $names .name -}}
+{{- end -}}
+{{- if and (has $enabled (list "true" "1" "t")) (not $endpoint) (not (has "OTEL_EXPORTER_OTLP_ENDPOINT" $names)) -}}
+{{- if has "HOST_IP" $names }}
+- name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+  value: "http://$(HOST_IP):4317"
+{{- else }}
+{{ include "lerian-common.otel.podEnv" (dict "port" 4317 "scheme" "http") }}
+{{- end }}
+{{- if not (has "ALLOW_INSECURE_OTEL" $names) }}
+{{- $allow := "node-local otel-collector on the pod's own node (status.hostIP:4317): plaintext gRPC that never leaves the node" -}}
+{{- $obs := (($root.Values.global | default dict).observability | default dict) -}}
+{{- if not (kindIs "invalid" (index $eff "ALLOW_INSECURE_OTEL")) -}}
+{{- $allow = index $eff "ALLOW_INSECURE_OTEL" | toString -}}
+{{- else if not (kindIs "invalid" (index $obs "allowInsecureOtel")) -}}
+{{- $allow = $obs.allowInsecureOtel | toString -}}
+{{- end }}
+- name: "ALLOW_INSECURE_OTEL"
+  value: {{ $allow | quote }}
+{{- end }}
+{{- end -}}
 {{- end }}

@@ -268,6 +268,8 @@ plugin-br-ted-lerian:
   #    OTEL_EXPORTER_OTLP_ENDPOINT. Keys the ConfigMap does not render are
   #    dropped: add those through extraEnvVars or secrets.
   # @default -- templates/configmap.yaml
+  #    ANTIFRAUD_SECRETS_BACKEND ("aws" or "vault", rendered only when set) is also
+  #    read from here; see the README.
   configmap: {}
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml

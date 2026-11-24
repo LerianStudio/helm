@@ -1,0 +1,25 @@
+suite: modeled ANTIFRAUD_SECRETS_BACKEND
+templates:
+  - templates/configmap.yaml
+tests:
+  - it: renders no backend by default
+    asserts:
+      - notExists:
+          path: data.ANTIFRAUD_SECRETS_BACKEND
+  - it: renders the backend when configmap sets it
+    set:
+      plugin-br-ted-lerian.configmap.ANTIFRAUD_SECRETS_BACKEND: aws
+    asserts:
+      - equal:
+          path: data.ANTIFRAUD_SECRETS_BACKEND
+          value: aws
+  - it: renders the backend once when extraEnvVars also sets it
+    set:
+      plugin-br-ted-lerian.configmap.ANTIFRAUD_SECRETS_BACKEND: aws
+      plugin-br-ted-lerian.extraEnvVars:
+        - name: ANTIFRAUD_SECRETS_BACKEND
+          value: vault
+    asserts:
+      - equal:
+          path: data.ANTIFRAUD_SECRETS_BACKEND
+          value: vault

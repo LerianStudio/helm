@@ -194,6 +194,12 @@ data:
         "cloudeventsSource" (dig "streaming" "cloudeventsSource" "br-ted" (index .Values "plugin-br-ted-lerian"))
       )) }}{{ . | nindent 2 }}{{- end }}
 
+  {{- /* ANTIFRAUD_SECRETS_BACKEND: aws or vault, no app default; rendered only when set. A key set in extraEnvVars renders below instead. */}}
+  {{- $afBackend := index ((index .Values "plugin-br-ted-lerian").configmap | default dict) "ANTIFRAUD_SECRETS_BACKEND" }}
+  {{- if and $afBackend (not (has "ANTIFRAUD_SECRETS_BACKEND" $extraNames)) }}
+  ANTIFRAUD_SECRETS_BACKEND: {{ $afBackend | quote }}
+  {{- end }}
+
   # Extra Env Vars
   {{- with (index .Values "plugin-br-ted-lerian").extraEnvVars }}
   {{- range . }}

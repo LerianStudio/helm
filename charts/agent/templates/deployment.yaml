@@ -75,6 +75,10 @@ spec:
                 fieldPath: metadata.namespace
           - name: AGENT_SELF_DEPLOYMENT
             value: {{ include "lerian-agent.fullname" . | quote }}
+          # The namespaces the agent may write to, built from the same list as
+          # the RBAC Roles in rbac.yaml so the two never disagree.
+          - name: AGENT_MANAGED_NAMESPACES
+            value: {{ include "lerian-agent.managedNamespaces" . | fromJsonArray | join "," | quote }}
           {{- if $registry }}
           # A path, never the credential: the pod's environment yields no token.
           - name: OCI_REGISTRY_CONFIG_FILE

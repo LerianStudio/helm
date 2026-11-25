@@ -73,14 +73,13 @@ data:
   # deployments that carry real client data — production is already covered by
   # the app's own ENVIRONMENT_NAME=production boot guard.
   REQUIRE_UPSTREAM_HTTPS: {{ .Values.bankTransfer.configmap.REQUIRE_UPSTREAM_HTTPS | default "false" | quote }}
-  # -- Partner antifraud (app v3.7.0). ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: exact hosts
-  # (comma-separated) a tenant route may reach over http or a private address, e.g. an
-  # in-cluster Flowker; leave it unset on Lerian Cloud. ANTIFRAUD_SECRETS_BACKEND: aws or
-  # vault, no app default; unset means no backend, so an enabled flow denies with
-  # INVALID_CONFIG. Both are rendered only when set; routes and credentials are not
-  # configured here (the app reads the credentials from the secret manager only).
-  {{- with .Values.bankTransfer.configmap.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS }}
-  ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: {{ . | quote }}
+  # -- Partner antifraud (app v3.7.0). The three destination lists are deploy-owned and empty
+  # approves none; ANTIFRAUD_SECRETS_BACKEND is aws or vault, unset denies every enabled
+  # flow (INVALID_CONFIG). Rendered only when set; credentials never come from env.
+  {{- range $k := list "ANTIFRAUD_ALLOWED_PRIVATE_HOSTS" "ANTIFRAUD_PARTNER_HOSTS" "ANTIFRAUD_PARTNER_TOKEN_URLS" }}
+  {{- with index $cm $k }}
+  {{ $k }}: {{ . | quote }}
+  {{- end }}
   {{- end }}
   {{- with .Values.bankTransfer.configmap.ANTIFRAUD_SECRETS_BACKEND }}
   ANTIFRAUD_SECRETS_BACKEND: {{ . | quote }}

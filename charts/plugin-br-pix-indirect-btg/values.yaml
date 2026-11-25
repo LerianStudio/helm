@@ -272,6 +272,9 @@ pix:
     ANTIFRAUD_HOOK_PREWARM_ENABLED: "true"
     # Partner antifraud credential store, "aws" or "vault"; not set by default, and an enabled flow then denies.
     # ANTIFRAUD_SECRETS_BACKEND: ""
+    # Approved antifraud destinations, comma-separated, set before the image; empty approves none.
+    # ANTIFRAUD_PARTNER_HOSTS: ""
+    # ANTIFRAUD_PARTNER_TOKEN_URLS: ""
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml

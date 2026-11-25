@@ -210,6 +210,14 @@ data:
   ANTIFRAUD_SECRETS_BACKEND: {{ . | quote }}
   {{- end }}
   {{- end }}
+  {{- /* Approved antifraud destinations, deploy-owned; empty approves none (a key in extraEnvVars wins). */}}
+  {{- range $k := list "ANTIFRAUD_PARTNER_HOSTS" "ANTIFRAUD_PARTNER_TOKEN_URLS" }}
+  {{- with index $.Values.pix.configmap $k }}
+  {{- if not (hasKey ($.Values.pix.extraEnvVars | default dict) $k) }}
+  {{ $k }}: {{ . | quote }}
+  {{- end }}
+  {{- end }}
+  {{- end }}
 
   SWAGGER_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.pix.configmap.SWAGGER_ENABLED | quote }}
   STREAMING_BROKERS: {{ .Values.pix.configmap.STREAMING_BROKERS | default "" | quote }}

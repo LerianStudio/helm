@@ -167,7 +167,7 @@ mongodb ROOT user (mongodb.auth.rootUser), so the Bitnami key is mongodb-root-pa
 - Bundled subchart: MONGO_PASSWORD <- <release>-mongodb / mongodb-root-password.
 - existingSecret override: MONGO_PASSWORD <- <existingSecret> / mongodb-root-password.
 - External inline: MONGO_PASSWORD <- app Secret / MONGO_PASSWORD.
-An explicit flowker.secrets.MONGO_URI wins verbatim (no assembly).
+An explicit flowker.secrets.MONGO_URI wins (no assembly); it is referenced from the Secret.
 Input (dict): context (root .), secretName (app Secret name for the external-inline fallback).
 */}}
 {{- define "flowker.mongoEnv" -}}
@@ -176,8 +176,13 @@ Input (dict): context (root .), secretName (app Secret name for the external-inl
 {{- $mongoAuth := default dict $mongo.auth -}}
 {{- $internal := eq (include "flowker.mongoInternal" $ctx) "true" -}}
 {{- if $ctx.Values.flowker.secrets.MONGO_URI }}
+{{- /* The supplied URI carries the password: reference it from the Secret
+   (chart Secret, or the existing Secret), never as a literal PodSpec value. */}}
 - name: MONGO_URI
-  value: {{ $ctx.Values.flowker.secrets.MONGO_URI | quote }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .secretName }}
+      key: MONGO_URI
 {{- else if not $ctx.Values.flowker.useExistingSecret }}
 {{- if or $internal $mongoAuth.existingSecret }}
 {{- /* Single-source MONGO_PASSWORD from the mongodb subchart Secret (or its
@@ -270,6 +275,11 @@ Input (dict): context (root .).
 {{- $pullPolicy := $img.pullPolicy | default $ctx.Values.flowker.image.pullPolicy -}}
 {{- $port := (($x.port) | default 8081) -}}
 {{- $pa := $x.pluginAuth | default dict -}}
+{{- $paEnabled := (ne (toString $pa.enabled) "") | ternary (toString $pa.enabled) ($ctx.Values.flowker.configmap.PLUGIN_AUTH_ENABLED | default "false" | toString) -}}
+{{- $paAddress := $pa.address | default $ctx.Values.flowker.configmap.PLUGIN_AUTH_ADDRESS | default "" -}}
+{{- if and (eq $paEnabled "true") (hasPrefix "http://" $paAddress) (ne (toString $pa.allowInsecureHttp) "true") -}}
+{{- fail (printf "flowker.xsdValidator: PLUGIN_AUTH_ADDRESS %q is cleartext http:// and the sidecar exits on it unless you acknowledge it. Set flowker.xsdValidator.pluginAuth.allowInsecureHttp=\"true\", use an https:// address, or disable the sidecar (flowker.xsdValidator.enabled=false)" $paAddress) -}}
+{{- end -}}
 {{- $lp := $x.livenessProbe | default dict -}}
 {{- $rp := $x.readinessProbe | default dict -}}
 - name: xsd-validator

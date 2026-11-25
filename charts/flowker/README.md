@@ -28,7 +28,7 @@ The chart renders these workloads (all are toggleable; the api via `flowker.enab
 
 ## Prerequisites
 
-- Kubernetes 1.19+
+- Kubernetes 1.27+ (`Chart.yaml` `kubeVersion`; the health preset's PDB uses `unhealthyPodEvictionPolicy`)
 - Helm 3.2.0+
 - MongoDB database (bundled or external)
 
@@ -100,6 +100,11 @@ flowker:
   secrets:
     IDP_M2M_CLIENT_ID: "<client-id>"
     IDP_M2M_CLIENT_SECRET: "<client-secret>"
+  xsdValidator:
+    pluginAuth:
+      # The XSD sidecar inherits PLUGIN_AUTH_* and refuses a cleartext http://
+      # address unless acknowledged. The chart fails at render without this.
+      allowInsecureHttp: "true"
 ```
 
 - `IDP_DECLARATION_ENABLED` is always rendered in the ConfigMap (default `"false"`); `IDP_HOST` only when non-empty.

@@ -327,6 +327,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
+| `4.0.0` | 1.7.0 |
 -----------------
 
 ### Lerian Common (Library)

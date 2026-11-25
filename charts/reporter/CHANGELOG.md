@@ -1,5 +1,14 @@
 # Reporter Changelog
 
+## [5.4.5](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.4.5)
+
+Fixes:
+- Update `reporter-manager` to `4.11.0` and `reporter-worker` to `4.11.0`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.4.4...reporter-v5.4.5)
+
+---
+
 ## [5.4.4](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.4.4)
 
 Fixes:

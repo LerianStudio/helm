@@ -1,5 +1,14 @@
 # Midaz Changelog
 
+## [11.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.4.1)
+
+🛠️ Fixes:
+- Midaz now refuses to render a `4.5` ledger when no license is present, instead of rendering it anyway. If you use a `4.5` ledger, make sure a valid license is in place. (#3324, @andreimatiazi)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v11.4.0...midaz-v11.4.1)
+
+---
+
 ## [11.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.4.0)
 
 Features:

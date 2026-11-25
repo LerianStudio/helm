@@ -27,6 +27,8 @@ brCcs:
     # The app refuses an empty REPORTER_URL; an unreachable Reporter only trips its breaker.
     REPORTER_URL: "http://reporter:4005"
     OUTBOX_ENABLED: "true"
+    # The app refuses plain http for the CRM outside a development ENV_NAME only.
+    CRM_URL: "http://crm:4003"
   # The app refuses to boot in every environment without a license the Lerian
   # gateway accepts: the CI license placeholder (README) is written over by
   # install-test.sh from HELM_CI_LICENSE_KEY_BR_CCS.

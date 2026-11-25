@@ -3,6 +3,8 @@
 #   - multiTenant.env + fail-fast multiTenant.secret (MT on, API key supplied)
 #   - otel.env driven by global.observability
 #   - serviceDiscovery.env (SD on) and streaming.env + streaming.secret (streaming on, SASL)
+#   - the boot contract (templates/_validate.tpl): every value the app refuses
+#     to boot without, so the render gate passes the checks the app runs
 # Values are placeholders; the gate only checks that the chart renders.
 brCcs:
   multiTenant:
@@ -16,8 +18,25 @@ brCcs:
     STREAMING_SASL_MECHANISM: "PLAIN"
     STREAMING_SASL_USERNAME: "render-fixture-user"
     STREAMING_TLS_ENABLED: "true"
+    TRUSTED_PROXIES: "10.0.0.0/8"
+    CORS_ALLOWED_ORIGINS: "https://console.render-fixture.example"
+    PLUGIN_AUTH_HOST: "https://auth.render-fixture.example"
+    REPORTER_URL: "https://reporter.render-fixture.example"
+    REPORTER_TEMPLATE_NAME_CCS0002: "ccs0002"
+    REPORTER_TEMPLATE_NAME_CCS0004: "ccs0004"
+    REPORTER_TEMPLATE_NAME_ACCS005: "accs005"
+    CRM_URL: "https://crm.render-fixture.example"
+    CRM_ORGANIZATION_ID: "render-fixture-org"
+    OBJECT_STORAGE_STA_SSE_ALGORITHM: "AES256"
+    OBJECT_STORAGE_CCS_SSE_ALGORITHM: "AES256"
   secrets:
-    CCS_CRYPTO_MASTER_KEY: "render-fixture-crypto-key"
+    # Synthetic AES-256 key (64 hex chars): the boot contract refuses a non-hex key.
+    CCS_CRYPTO_MASTER_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+    LICENSE_KEY: "render-fixture-license"
+    REPORTER_CLIENT_ID: "render-fixture-reporter"
+    REPORTER_CLIENT_SECRET: "render-fixture-reporter-secret"
+    STA_CLIENT_ID: "render-fixture-sta"
+    STA_CLIENT_SECRET: "render-fixture-sta-secret"
     MULTI_TENANT_SERVICE_API_KEY: "render-fixture-mt-api-key"
     STREAMING_SASL_PASSWORD: "render-fixture-stream-pass"
     SD_TOKEN: "render-fixture-sd-token"

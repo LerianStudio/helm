@@ -10,7 +10,8 @@
 #
 #   helm install br-ccs charts/br-ccs -f values-quickstart.yaml
 #
-# Anything with CHANGE_ME MUST be set. The bundled Bitnami subcharts (postgresql,
+# Anything with CHANGE_ME MUST be set: the chart refuses to render until every
+# value the app needs at boot is filled (templates/_validate.tpl). The bundled Bitnami subcharts (postgresql,
 # valkey) are ON by default, so the datastore *host* knobs below only matter when
 # you point br-ccs at EXTERNAL infra (set <subchart>.enabled=false / external=true).
 # =============================================================================
@@ -27,9 +28,9 @@ global:
     # otlpEndpoint: "otel-collector:4317"
     # deploymentEnvironment: "production"
   # -- plugin-access-manager auth, env-wide (per-component override via configmap).
-  auth: {}
-    # enabled: "true"
-    # host: "http://plugin-access-manager:4000"
+  # Auth is on by default (the app accepts it off only with a development ENV_NAME).
+  auth:
+    host: "CHANGE_ME"   # plugin-access-manager URL, e.g. http://plugin-access-manager:4000
   # -- Tenant-manager (only needed when MULTI_TENANT_ENABLED=true below).
   multiTenant: {}
     # url: "http://tenant-manager:8090"
@@ -48,7 +49,7 @@ global:
 brCcs:
   enabled: true
   image:
-    tag: "1.0.0"   # -- pin the br-ccs image version
+    tag: "1.1.2"   # -- pin the br-ccs image version
   ingress:
     enabled: false
     # className: "nginx"
@@ -61,13 +62,31 @@ brCcs:
   streaming:
     enabled: false      # STREAMING_ENABLED — then set global.streaming + secrets.STREAMING_SASL_PASSWORD
   # -- A few common non-dependency overrides live under the escape hatch:
-  configmap: {}
+  # -- Values the app refuses to boot without:
+  configmap:
+    ENV_NAME: "production"
+    TRUSTED_PROXIES: "CHANGE_ME"          # production: L7 proxy IPs/CIDRs, e.g. 10.0.0.0/8
+    CORS_ALLOWED_ORIGINS: "CHANGE_ME"     # production: e.g. https://console.example.com (no "*")
+    REPORTER_URL: "CHANGE_ME"             # Reporter base URL
+    REPORTER_TEMPLATE_NAME_CCS0002: "CHANGE_ME"
+    REPORTER_TEMPLATE_NAME_CCS0004: "CHANGE_ME"
+    REPORTER_TEMPLATE_NAME_ACCS005: "CHANGE_ME"
+    CRM_URL: "CHANGE_ME"                  # Midaz CRM, https outside development
+    CRM_ORGANIZATION_ID: "CHANGE_ME"
+    OBJECT_STORAGE_STA_SSE_ALGORITHM: "AES256"   # AES256 | aws:kms (+ _SSE_KMS_KEY_ID) | none (development only)
+    OBJECT_STORAGE_CCS_SSE_ALGORITHM: "AES256"
     # OBJECT_STORAGE_CCS_ENDPOINT: "http://seaweedfs:8333"   # then set the *_ACCESS_KEY/*_SECRET_KEY secrets
-    # PLUGIN_AUTH_ENABLED: "true"       # inbound auth; also set global.auth.host
   secrets:
-    # -- Crypto master key. REQUIRED in production (empty fails fast at boot);
-    #    64 hex chars: openssl rand -hex 32
+    # -- Crypto master key. REQUIRED; 64 hex chars: openssl rand -hex 32
     CCS_CRYPTO_MASTER_KEY: "CHANGE_ME"
+    # -- Lerian license key. REQUIRED in every environment.
+    LICENSE_KEY: "CHANGE_ME"
+    # -- M2M client credentials for the Reporter and STA. REQUIRED with auth on,
+    #    even with STA_ENABLED=false.
+    REPORTER_CLIENT_ID: "CHANGE_ME"
+    REPORTER_CLIENT_SECRET: "CHANGE_ME"
+    STA_CLIENT_ID: "CHANGE_ME"
+    STA_CLIENT_SECRET: "CHANGE_ME"
     # -- Fetcher snapshot decryption key (base64; = the Fetcher APP_ENC_KEY). Empty = plaintext passthrough.
     # FETCHER_CRYPTO_KEY: "CHANGE_ME"
     # -- Only for EXTERNAL infra (subchart disabled / .external=true):
@@ -80,11 +99,9 @@ brCcs:
     # -- Object storage credentials (per bucket) — only when the endpoint is set:
     # OBJECT_STORAGE_CCS_ACCESS_KEY: "CHANGE_ME"
     # OBJECT_STORAGE_CCS_SECRET_KEY: "CHANGE_ME"
-    # -- Per-upstream M2M OAuth2 client credentials (when PLUGIN_AUTH_ENABLED=true):
+    # -- Fetcher M2M OAuth2 client credentials (when PLUGIN_AUTH_ENABLED=true):
     # FETCHER_CLIENT_ID: "CHANGE_ME"
     # FETCHER_CLIENT_SECRET: "CHANGE_ME"
-    # STA_CLIENT_ID: "CHANGE_ME"
-    # STA_CLIENT_SECRET: "CHANGE_ME"
 
 # --- dependencies (Helm requires subchart values at the root) ---
 # Bundled datastores are ON by default. Disable one to use EXTERNAL infra

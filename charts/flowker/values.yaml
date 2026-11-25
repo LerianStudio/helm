@@ -67,7 +67,7 @@ flowker:
     # -- Image tag used for deployment. Must be >= 1.3.0 (REDIS_* names; older images read SCHEDULER_REDIS_*). It bundles
     # the /worker binary (scheduler worker Deployment) alongside the api entrypoint. The chart refuses a tag below
     # 1.7.0-beta.50 (the first image serving the health port 8099); image and chart move together.
-    tag: "1.7.0-beta.50"
+    tag: "1.7.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []

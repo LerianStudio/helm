@@ -124,7 +124,7 @@ Probes, grace, the rollout strategy, the PDB and the drain env come from the `le
 | `flowker.enabled` | Enable flowker deployment | `true` |
 | `flowker.replicaCount` | Number of api replicas (the worker is a fixed singleton) | `2` |
 | `flowker.image.repository` | Image repository | `ghcr.io/lerianstudio/flowker` |
-| `flowker.image.tag` | Image tag (must bundle `/worker`, >= `1.3.0`; older images read `SCHEDULER_REDIS_*`, which this chart no longer emits). The chart refuses a tag below `1.7.0-beta.50`, the first image that serves the health port | `1.7.0-beta.50` |
+| `flowker.image.tag` | Image tag (must bundle `/worker`, >= `1.3.0`; older images read `SCHEDULER_REDIS_*`, which this chart no longer emits). The chart refuses a tag below `1.7.0-beta.50`, the first image that serves the health port | `1.7.0` |
 | `flowker.service.port` | Service port | `4021` |
 | `flowker.ingress.enabled` | Enable ingress | `false` |
 | `flowker.autoscaling.enabled` | Enable HPA | `true` |

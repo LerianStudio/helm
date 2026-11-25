@@ -204,6 +204,13 @@ data:
   ANTIFRAUD_HOOK_CB_FAILURE_THRESHOLD: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_CB_FAILURE_THRESHOLD | default "5" | quote }}
   ANTIFRAUD_HOOK_PREWARM_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.pix.configmap.ANTIFRAUD_HOOK_PREWARM_ENABLED | quote }}
 
+  {{- /* Antifraud credential store: aws or vault; rendered only when set (a key in extraEnvVars wins). */}}
+  {{- with .Values.pix.configmap.ANTIFRAUD_SECRETS_BACKEND }}
+  {{- if not (hasKey ($.Values.pix.extraEnvVars | default dict) "ANTIFRAUD_SECRETS_BACKEND") }}
+  ANTIFRAUD_SECRETS_BACKEND: {{ . | quote }}
+  {{- end }}
+  {{- end }}
+
   SWAGGER_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.pix.configmap.SWAGGER_ENABLED | quote }}
   STREAMING_BROKERS: {{ .Values.pix.configmap.STREAMING_BROKERS | default "" | quote }}
   STREAMING_CLOUDEVENTS_SOURCE: {{ .Values.pix.configmap.STREAMING_CLOUDEVENTS_SOURCE | default "plugin-br-pix-indirect-btg" | quote }}

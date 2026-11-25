@@ -179,6 +179,7 @@ ledger:
     REDIS_PASSWORD: ""
     RABBITMQ_DEFAULT_PASS: ""
     RABBITMQ_CONSUMER_PASS: ""
+    LICENSE_KEY: ""
     # -- RI permission declaration M2M client secret. Operator-provided; only set
     # when IDP_DECLARATION_ENABLED=true. Rendered into the ledger Secret, never the ConfigMap.
     IDP_M2M_CLIENT_SECRET: ""

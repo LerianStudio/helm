@@ -25,6 +25,7 @@ tests:
     set:
       ledger.licenseFile: null
       tracer.licenseFile: null
+      ledger.secrets.LICENSE_KEY: placeholder-key
     asserts:
       - notExists:
           path: spec.template.spec.volumes

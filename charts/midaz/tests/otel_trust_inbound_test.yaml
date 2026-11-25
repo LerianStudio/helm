@@ -7,6 +7,7 @@ set:
   ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
   ledger.secrets.RABBITMQ_DEFAULT_PASS: sample
   ledger.secrets.RABBITMQ_CONSUMER_PASS: sample
+  ledger.secrets.LICENSE_KEY: sample
   ledger.configmap.ENV_NAME: development
   rabbitmq.authentication.erlangCookie.value: "0123456789abcdef0123456789abcdef"
   tracer.enabled: true

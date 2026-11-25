@@ -73,6 +73,8 @@ ledger:
     # -- RabbitMQ credentials are REQUIRED (not yet single-sourced from the subchart).
     RABBITMQ_DEFAULT_PASS: "CHANGE_ME"
     RABBITMQ_CONSUMER_PASS: "CHANGE_ME"
+    # -- Product license key. REQUIRED for ledger images from 4.5.0-beta.59 on.
+    LICENSE_KEY: "CHANGE_ME"
     # -- CRM holder-PII crypto keys. REQUIRED for midaz 4.x ledger images when
     #    KMS_VENDOR=none (the default). Hex-encoded AES key — regenerate with
     #    `openssl rand -hex 32`; the all-zero value below is a placeholder so the

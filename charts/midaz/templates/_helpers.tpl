@@ -397,6 +397,20 @@ Called with a component's values (.Values.ledger / .Values.tracer).
 {{- end }}
 {{- end }}
 
+{{/* The ledger exits without a license, and so does its partition hook, which runs after the migrations:
+     fail the render first. Skipped under useExistingSecret (the chart cannot read it) or a tag that is not SemVer. */}}
+{{- define "midaz-ledger.validateLicense" -}}
+{{- $ledger := .Values.ledger -}}
+{{- $tag := $ledger.image.tag | default .Chart.AppVersion | toString | trimPrefix "v" -}}
+{{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag -}}
+{{- if semverCompare ">=4.5.0-beta.59" $tag -}}
+{{- if not (or ($ledger.secrets | default dict).LICENSE_KEY (include "midaz.licenseFileSecret" $ledger) $ledger.useExistingSecret) -}}
+{{- fail (printf "ledger: no license is configured for ledger image %s. The ledger refuses to boot without a license from 4.5.0-beta.59 on, and from 4.5.0-beta.220 on so does its partition reconcile hook, which runs after the migrations: the upgrade would stop with the database already migrated. Set ledger.secrets.LICENSE_KEY, or ledger.licenseFile.existingSecret (a Secret holding the signed license file under the key \"license\"), or ledger.useExistingSecret=true with LICENSE_KEY already in the Secret named by ledger.existingSecretName. A license in ledger.extraEnvVars does not count: the pre-upgrade hook reads the ConfigMap of the previous release" $tag) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
 {{/*
 midaz-tracer.migrationsFullname — one Job name per rendered Job spec
 (dict "context" . "spec" <rendered spec>). The tracer Job is a regular release

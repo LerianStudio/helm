@@ -35,6 +35,7 @@ ledger:
     # Secrets, so they are intentionally omitted here.
     RABBITMQ_DEFAULT_PASS: "sample"
     RABBITMQ_CONSUMER_PASS: "sample"
+    LICENSE_KEY: "IT_LICENSE_KEY"
 rabbitmq:
   authentication:
     erlangCookie:

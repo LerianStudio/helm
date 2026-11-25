@@ -8,10 +8,19 @@ tests:
     asserts:
       - notExists: {path: data.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS}
       - notExists: {path: data.ANTIFRAUD_SECRETS_BACKEND}
+      - notExists: {path: data.ANTIFRAUD_PARTNER_HOSTS}
+      - notExists: {path: data.ANTIFRAUD_PARTNER_TOKEN_URLS}
   - it: sends the allowlist to the SPI API and the systemplane
     set: {antifraud.allowedPrivateHosts: 'flowker.flowker.svc.cluster.local,10.0.0.5'}
     asserts:
       - equal: {path: data.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS, value: 'flowker.flowker.svc.cluster.local,10.0.0.5'}
+  - it: sends the destination lists to the SPI API and the systemplane
+    set:
+      antifraud.partnerHosts: partner.example.com
+      antifraud.partnerTokenUrls: https://idp.example.com/oauth/token
+    asserts:
+      - equal: {path: data.ANTIFRAUD_PARTNER_HOSTS, value: partner.example.com}
+      - equal: {path: data.ANTIFRAUD_PARTNER_TOKEN_URLS, value: 'https://idp.example.com/oauth/token'}
   - it: sends the secret backend to the SPI API only
     set: {antifraud.secretsBackend: vault}
     asserts:
@@ -23,8 +32,14 @@ tests:
     set:
       antifraud.allowedPrivateHosts: a
       spiSystemplane.configmap.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: b
+      antifraud.partnerHosts: a
+      spiSystemplane.configmap.ANTIFRAUD_PARTNER_HOSTS: b
     asserts:
       - equal: {path: data.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS, value: a}
         template: templates/spi/configmap.yaml
       - equal: {path: data.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS, value: b}
+        template: templates/spi-systemplane/configmap.yaml
+      - equal: {path: data.ANTIFRAUD_PARTNER_HOSTS, value: a}
+        template: templates/spi/configmap.yaml
+      - equal: {path: data.ANTIFRAUD_PARTNER_HOSTS, value: b}
         template: templates/spi-systemplane/configmap.yaml

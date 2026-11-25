@@ -1,0 +1,127 @@
+{{- if eq (include "flowker.worker.enabled" .) "true" }}
+{{- $w := .Values.worker | default dict -}}
+{{- $wImage := $w.image | default dict -}}
+{{- $repo := $wImage.repository | default .Values.flowker.image.repository -}}
+{{- $tag := $wImage.tag | default (include "flowker.defaultTag" .) -}}
+{{- $pullPolicy := $wImage.pullPolicy | default .Values.flowker.image.pullPolicy -}}
+{{- $pullSecrets := $w.imagePullSecrets | default .Values.flowker.imagePullSecrets -}}
+{{- $secCtx := $w.securityContext | default .Values.flowker.securityContext -}}
+{{- $podSecCtx := $w.podSecurityContext | default .Values.flowker.podSecurityContext -}}
+{{- $port := (($w.service).port | default 4022) -}}
+{{- /* Worker reuses the api ConfigMap/Secret (envFrom), so OTEL follows the api
+   knob (.Values.flowker.otel.enabled) — same source as the pre-refactor gate
+   on the api's ENABLE_TELEMETRY. */ -}}
+{{- $otelEnabled := eq (dig "otel" "enabled" false .Values.flowker | toString) "true" -}}
+{{- $rolesAnywhereEnabled := eq (include "flowker.awsRolesAnywhere.enabled" .) "true" -}}
+{{- $licenseSecret := include "flowker.licenseFileSecret" .Values.flowker -}}
+{{- $h := include "flowker.worker.health" . | fromYaml -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "flowker.worker.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "flowker.worker.labels" (dict "context" .) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ $w.revisionHistoryLimit | default 10 }}
+  # Singleton (preset): Recreate, 1 replica. The scheduler consume server and background jobs are
+  # not leader-gated yet, so a second replica would double-process. Do NOT add an HPA.
+  strategy:
+    {{- toYaml $h.strategy | nindent 4 }}
+  replicas: {{ $h.replicas }}
+  selector:
+    matchLabels:
+      {{- include "flowker.worker.selectorLabels" (dict "context" .) | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/worker-config: {{ include (print $.Template.BasePath "/worker/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.flowker.useExistingSecret }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with $w.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "flowker.worker.labels" (dict "context" .) | nindent 8 }}
+    spec:
+      {{- with $pullSecrets }}
+      {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
+      {{- end }}
+      serviceAccountName: {{ include "flowker.worker.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
+      {{- include "lerian-common.rolesAnywhere.podSecurityContext" (dict "aws" .Values.aws "podSecurityContext" $podSecCtx) | nindent 6 }}
+      initContainers:
+        {{- include "flowker.waitForMongoInit" (dict "context" $) | nindent 8 }}
+      containers:
+        - name: {{ include "flowker.worker.fullname" . }}
+          securityContext:
+            {{- toYaml $secCtx | nindent 12 }}
+          image: "{{ $repo }}:{{ $tag }}"
+          imagePullPolicy: {{ $pullPolicy }}
+          # Runs the worker binary bundled in the shared flowker image.
+          command:
+            {{- toYaml ($w.command | default (list "/worker")) | nindent 12 }}
+          envFrom:
+          # Shared config + secrets from the api (single source of truth).
+          - secretRef:
+              name: {{ if .Values.flowker.useExistingSecret }}{{ .Values.flowker.existingSecretName }}{{ else }}{{ include "flowker.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "flowker.fullname" . }}
+          # Worker-only overrides (WORKER_SERVER_*, OTEL name) — last so its keys win.
+          - configMapRef:
+              name: {{ include "flowker.worker.fullname" . }}
+          env:
+          {{- toYaml $h.env | nindent 10 }}
+          {{- $secretName := ternary .Values.flowker.existingSecretName (include "flowker.fullname" .) .Values.flowker.useExistingSecret }}
+          {{- include "flowker.mongoEnv" (dict "context" $ "secretName" $secretName) | nindent 10 }}
+          {{- if $otelEnabled }}
+          {{- include "lerian-common.otel.podEnv" (dict "port" 4317) | nindent 10 }}
+          {{- end }}
+          {{- if $rolesAnywhereEnabled }}
+          {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 10 }}
+          {{- end }}
+          {{- if $licenseSecret }}
+          {{- include "flowker.licenseFileEnv" . | nindent 10 }}
+          {{- end }}
+          {{- with $w.extraEnvVars }}
+          {{- range $key, $value := . }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+          {{- end }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ $port }}
+              protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
+          startupProbe:
+            {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe:
+            {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml $h.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml ($w.resources | default .Values.flowker.resources) | nindent 12 }}
+          {{- if $licenseSecret }}
+          {{- include "flowker.licenseFileMount" . | nindent 10 }}
+          {{- end }}
+        {{- if eq (include "flowker.xsdValidator.enabled" .) "true" }}
+        {{- include "flowker.xsdValidatorContainer" (dict "context" $) | nindent 8 }}
+        {{- end }}
+        {{- if $rolesAnywhereEnabled }}
+        {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" .Values.aws) | nindent 8 }}
+        {{- end }}
+      {{- if $rolesAnywhereEnabled }}
+      {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.aws "iamTlsDefault" "flowker-iam-tls") | nindent 6 }}
+      {{- else if $licenseSecret }}
+      volumes:
+      {{- end }}
+      {{- if $licenseSecret }}
+      {{- include "flowker.licenseFileVolume" $licenseSecret | nindent 8 }}
+      {{- end }}
+      {{- if or $w.nodeSelector $w.affinity $w.tolerations }}
+      {{- include "lerian-common.scheduling" $w | nindent 6 }}
+      {{- end }}
+{{- end }}

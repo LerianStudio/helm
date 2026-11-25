@@ -1,0 +1,11 @@
+{{- if and .Values.flowker.enabled .Values.flowker.ingress.enabled }}
+{{- include "lerian-common.ingress" (dict
+      "context" .
+      "ingress" .Values.flowker.ingress
+      "name" (include "flowker.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "flowker.labels" (dict "context" . "component" .Values.flowker.name "name" .Values.flowker.name))
+      "svcPort" .Values.flowker.service.port
+      "healthcheck" (include "flowker.health" . | fromYaml).alb
+    ) }}
+{{- end }}

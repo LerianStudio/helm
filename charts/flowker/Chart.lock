@@ -1,0 +1,12 @@
+dependencies:
+- name: lerian-common-helm
+  repository: oci://ghcr.io/lerianstudio
+  version: 2.7.0
+- name: mongodb
+  repository: https://charts.bitnami.com/bitnami
+  version: 16.4.0
+- name: valkey
+  repository: https://valkey.io/valkey-helm
+  version: 0.7.4
+digest: sha256:3a2351bdf93c72b9b148a7e2942eb12903842bd2336c0e64172624c25c83bc25
+generated: "2026-11-25T11:47:43.878769959-03:00"

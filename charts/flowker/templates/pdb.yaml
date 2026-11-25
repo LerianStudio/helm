@@ -1,0 +1,10 @@
+{{- if .Values.flowker.enabled }}
+{{- $h := include "flowker.health" . | fromYaml }}
+{{- include "lerian-common.pdb" (dict
+      "pdb" (mergeOverwrite (deepCopy $h.pdb) (dict "annotations" .Values.flowker.pdb.annotations))
+      "name" (include "flowker.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "flowker.labels" (dict "context" . "component" .Values.flowker.name "name" .Values.flowker.name))
+      "selector" (include "flowker.selectorLabels" (dict "context" . "name" .Values.flowker.name))
+    ) }}
+{{- end }}

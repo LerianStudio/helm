@@ -1,0 +1,9 @@
+{{- $h := include "flowker.health" . | fromYaml }}
+{{- if and .Values.flowker.enabled $h.autoscaling }}
+{{- include "lerian-common.hpa" (dict
+      "autoscaling" $h.autoscaling
+      "name" (include "flowker.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "flowker.labels" (dict "context" . "component" .Values.flowker.name "name" .Values.flowker.name))
+    ) }}
+{{- end }}

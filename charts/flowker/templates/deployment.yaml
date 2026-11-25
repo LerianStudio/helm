@@ -1,0 +1,101 @@
+{{- if .Values.flowker.enabled }}
+{{- $otelEnabled := eq (dig "otel" "enabled" false .Values.flowker | toString) "true" }}
+{{- $rolesAnywhereEnabled := eq (include "flowker.awsRolesAnywhere.enabled" .) "true" }}
+{{- $licenseSecret := include "flowker.licenseFileSecret" .Values.flowker }}
+{{- $h := include "flowker.health" . | fromYaml }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "flowker.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "flowker.labels" (dict "context" . "component" .Values.flowker.name "name" .Values.flowker.name) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.flowker.revisionHistoryLimit | default 10 }}
+  strategy:
+    {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "flowker.selectorLabels" (dict "context" . "name" .Values.flowker.name) | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.flowker.useExistingSecret }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.flowker.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "flowker.labels" (dict "context" . "component" .Values.flowker.name "name" .Values.flowker.name) | nindent 8 }}
+    spec:
+      {{- with .Values.flowker.imagePullSecrets }}
+      {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
+      {{- end }}
+      serviceAccountName: {{ include "flowker.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
+      {{- include "lerian-common.rolesAnywhere.podSecurityContext" (dict "aws" .Values.aws "podSecurityContext" .Values.flowker.podSecurityContext) | nindent 6 }}
+      initContainers:
+        {{- include "flowker.waitForMongoInit" (dict "context" $) | nindent 8 }}
+      containers:
+        - name: {{ include "flowker.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.flowker.securityContext | nindent 12 }}
+          image: "{{ .Values.flowker.image.repository }}:{{ .Values.flowker.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.flowker.image.pullPolicy }}
+          envFrom:
+          - secretRef:
+              name: {{ if .Values.flowker.useExistingSecret }}{{ .Values.flowker.existingSecretName }}{{ else }}{{ include "flowker.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "flowker.fullname" . }}
+          env:
+          {{- toYaml $h.env | nindent 10 }}
+          {{- $secretName := ternary .Values.flowker.existingSecretName (include "flowker.fullname" .) .Values.flowker.useExistingSecret }}
+          {{- include "flowker.mongoEnv" (dict "context" $ "secretName" $secretName) | nindent 10 }}
+          {{- if $otelEnabled }}
+          {{- include "lerian-common.otel.podEnv" (dict "port" 4317) | nindent 10 }}
+          {{- end }}
+          {{- if $rolesAnywhereEnabled }}
+          {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 10 }}
+          {{- end }}
+          {{- if $licenseSecret }}
+          {{- include "flowker.licenseFileEnv" . | nindent 10 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.flowker.service.port }}
+              protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
+          startupProbe:
+            {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe:
+            {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml $h.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.flowker.resources | nindent 12 }}
+          {{- if $licenseSecret }}
+          {{- include "flowker.licenseFileMount" . | nindent 10 }}
+          {{- end }}
+        {{- if eq (include "flowker.xsdValidator.enabled" .) "true" }}
+        {{- include "flowker.xsdValidatorContainer" (dict "context" $) | nindent 8 }}
+        {{- end }}
+        {{- if $rolesAnywhereEnabled }}
+        {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" .Values.aws) | nindent 8 }}
+        {{- end }}
+      {{- if $rolesAnywhereEnabled }}
+      {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.aws "iamTlsDefault" "flowker-iam-tls") | nindent 6 }}
+      {{- else if $licenseSecret }}
+      volumes:
+      {{- end }}
+      {{- if $licenseSecret }}
+      {{- include "flowker.licenseFileVolume" $licenseSecret | nindent 8 }}
+      {{- end }}
+      {{- if or .Values.flowker.nodeSelector .Values.flowker.affinity .Values.flowker.tolerations }}
+      {{- include "lerian-common.scheduling" .Values.flowker | nindent 6 }}
+      {{- end }}
+{{- end }}

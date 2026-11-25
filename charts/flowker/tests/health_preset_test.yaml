@@ -1,0 +1,78 @@
+suite: flowker health comes from the lerian-common preset
+templates:
+  - templates/deployment.yaml
+  - templates/worker/deployment.yaml
+  - templates/service.yaml
+  - templates/pdb.yaml
+  - templates/hpa.yaml
+  # loaded so the deployments can include and hash the rendered ConfigMaps and Secret
+  - templates/configmap.yaml
+  - templates/worker/configmap.yaml
+  - templates/secrets.yaml
+release:
+  name: flowker
+  namespace: flowker
+set:
+  flowker.secrets.LICENSE_KEY: x
+tests:
+  - it: serves probes and the drain env from the health port on the api
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content: {name: health, containerPort: 8099}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HEALTH_PORT, value: "8099"}
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: {path: /readyz, port: health}
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet
+          value: {path: /health, port: health}
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 55
+      - equal:
+          path: spec.strategy.rollingUpdate.maxUnavailable
+          value: 0
+
+  - it: runs the worker as a singleton without a drain
+    template: templates/worker/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+      - equal:
+          path: spec.replicas
+          value: 1
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: SHUTDOWN_DRAIN_DELAY, value: 0s}
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: {path: /readyz, port: health}
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 40
+
+  - it: exposes the health port as an internal Service port only
+    template: templates/service.yaml
+    asserts:
+      - contains:
+          path: spec.ports
+          content: {name: health, port: 8099, targetPort: 8099, protocol: TCP}
+
+  - it: renders the preset PDB
+    template: templates/pdb.yaml
+    asserts:
+      - equal:
+          path: spec.unhealthyPodEvictionPolicy
+          value: AlwaysAllow
+
+  - it: starts the HPA at two replicas
+    template: templates/hpa.yaml
+    asserts:
+      - equal:
+          path: spec.minReplicas
+          value: 2

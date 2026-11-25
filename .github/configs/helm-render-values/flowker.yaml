@@ -1,0 +1,9 @@
+# CI-ONLY render fixture for charts/flowker.
+#
+# NOT a production example and NOT a credential store. The value below is a
+# self-describing placeholder that satisfies the chart's fail-loud gate:
+#   flowker.secrets.LICENSE_KEY — required for chart-managed Secrets
+#   (flowker >= 1.6 does not boot without a license).
+flowker:
+  secrets:
+    LICENSE_KEY: "IT_LICENSE_KEY" # CI license placeholder (README)

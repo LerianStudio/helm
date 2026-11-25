@@ -1,0 +1,10 @@
+{{- if .Values.flowker.enabled }}
+{{- include "lerian-common.service" (dict
+      "service" .Values.flowker.service
+      "name" (include "flowker.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "flowker.labels" (dict "context" . "component" .Values.flowker.name "name" .Values.flowker.name))
+      "selector" (include "flowker.selectorLabels" (dict "context" . "name" .Values.flowker.name))
+      "ports" (include "flowker.health" . | fromYaml).servicePorts
+    ) }}
+{{- end }}

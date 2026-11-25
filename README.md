@@ -317,6 +317,18 @@ For implementation and configuration details, see the [README](https://charts.le
 | `2.2.1` | 3.4.0 |
 -----------------
 
+### Flowker
+
+Workflow orchestration platform for financial validation.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/flowker).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+-----------------
+
 ### Lerian Common (Library)
 
 Library chart consumed by other Lerian charts — renders nothing on its own.

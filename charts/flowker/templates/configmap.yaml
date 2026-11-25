@@ -1,0 +1,197 @@
+{{- if .Values.flowker.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "flowker.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "flowker.labels" (dict "context" . "component" .Values.flowker.name "name" .Values.flowker.name) | nindent 4 }}
+data:
+  # Server
+  ALLOW_INSECURE_TLS: {{ .Values.flowker.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ENV_NAME: {{ .Values.flowker.configmap.ENV_NAME | default "development" | quote }}
+  VERSION: {{ .Values.flowker.image.tag | default .Chart.AppVersion | quote }}
+  SERVER_PORT: {{ .Values.flowker.configmap.SERVER_PORT | default "4021" | quote }}
+  SERVER_ADDRESS: {{ .Values.flowker.configmap.SERVER_ADDRESS | default ":4021" | quote }}
+
+  # Deployment mode (saas/byoc/local — controls TLS enforcement at startup)
+  DEPLOYMENT_MODE: {{ .Values.flowker.configmap.DEPLOYMENT_MODE | default "local" | quote }}
+
+  # Logging
+  LOG_LEVEL: {{ .Values.flowker.configmap.LOG_LEVEL | default "info" | quote }}
+
+  # Access Manager (plugin auth)
+  PLUGIN_AUTH_ENABLED: {{ .Values.flowker.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ .Values.flowker.configmap.PLUGIN_AUTH_ADDRESS | default "" | quote }}
+
+  # Access Manager permission declaration (RI). The API binary publishes the
+  # embedded permissions.yaml at boot via lib-auth declaration.WireFromEnv; the
+  # worker never publishes. Off by default; when "true" the app also requires
+  # IDP_HOST here and IDP_M2M_CLIENT_ID/IDP_M2M_CLIENT_SECRET in the Secret.
+  # Precedence: flowker.extraEnvVars (legacy path, kept as override) >
+  # flowker.configmap > default. IDP_HOST is emitted only when non-empty.
+  {{- $extra := .Values.flowker.extraEnvVars | default dict }}
+  {{- if not (kindIs "map" $extra) }}{{- $extra = dict }}{{- end }}
+  {{- $idpEnabled := .Values.flowker.configmap.IDP_DECLARATION_ENABLED | default "false" }}
+  {{- if hasKey $extra "IDP_DECLARATION_ENABLED" }}{{- $idpEnabled = index $extra "IDP_DECLARATION_ENABLED" }}{{- end }}
+  IDP_DECLARATION_ENABLED: {{ $idpEnabled | toString | quote }}
+  {{- $idpHost := .Values.flowker.configmap.IDP_HOST | default "" }}
+  {{- if hasKey $extra "IDP_HOST" }}{{- $idpHost = index $extra "IDP_HOST" | default "" }}{{- end }}
+  {{- if $idpHost }}
+  IDP_HOST: {{ $idpHost | quote }}
+  {{- end }}
+
+  # Trusted proxies
+  TRUSTED_PROXIES: {{ .Values.flowker.configmap.TRUSTED_PROXIES | default "" | quote }}
+
+  # CORS
+  CORS_ALLOWED_ORIGINS: {{ .Values.flowker.configmap.CORS_ALLOWED_ORIGINS | default "*" | quote }}
+
+  # Feature flags
+  SKIP_LIB_COMMONS_TELEMETRY: {{ .Values.flowker.configmap.SKIP_LIB_COMMONS_TELEMETRY | default "false" | quote }}
+  FAULT_INJECTION_ENABLED: {{ .Values.flowker.configmap.FAULT_INJECTION_ENABLED | default "false" | quote }}
+  SSRF_ALLOW_PRIVATE: {{ .Values.flowker.configmap.SSRF_ALLOW_PRIVATE | default "false" | quote }}
+
+  # MongoDB
+  # MONGO_URI lives in the Secret (templates/secrets.yaml) because it
+  # contains the application password.
+  # MONGO_DB_NAME is non-sensitive and used by the app to scope database operations.
+  MONGO_DB_NAME: {{ .Values.flowker.configmap.MONGO_DB_NAME | default "flowker" | quote }}
+  # MongoDB driver pool size (read directly via getEnvAsIntOrDefault, not via struct tag).
+  MONGO_MAX_POOL_SIZE: {{ .Values.flowker.configmap.MONGO_MAX_POOL_SIZE | default "20" | quote }}
+
+  # Swagger
+  SWAGGER_TITLE: {{ .Values.flowker.configmap.SWAGGER_TITLE | default "Flowker API" | quote }}
+  SWAGGER_DESCRIPTION: {{ .Values.flowker.configmap.SWAGGER_DESCRIPTION | default "Workflow orchestration platform for financial validation" | quote }}
+  SWAGGER_VERSION: {{ .Values.flowker.image.tag | default .Chart.AppVersion | quote }}
+  SWAGGER_HOST: {{ .Values.flowker.configmap.SWAGGER_HOST | default ":4021" | quote }}
+  SWAGGER_BASE_PATH: {{ .Values.flowker.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
+  SWAGGER_SCHEMES: {{ .Values.flowker.configmap.SWAGGER_SCHEMES | default "http" | quote }}
+  SWAGGER_LEFT_DELIM: {{ .Values.flowker.configmap.SWAGGER_LEFT_DELIM | default "{{" | quote }}
+  SWAGGER_RIGHT_DELIM: {{ .Values.flowker.configmap.SWAGGER_RIGHT_DELIM | default "}}" | quote }}
+
+  # OpenTelemetry — enable is per-component (.Values.flowker.otel.enabled); the
+  # remaining OTEL_* keys are always emitted. The OTLP endpoint podEnv (HOST_IP)
+  # is injected on the Deployment when otel.enabled=true.
+  {{- $otelEnabled := eq (dig "otel" "enabled" false .Values.flowker | toString) "true" }}
+  ENABLE_TELEMETRY: {{ $otelEnabled | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.flowker.configmap.OTEL_RESOURCE_SERVICE_NAME | default "flowker" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.flowker.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/flowker" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.flowker.image.tag | default .Chart.AppVersion | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.flowker.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.flowker.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.flowker.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
+
+  # Multi-tenant configuration — enable is per-component
+  # (.Values.flowker.multiTenant.enabled); the env-wide config
+  # (url/redis/pool/cache/circuit-breaker) comes from global.multiTenant via the
+  # lerian-common.multiTenant.env helper (component configmap overrides). Only the
+  # ENABLED line renders (the rest of the MULTI_TENANT_* block stays inert) until
+  # multiTenant.enabled=true. Flowker does NOT emit MULTI_TENANT_SERVICE_NAME or
+  # MULTI_TENANT_ENVIRONMENT, and MULTI_TENANT_REDIS_HOST is optional (not required).
+  {{- $mtEnabled := eq (dig "multiTenant" "enabled" false .Values.flowker | toString) "true" }}
+  MULTI_TENANT_ENABLED: {{ $mtEnabled | quote }}
+  {{- with (include "lerian-common.multiTenant.env" (dict
+        "context" $
+        "configmap" .Values.flowker.configmap
+        "enabled" $mtEnabled
+        "requiredUrl" true "requiredRedisHost" false
+        "emitRedis" true "emitPool" true "emitCache" true
+        "emitAllowInsecure" true
+      )) }}{{ . | nindent 2 }}{{- end }}
+
+  # HTTP egress body cap (bytes). Caps request/response bodies on provider calls.
+  HTTP_MAX_BODY_BYTES: {{ .Values.flowker.configmap.HTTP_MAX_BODY_BYTES | default "10485760" | quote }}
+
+  # CORS wildcard (lib-commons parity). Secure-by-default false; local overrides to true.
+  ALLOW_CORS_WILDCARD: {{ .Values.flowker.configmap.ALLOW_CORS_WILDCARD | default "false" | quote }}
+
+  # Internal (Lerian-managed) provider base URLs. Empty = stored config doc value used.
+  MIDAZ_BASE_URL: {{ .Values.flowker.configmap.MIDAZ_BASE_URL | default "" | quote }}
+  TRACER_BASE_URL: {{ .Values.flowker.configmap.TRACER_BASE_URL | default "" | quote }}
+
+  # Schema Registry auth gates (secure default: true)
+  XSD_SCHEMAS_AUTH_ENABLED: {{ .Values.flowker.configmap.XSD_SCHEMAS_AUTH_ENABLED | default "true" | quote }}
+  OPENAPI_SCHEMAS_AUTH_ENABLED: {{ .Values.flowker.configmap.OPENAPI_SCHEMAS_AUTH_ENABLED | default "true" | quote }}
+
+  # Schema Registry blob storage (S3). Graceful-off: empty bucket disables the S3
+  # backend (boot proceeds Mongo-only). AWS creds come from the credential chain
+  # (IRSA / Roles Anywhere). Empty region resolves via the standard AWS SDK chain.
+  SCHEMA_REGISTRY_S3_BUCKET: {{ .Values.flowker.configmap.SCHEMA_REGISTRY_S3_BUCKET | default "" | quote }}
+  SCHEMA_REGISTRY_S3_REGION: {{ .Values.flowker.configmap.SCHEMA_REGISTRY_S3_REGION | default "" | quote }}
+
+  # Shared OAuth2 token cache
+  TOKEN_CACHE_MAX_TTL_SEC: {{ .Values.flowker.configmap.TOKEN_CACHE_MAX_TTL_SEC | default "3600" | quote }}
+  TOKEN_CACHE_JANITOR_INTERVAL_SEC: {{ .Values.flowker.configmap.TOKEN_CACHE_JANITOR_INTERVAL_SEC | default "300" | quote }}
+  TOKEN_CACHE_REFRESH_BUFFER_SEC: {{ .Values.flowker.configmap.TOKEN_CACHE_REFRESH_BUFFER_SEC | default "60" | quote }}
+  TOKEN_CACHE_TENANT_SCOPED_DISABLED: {{ .Values.flowker.configmap.TOKEN_CACHE_TENANT_SCOPED_DISABLED | default "false" | quote }}
+  # L2 Redis token cache (feature Fase 4) — dark-launch opt-in, default OFF (fail-safe).
+  # TOKEN_CACHE_ALLOW_INSECURE_TRANSPORT permits the L2 store over a non-TLS/cleartext
+  # Redis; the app's boot guard only honors it in non-production (staging/development),
+  # so production still fails closed regardless of this value.
+  TOKEN_CACHE_L2_ENABLED: {{ .Values.flowker.configmap.TOKEN_CACHE_L2_ENABLED | default "false" | quote }}
+  TOKEN_CACHE_ALLOW_INSECURE_TRANSPORT: {{ .Values.flowker.configmap.TOKEN_CACHE_ALLOW_INSECURE_TRANSPORT | default "false" | quote }}
+
+  # Secrets backend. unset = disabled (boots fine); tenant-manager = AWS Secrets
+  # Manager reader. WORKOS_TM_SERVICE_NAME MUST match FLOWKER_SECRETS_APPLICATION_NAME.
+  FLOWKER_SECRETS_BACKEND: {{ .Values.flowker.configmap.FLOWKER_SECRETS_BACKEND | default "" | quote }}
+  FLOWKER_SECRETS_CACHE_TTL_SEC: {{ .Values.flowker.configmap.FLOWKER_SECRETS_CACHE_TTL_SEC | default "" | quote }}
+  FLOWKER_SECRETS_APPLICATION_NAME: {{ .Values.flowker.configmap.FLOWKER_SECRETS_APPLICATION_NAME | default "" | quote }}
+
+  # XSD validator (app-side knobs). When the in-pod sidecar is enabled, the URL
+  # defaults to the loopback sidecar and cleartext http is acknowledged for that
+  # same-pod hop; an explicit override always wins. When the sidecar is disabled
+  # the URL is empty (feature unconfigured — never a hard boot dependency).
+  {{- $xsdOn := eq (include "flowker.xsdValidator.enabled" .) "true" }}
+  {{- $xsdPort := ((.Values.flowker.xsdValidator).port | default 8081) }}
+  {{- $xsdUrlOverridden := ne (.Values.flowker.configmap.XSD_VALIDATOR_URL | default "") "" }}
+  XSD_VALIDATOR_URL: {{ .Values.flowker.configmap.XSD_VALIDATOR_URL | default (ternary (printf "http://localhost:%v" $xsdPort) "" $xsdOn) | quote }}
+  {{- /* cleartext is auto-acknowledged ONLY for the in-pod loopback URL; an explicit off-pod override must opt in deliberately */}}
+  XSD_VALIDATOR_ALLOW_INSECURE_HTTP: {{ .Values.flowker.configmap.XSD_VALIDATOR_ALLOW_INSECURE_HTTP | default (ternary "true" "false" (and $xsdOn (not $xsdUrlOverridden))) | quote }}
+
+  # Scheduler (queue-backed `schedule` trigger). DEFAULT ON. When the bundled
+  # valkey subchart is enabled, REDIS_HOST auto-derives to its Service
+  # name; empty (valkey off, no override) leaves the scheduler without a queue Redis
+  # (flowker 1.6.0 refuses to boot unless SCHEDULER_ENABLED=false). This dedicated
+  # queue Redis MUST stay isolated from the tenant Pub/Sub Redis (MULTI_TENANT_REDIS_*).
+  SCHEDULER_ENABLED: {{ .Values.flowker.configmap.SCHEDULER_ENABLED | default "true" | quote }}
+  {{- /* Derive the queue host from the valkey subchart's actual Service name (<release>-valkey, or fullnameOverride) so it resolves under any release name; an explicit override always wins. */}}
+  {{- $valkeyHost := "" }}
+  {{- if eq (include "flowker.valkey.enabled" .) "true" }}
+  {{- $valkeyHost = include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" (.Values.valkey | default dict) "context" .) }}
+  {{- end }}
+  {{- /* flowker >=1.3 reads the queue Redis from REDIS_*; a REDIS_* key in flowker.extraEnvVars wins and is emitted by the Extra Env Vars block below. */}}
+  {{- if not (hasKey $extra "REDIS_HOST") }}
+  REDIS_HOST: {{ .Values.flowker.configmap.REDIS_HOST | default $valkeyHost | quote }}
+  {{- end }}
+  {{- if not (hasKey $extra "REDIS_PORT") }}
+  REDIS_PORT: {{ .Values.flowker.configmap.REDIS_PORT | default "6379" | quote }}
+  {{- end }}
+  {{- if not (hasKey $extra "REDIS_TLS") }}
+  REDIS_TLS: {{ .Values.flowker.configmap.REDIS_TLS | default "false" | quote }}
+  {{- end }}
+  {{- if not (hasKey $extra "REDIS_DB") }}
+  REDIS_DB: {{ .Values.flowker.configmap.REDIS_DB | default "0" | quote }}
+  {{- end }}
+  SCHEDULER_CONCURRENCY: {{ .Values.flowker.configmap.SCHEDULER_CONCURRENCY | default "10" | quote }}
+
+  # WorkOS Tenant Manager token mint (feature #300) — ALL-OR-NONE. When enabled,
+  # URL + CLIENT_ID (here) + CLIENT_SECRET (Secret) are all required; a partial
+  # config is rejected at template time (mirrors the app's fail-fast boot check).
+  {{- if .Values.flowker.workosTmEnabled }}
+  WORKOS_TM_TOKEN_URL: {{ required "flowker.configmap.WORKOS_TM_TOKEN_URL is required when flowker.workosTmEnabled=true" .Values.flowker.configmap.WORKOS_TM_TOKEN_URL | quote }}
+  WORKOS_TM_CLIENT_ID: {{ required "flowker.configmap.WORKOS_TM_CLIENT_ID is required when flowker.workosTmEnabled=true" .Values.flowker.configmap.WORKOS_TM_CLIENT_ID | quote }}
+  WORKOS_TM_SCOPE: {{ .Values.flowker.configmap.WORKOS_TM_SCOPE | default "" | quote }}
+  WORKOS_TM_SERVICE_NAME: {{ .Values.flowker.configmap.WORKOS_TM_SERVICE_NAME | default "flowker" | quote }}
+  {{- end }}
+
+  # Extra Env Vars
+  {{- with .Values.flowker.extraEnvVars }}
+  {{- range $key, $value := . }}
+  {{- /* IDP_* declaration keys are emitted (with override) in the Access Manager block above. */}}
+  {{- if not (has $key (list "IDP_DECLARATION_ENABLED" "IDP_HOST")) }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  {{- end }}
+{{- end }}

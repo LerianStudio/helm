@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "namespaceOverride": {
+      "type": "string"
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "flowker": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object",
+          "properties": {
+            "IDP_DECLARATION_ENABLED": {
+              "type": ["string", "boolean"],
+              "description": "Publish the RI permission manifest to the Access Manager at boot (API only). Default \"false\"."
+            },
+            "IDP_HOST": {
+              "type": "string",
+              "description": "Access Manager identity base URL for the RI declaration. Emitted only when non-empty."
+            }
+          }
+        },
+        "secrets": {
+          "type": "object",
+          "properties": {
+            "IDP_M2M_CLIENT_ID": {
+              "type": "string",
+              "description": "RI declaration M2M client ID. Emitted only when set."
+            },
+            "IDP_M2M_CLIENT_SECRET": {
+              "type": "string",
+              "description": "RI declaration M2M client secret. Emitted only when set."
+            }
+          }
+        },
+        "workosTmEnabled": {
+          "type": "boolean"
+        },
+        "xsdValidator": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "worker": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "valkey": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "aws": {
+      "type": "object",
+      "properties": {
+        "rolesAnywhere": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "mongodb": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

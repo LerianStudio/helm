@@ -1,0 +1,61 @@
+suite: flowker refuses what the health preset owns
+templates:
+  - templates/deployment.yaml
+  - templates/worker/deployment.yaml
+  # loaded so the deployments can include and hash the rendered ConfigMaps and Secret
+  - templates/configmap.yaml
+  - templates/worker/configmap.yaml
+  - templates/secrets.yaml
+release:
+  name: flowker
+  namespace: flowker
+set:
+  flowker.secrets.LICENSE_KEY: x
+tests:
+  - it: refuses an image that predates the health port
+    template: templates/worker/deployment.yaml
+    set:
+      flowker.image.tag: "1.6.0"
+    asserts:
+      - failedTemplate:
+          errorPattern: "is below 1.7.0-beta.50"
+
+  - it: refuses the retired PDB enabled setting
+    template: templates/deployment.yaml
+    set:
+      flowker.pdb.enabled: false
+    asserts:
+      - failedTemplate:
+          errorPattern: "flowker.pdb.enabled is owned by the health preset"
+
+  - it: refuses the retired api rollout strategy
+    template: templates/deployment.yaml
+    set:
+      flowker.deploymentUpdate.type: Recreate
+    asserts:
+      - failedTemplate:
+          errorPattern: "flowker.deploymentUpdate is owned by the health preset"
+
+  - it: refuses the retired worker rollout strategy
+    template: templates/worker/deployment.yaml
+    set:
+      worker.deploymentStrategy.type: Recreate
+    asserts:
+      - failedTemplate:
+          errorPattern: "worker.deploymentStrategy is owned by the health preset"
+
+  - it: refuses a probe override on the api
+    template: templates/deployment.yaml
+    set:
+      flowker.readinessProbe.path: /readyz
+    asserts:
+      - failedTemplate:
+          errorPattern: "readinessProbe is owned by the health preset"
+
+  - it: refuses a drain override in the configmap
+    template: templates/deployment.yaml
+    set:
+      flowker.configmap.SHUTDOWN_DRAIN_DELAY: 5s
+    asserts:
+      - failedTemplate:
+          errorPattern: "SHUTDOWN_DRAIN_DELAY is owned by the health preset"

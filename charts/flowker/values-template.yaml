@@ -1,0 +1,103 @@
+# Template values for flowker deployment
+# Copy this file and customize for your environment
+
+namespaceOverride: "flowker"
+
+flowker:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: ghcr.io/lerianstudio/flowker
+    pullPolicy: IfNotPresent
+    # Empty inherits the chart default (>= 1.3.0: REDIS_* env names, worker, xsd).
+    tag: ""
+
+  imagePullSecrets: []
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  # Structured enable knobs. multiTenant drives MULTI_TENANT_ENABLED (+ the MT
+  # config block via lerian-common); otel drives ENABLE_TELEMETRY (+ OTLP podEnv).
+  multiTenant:
+    enabled: false
+  otel:
+    enabled: false
+
+  configmap:
+    ALLOW_INSECURE_TLS: "true"
+    SERVER_ADDRESS: ":4021"
+    LOG_LEVEL: "info"
+    CORS_ALLOWED_ORIGINS: "*"
+    MONGO_DB_NAME: "flowker"
+    MONGO_MAX_POOL_SIZE: "20"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+
+  secrets:
+    # REQUIRED: full mongodb:// URI with password embedded.
+    MONGO_URI: ""
+    # REQUIRED: flowker >= 1.6 does not boot without a license.
+    LICENSE_KEY: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  # WorkOS Tenant Manager token mint (all-or-none; requires WORKOS_TM_* config + secret).
+  workosTmEnabled: false
+
+  # In-pod XSD validator sidecar (default on; disable if XML validation is unused).
+  xsdValidator:
+    enabled: true
+
+# Scheduler worker Deployment (runs the /worker binary from the flowker image).
+worker:
+  enabled: true
+
+# In-cluster Redis for the scheduler queue. Enable for a bundled valkey, or leave
+# off and point flowker.configmap.REDIS_HOST at an external Redis.
+valkey:
+  enabled: false
+
+# AWS auth. On EKS use IRSA via flowker.serviceAccount.annotations; on non-EKS
+# clusters enable IAM Roles Anywhere and supply the ARNs + certificate secret.
+aws:
+  rolesAnywhere:
+    enabled: false
+    trustAnchorArn: ""
+    profileArn: ""
+    roleArn: ""
+    certificateSecretName: "flowker-iam-tls"
+
+mongodb:
+  enabled: true
+  external: false
+  auth:
+    enabled: true
+    rootUser: flowker
+    rootPassword: ""
+  persistence:
+    size: 8Gi

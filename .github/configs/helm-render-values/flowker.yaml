@@ -1,0 +1,16 @@
+# CI-ONLY render fixture for charts/flowker.
+#
+# NOT a production example and NOT a credential store. The value below is a
+# self-describing placeholder that satisfies the chart's fail-loud gate:
+#   flowker.secrets.LICENSE_KEY — required for chart-managed Secrets
+#   (flowker >= 1.6 does not boot without a license).
+#
+# namespaceOverride is cleared because the chart default pins the workload to
+# "flowker" while the bundled subcharts follow the release namespace; every
+# deployment sets the override to its release namespace, which is what an empty
+# override reproduces here (same as plugin-br-ted-lerian.yaml).
+namespaceOverride: ""
+
+flowker:
+  secrets:
+    LICENSE_KEY: "IT_LICENSE_KEY" # CI license placeholder (README)

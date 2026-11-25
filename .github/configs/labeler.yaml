@@ -97,3 +97,7 @@ system-facts:
 streaming-hub:
   - changed-files:
       - any-glob-to-any-file: charts/streaming-hub/**
+
+flowker:
+  - changed-files:
+      - any-glob-to-any-file: charts/flowker/**

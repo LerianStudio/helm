@@ -1,0 +1,130 @@
+suite: flowker secure defaults (MONGO_URI and XSD sidecar auth)
+templates:
+  - templates/deployment.yaml
+  - templates/worker/deployment.yaml
+  - templates/secrets.yaml
+  # loaded so the deployments can include and hash the rendered ConfigMaps and Secret
+  - templates/configmap.yaml
+  - templates/worker/configmap.yaml
+release:
+  name: flowker
+  namespace: flowker
+set:
+  flowker.secrets.LICENSE_KEY: x
+tests:
+  # --- supplied MONGO_URI reaches the pods only through secretKeyRef ---
+  - it: references a supplied MONGO_URI from the chart Secret on the api
+    template: templates/deployment.yaml
+    set: &mongoUri
+      mongodb.enabled: false
+      flowker.configmap.MONGO_HOST: mongo.example.invalid
+      flowker.secrets.MONGO_URI: mongodb://ci-only@mongo.example.invalid:27017/flowker
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MONGO_URI
+            valueFrom: {secretKeyRef: {name: flowker, key: MONGO_URI}}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: MONGO_URI, value: mongodb://ci-only@mongo.example.invalid:27017/flowker}
+  - it: references a supplied MONGO_URI from the chart Secret on the worker
+    template: templates/worker/deployment.yaml
+    set: *mongoUri
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MONGO_URI
+            valueFrom: {secretKeyRef: {name: flowker, key: MONGO_URI}}
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: MONGO_URI, value: mongodb://ci-only@mongo.example.invalid:27017/flowker}
+  - it: stores a supplied MONGO_URI in the chart Secret
+    template: templates/secrets.yaml
+    set: *mongoUri
+    asserts:
+      - equal:
+          path: stringData.MONGO_URI
+          value: mongodb://ci-only@mongo.example.invalid:27017/flowker
+  - it: points MONGO_URI at the existing Secret when useExistingSecret is on
+    template: templates/deployment.yaml
+    set:
+      mongodb.enabled: false
+      flowker.configmap.MONGO_HOST: mongo.example.invalid
+      flowker.secrets.MONGO_URI: mongodb://ci-only@mongo.example.invalid:27017/flowker
+      flowker.useExistingSecret: true
+      flowker.existingSecretName: flowker-existing
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MONGO_URI
+            valueFrom: {secretKeyRef: {name: flowker-existing, key: MONGO_URI}}
+
+  # --- XSD sidecar refuses an unacknowledged cleartext Access Manager ---
+  - it: fails when the sidecar inherits an unacknowledged http:// address
+    # Helm reports the first failing file in render order: the worker Deployment.
+    template: templates/worker/deployment.yaml
+    set:
+      flowker.configmap.PLUGIN_AUTH_ENABLED: "true"
+      flowker.configmap.PLUGIN_AUTH_ADDRESS: http://plugin-access-manager-auth:4000
+    asserts:
+      - failedTemplate:
+          errorPattern: "flowker.xsdValidator.pluginAuth.allowInsecureHttp"
+  - it: renders an http:// address acknowledged with the string "true"
+    template: templates/deployment.yaml
+    set:
+      flowker.configmap.PLUGIN_AUTH_ENABLED: "true"
+      flowker.configmap.PLUGIN_AUTH_ADDRESS: http://plugin-access-manager-auth:4000
+      flowker.xsdValidator.pluginAuth.allowInsecureHttp: "true"
+    asserts:
+      - notFailedTemplate: {}
+  - it: renders an http:// address acknowledged with the boolean true
+    template: templates/deployment.yaml
+    set:
+      flowker.configmap.PLUGIN_AUTH_ENABLED: "true"
+      flowker.configmap.PLUGIN_AUTH_ADDRESS: http://plugin-access-manager-auth:4000
+      flowker.xsdValidator.pluginAuth.allowInsecureHttp: true
+    asserts:
+      - notFailedTemplate: {}
+  - it: renders an http:// address when plugin auth is disabled
+    template: templates/deployment.yaml
+    set:
+      flowker.configmap.PLUGIN_AUTH_ENABLED: "false"
+      flowker.configmap.PLUGIN_AUTH_ADDRESS: http://plugin-access-manager-auth:4000
+    asserts:
+      - notFailedTemplate: {}
+  - it: renders an https:// address
+    template: templates/deployment.yaml
+    set:
+      flowker.configmap.PLUGIN_AUTH_ENABLED: "true"
+      flowker.configmap.PLUGIN_AUTH_ADDRESS: https://plugin-access-manager-auth.example.invalid
+    asserts:
+      - notFailedTemplate: {}
+  - it: fails when the pluginAuth override turns auth on with an http:// address
+    # Helm reports the first failing file in render order: the worker Deployment.
+    template: templates/worker/deployment.yaml
+    set:
+      flowker.configmap.PLUGIN_AUTH_ENABLED: "false"
+      flowker.xsdValidator.pluginAuth.enabled: "true"
+      flowker.xsdValidator.pluginAuth.address: http://am.example.invalid:4000
+    asserts:
+      - failedTemplate:
+          errorPattern: "flowker.xsdValidator.pluginAuth.allowInsecureHttp"
+  - it: renders when the pluginAuth override turns auth off
+    template: templates/deployment.yaml
+    set:
+      flowker.configmap.PLUGIN_AUTH_ENABLED: "true"
+      flowker.configmap.PLUGIN_AUTH_ADDRESS: http://plugin-access-manager-auth:4000
+      flowker.xsdValidator.pluginAuth.enabled: "false"
+    asserts:
+      - notFailedTemplate: {}
+  - it: renders an http:// address when the sidecar is disabled
+    template: templates/deployment.yaml
+    set:
+      flowker.configmap.PLUGIN_AUTH_ENABLED: "true"
+      flowker.configmap.PLUGIN_AUTH_ADDRESS: http://plugin-access-manager-auth:4000
+      flowker.xsdValidator.enabled: false
+    asserts:
+      - notFailedTemplate: {}

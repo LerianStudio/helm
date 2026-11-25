@@ -1,0 +1,36 @@
+suite: accounting routes source and tenant policy plane
+templates:
+  - templates/configmap.yaml
+set:
+  postgresql.enabled: true
+  app.configmap.BTG_API_BASE_URL: https://btg.example.test
+  app.configmap.BTG_AUTH_URL: https://btg.example.test/token
+  app.configmap.MIDAZ_LEDGER_URL: http://midaz:3000
+  app.configmap.ORGANIZATION_IDS: 00000000-0000-0000-0000-000000000001
+  app.secrets.PROVIDER_CLIENT_ID: x
+  app.secrets.PROVIDER_CLIENT_SECRET: x
+  app.secrets.PLUGIN_AUTH_CLIENT_ID: x
+  app.secrets.PLUGIN_AUTH_CLIENT_SECRET: x
+  app.secrets.LICENSE_KEY: x
+  app.secrets.CONSULT_AUDIT_HMAC_KEY: "0123456789abcdef0123456789abcdef"
+  app.secrets.BTG_WEBHOOK_HMAC_SECRET: "0123456789abcdef0123456789abcdef"
+  app.secrets.INTERNAL_API_KEY: "0123456789abcdef0123456789abcdef"
+  app.secrets.CREDENTIAL_ENCRYPTION_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+tests:
+  - it: leaves both keys to the app default when unset
+    asserts:
+      - notExists: {path: data.ACCOUNTING_ROUTES_SOURCE}
+      - notExists: {path: data.SYSTEMPLANE_ENABLED}
+  - it: renders both keys when the overlay sets them
+    set:
+      app.configmap.ACCOUNTING_ROUTES_ENABLED: "true"
+      app.configmap.ACCOUNTING_ROUTES_SOURCE: systemplane
+      app.configmap.SYSTEMPLANE_ENABLED: "true"
+    asserts:
+      - equal: {path: data.ACCOUNTING_ROUTES_SOURCE, value: systemplane}
+      - equal: {path: data.SYSTEMPLANE_ENABLED, value: "true"}
+  - it: refuses a misspelled key through the schema
+    set:
+      app.configmap.SYSTEMPLANE_ENABLE: "true"
+    asserts:
+      - failedTemplate: {}

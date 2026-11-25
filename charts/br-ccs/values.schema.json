@@ -101,7 +101,7 @@
               "description": "Image pull policy"
             },
             "tag": {
-              "default": "1.0.0",
+              "default": "1.1.2",
               "description": "Image tag used for deployment"
             }
           },
@@ -595,6 +595,7 @@
               "REPORTER_CLIENT_ID",
               "REPORTER_CLIENT_SECRET",
               "REPORTER_ENABLED",
+              "REPORTER_HTTP_TIMEOUT_SEC",
               "REPORTER_M2M_TARGET_SERVICE",
               "REPORTER_SD_SERVICE_NAME",
               "REPORTER_TEMPLATE_ID_ACCS001",
@@ -679,7 +680,8 @@
               "TLS_TERMINATED_UPSTREAM",
               "TRUSTED_PROXIES",
               "VERSION",
-              "ALLOW_INSECURE_OTEL"
+              "ALLOW_INSECURE_OTEL",
+              "ALLOW_INSECURE_REDIS"
             ]
           }
         },

@@ -123,8 +123,25 @@ data:
   REDIS_MAX_RETRIES: {{ $cm.REDIS_MAX_RETRIES | default "3" | quote }}
   REDIS_MIN_RETRY_BACKOFF: {{ $cm.REDIS_MIN_RETRY_BACKOFF | default "8" | quote }}
   REDIS_MAX_RETRY_BACKOFF: {{ $cm.REDIS_MAX_RETRY_BACKOFF | default "1" | quote }}
-  {{- if $cm.REDIS_TLS }}
-  REDIS_TLS: {{ $cm.REDIS_TLS | quote }}
+  {{- /* The app defaults REDIS_TLS to false and lib-commons then refuses the
+     plaintext connection, so the chart always states the posture: TLS for
+     external Redis unless the operator set a plaintext bypass
+     (ALLOW_INSECURE_REDIS / ALLOW_INSECURE_TLS), plaintext plus
+     ALLOW_INSECURE_REDIS for the bundled valkey subchart (it serves no TLS).
+     An explicit REDIS_TLS wins, a YAML boolean false included.
+     REDIS_CA_CERT (base64 PEM) is a Secret. */}}
+  {{- $redisTLSDefault := include "br-ccs.redisTLSDefault" . }}
+  {{- $redisTLS := include "br-ccs.envValue" (dict "context" $ "key" "REDIS_TLS" "default" $redisTLSDefault) }}
+  {{- if not (hasKey (.Values.brCcs.extraEnvVars | default dict) "REDIS_TLS") }}
+  REDIS_TLS: {{ $redisTLS | quote }}
+  {{- end }}
+  {{- if not (hasKey (.Values.brCcs.extraEnvVars | default dict) "ALLOW_INSECURE_REDIS") }}
+  {{- $allowRedisCm := include "br-ccs.cmValue" (dict "context" $ "key" "ALLOW_INSECURE_REDIS") }}
+  {{- if $allowRedisCm }}
+  ALLOW_INSECURE_REDIS: {{ $allowRedisCm | quote }}
+  {{- else if and (include "br-ccs.valkeyBundled" .) (ne $redisTLS "true") }}
+  ALLOW_INSECURE_REDIS: "true"
+  {{- end }}
   {{- end }}
   {{- if $cm.REDIS_MASTER_NAME }}
   REDIS_MASTER_NAME: {{ $cm.REDIS_MASTER_NAME | quote }}
@@ -133,12 +150,13 @@ data:
   # =====================================================================
   # CIRCUIT BREAKER (passthrough — prerequisite for object storage adapters)
   # =====================================================================
-  CIRCUIT_BREAKER_ENABLED: {{ $cm.CIRCUIT_BREAKER_ENABLED | default "true" | quote }}
+  CIRCUIT_BREAKER_ENABLED: {{ include "br-ccs.cmValue" (dict "context" $ "key" "CIRCUIT_BREAKER_ENABLED") | default "true" | quote }}
 
   # =====================================================================
-  # OUTBOX (passthrough)
+  # OUTBOX (passthrough). Must stay on: the Reporter registers its dispatch
+  # handler on the outbox at boot.
   # =====================================================================
-  OUTBOX_ENABLED: {{ $cm.OUTBOX_ENABLED | default "false" | quote }}
+  OUTBOX_ENABLED: {{ include "br-ccs.cmValue" (dict "context" $ "key" "OUTBOX_ENABLED") | default "true" | quote }}
   OUTBOX_TABLE_NAME: {{ $cm.OUTBOX_TABLE_NAME | default "outbox_events" | quote }}
   OUTBOX_DISPATCH_INTERVAL_SEC: {{ $cm.OUTBOX_DISPATCH_INTERVAL_SEC | default "2" | quote }}
   OUTBOX_BATCH_SIZE: {{ $cm.OUTBOX_BATCH_SIZE | default "50" | quote }}
@@ -179,26 +197,26 @@ data:
   STA_HTTP_TIMEOUT_SEC: {{ $cm.STA_HTTP_TIMEOUT_SEC | default "30" | quote }}
 
   # =====================================================================
-  # REPORTER INTEGRATION (optional — passthrough)
+  # REPORTER INTEGRATION (required — passthrough)
+  # The app no longer reads REPORTER_ENABLED: it always dials the Reporter and
+  # refuses to boot on an empty REPORTER_URL (enforced in _validate.tpl).
+  # REPORTER_ENABLED is still accepted in values and ignored.
   # =====================================================================
-  REPORTER_ENABLED: {{ $cm.REPORTER_ENABLED | default "false" | quote }}
-  {{- if eq (toString ($cm.REPORTER_ENABLED | default "false")) "true" }}
-  REPORTER_URL: {{ required "brCcs.configmap.REPORTER_URL is required when REPORTER_ENABLED=true" $cm.REPORTER_URL | quote }}
-  REPORTER_HTTP_TIMEOUT_SEC: {{ $cm.REPORTER_HTTP_TIMEOUT_SEC | default "30" | quote }}
-  {{- else if and $cm.REPORTER_URL (not (hasKey (.Values.brCcs.extraEnvVars | default dict) "REPORTER_URL")) }}
-  {{- /* The app no longer reads REPORTER_ENABLED: it always dials the Reporter
-         and refuses to boot on an empty REPORTER_URL. A REPORTER_URL set without
-         the legacy switch is therefore delivered as-is (skipped when extraEnvVars
-         already carries it, so the key never renders twice). */}}
+  {{- if and $cm.REPORTER_URL (not (hasKey (.Values.brCcs.extraEnvVars | default dict) "REPORTER_URL")) }}
   REPORTER_URL: {{ $cm.REPORTER_URL | quote }}
+  {{- end }}
+  {{- if not (hasKey (.Values.brCcs.extraEnvVars | default dict) "REPORTER_HTTP_TIMEOUT_SEC") }}
+  REPORTER_HTTP_TIMEOUT_SEC: {{ $cm.REPORTER_HTTP_TIMEOUT_SEC | default "30" | quote }}
   {{- end }}
 
   # =====================================================================
   # AUTHENTICATION (dependency). ENABLED + HOST resolve via global.auth
-  # (globalValue: configmap.<KEY> > global.auth.<field> > default). HOST is
-  # emitted only when non-empty (preserves the pre-contract render).
+  # (globalValue: configmap.<KEY> > global.auth.<field> > default). ENABLED
+  # defaults to "true": the app accepts "false" only with a development
+  # ENV_NAME. HOST is emitted only when non-empty; _validate.tpl requires it
+  # with auth on.
   # =====================================================================
-  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") | quote }}
+  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "true") | quote }}
   {{- $pluginAuthHost := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_HOST" "default" "") }}
   {{- if $pluginAuthHost }}
   PLUGIN_AUTH_HOST: {{ $pluginAuthHost | quote }}
@@ -309,8 +327,9 @@ data:
   # DETAIL RESPONSE TUNING (optional)
   # =====================================================================
   {{- range $k := (list "CCS_DETAIL_MESSAGE_EMIT_ENABLED" "CCS_DETAIL_MESSAGE_VALIDATION_ENABLED" "CCS_BACEN_DESTINATARIO_CNPJ_BASE" "CCS_ACCS005_OVERFLOW_THRESHOLD" "CCS_ACCS005_SECRECY_SITUACAO") }}
-  {{- if index $cm $k }}
-  {{ $k }}: {{ index $cm $k | quote }}
+  {{- $v := include "br-ccs.cmValue" (dict "context" $ "key" $k) }}
+  {{- if $v }}
+  {{ $k }}: {{ $v | quote }}
   {{- end }}
   {{- end }}
 

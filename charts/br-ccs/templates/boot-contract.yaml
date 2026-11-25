@@ -1,0 +1,5 @@
+{{- /* Renders nothing: it runs the boot-contract checks in _validate.tpl so a
+   value the app refuses at boot fails `helm template` / `helm install` instead. */ -}}
+{{- if .Values.brCcs.enabled }}
+{{- include "br-ccs.validateBootContract" . }}
+{{- end }}

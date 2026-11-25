@@ -505,6 +505,7 @@ data:
   TRANSACTION_BATCH_MAX_SIZE: {{ .Values.ledger.configmap.TRANSACTION_BATCH_MAX_SIZE | default "10" | quote }}
   STREAMING_TENANT_KAFKA: {{ .Values.ledger.configmap.STREAMING_TENANT_KAFKA | default "false" | quote }}
   TRANSACTION_CREATED_BY_ENABLED: {{ .Values.ledger.configmap.TRANSACTION_CREATED_BY_ENABLED | default "false" | quote }}
+  TRANSACTION_FEE_ITEMS_ENABLED: {{ .Values.ledger.configmap.TRANSACTION_FEE_ITEMS_ENABLED | default "false" | quote }}
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

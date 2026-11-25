@@ -122,6 +122,10 @@ list, so it cannot mount another ServiceAccount's token there. The exception is
 the agent's own namespace, where the self-update creates pods and patches the
 agent's Deployment.
 
+The chart passes the same list to the agent as `AGENT_MANAGED_NAMESPACES`,
+comma-separated, built from the values the RBAC Roles are built from, so the
+agent's view never disagrees with what RBAC grants.
+
 Each listed namespace must already exist, and adding one later needs a
 `helm upgrade` of this chart. Add `lerian-infra` if you want the deployer to
 install the cluster components a failed preflight offers (a default

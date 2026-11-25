@@ -8,12 +8,12 @@ annotations:
 home: https://github.com/LerianStudio/helm
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/br-ccs
-  - https://github.com/LerianStudio/br-ccs
+  - https://github.com/LerianStudio/br-sfn/tree/main/services/ccs
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 
-version: 1.0.2
+version: 1.0.3
 
 appVersion: "1.1.2"
 

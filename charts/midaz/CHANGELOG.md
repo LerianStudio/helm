@@ -1,5 +1,15 @@
 # Midaz Changelog
 
+## [11.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.4.0)
+
+Features:
+
+- Update `midaz-ledger` to `4.6.0`, `midaz-tracer` to `4.6.0`, `midaz-tracer-migrations` to `4.6.0`, and `midaz-ledger-migrations` to `4.6.0`. Introduce new environment variables. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v11.3.0...midaz-v11.4.0)
+
+---
+
 ## [11.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.3.0)
 
 Features:

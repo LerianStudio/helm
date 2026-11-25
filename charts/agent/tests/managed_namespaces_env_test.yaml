@@ -1,0 +1,56 @@
+# AGENT_MANAGED_NAMESPACES is built from lerian-agent.managedNamespaces, the
+# same list the RBAC Roles are built from.
+suite: AGENT_MANAGED_NAMESPACES env
+release:
+  namespace: lerian-agent
+set:
+  agent:
+    configmap:
+      CONTROL_PLANE_URL: https://cp.example.com
+    secrets:
+      AGENT_TOKEN: x
+      AGENT_ID: 00000000-0000-0000-0000-000000000000
+tests:
+- it: defaults to the release namespace
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: AGENT_MANAGED_NAMESPACES
+        value: lerian-agent
+- it: joins agent.managedNamespaces with commas
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  set:
+    agent.managedNamespaces:
+    - lerian-apps
+    - product-console
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: AGENT_MANAGED_NAMESPACES
+        value: lerian-apps,product-console
+- it: drops blanks and duplicates
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  set:
+    agent.managedNamespaces:
+    - lerian-apps
+    - ""
+    - product-console
+    - lerian-apps
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: AGENT_MANAGED_NAMESPACES
+        value: lerian-apps,product-console

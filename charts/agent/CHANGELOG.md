@@ -1,5 +1,18 @@
 # Agent Changelog
 
+## [1.1.0](https://github.com/LerianStudio/helm/releases/tag/agent-v1.1.0)
+
+Features:
+- Pass the managed namespaces to the agent as `AGENT_MANAGED_NAMESPACES`. (@bedatty)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides. (@guimoreirar, @gandalf-at-lerian)
+- Protect exported upgrade values in the documentation. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.6...agent-v1.1.0)
+
+---
+
 ## [1.0.6](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.6)
 
 Features:

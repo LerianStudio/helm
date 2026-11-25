@@ -34,7 +34,26 @@
       "type": "object",
       "properties": {
         "configmap": {
-          "type": "object"
+          "type": "object",
+          "properties": {
+            "ANTIFRAUD_SECRETS_BACKEND": {
+              "type": "string"
+            }
+          }
+        },
+        "serviceAccount": {
+          "type": "object",
+          "properties": {
+            "create": {
+              "type": "boolean"
+            },
+            "name": {
+              "type": "string"
+            },
+            "annotations": {
+              "type": "object"
+            }
+          }
         },
         "secrets": {
           "type": "object"

@@ -1,0 +1,671 @@
+suite: br-ccs fails at render on values the CCS 1.1.x boot refuses
+# tests/values/boot-contract.yaml is a production install the app accepts. Each
+# test changes one value and expects the render to fail with the variable to fix,
+# instead of a pod that crash-loops at boot.
+templates:
+  - templates/boot-contract.yaml
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+release:
+  name: br-ccs
+  namespace: br-ccs
+values:
+  - values/boot-contract.yaml
+tests:
+  # --- The accepted baseline ------------------------------------------------
+  - it: renders a production install that sets every boot value
+    template: templates/configmap.yaml
+    asserts:
+      - equal:
+          path: data.PLUGIN_AUTH_ENABLED
+          value: "true"
+      - equal:
+          path: data.OUTBOX_ENABLED
+          value: "true"
+      - equal:
+          path: data.REDIS_TLS
+          value: "true"
+      - notExists:
+          path: data.ALLOW_INSECURE_REDIS
+      - notExists:
+          path: data.REPORTER_ENABLED
+      - equal:
+          path: data.PLUGIN_AUTH_HOST
+          value: https://auth.example.com
+
+  - it: passes the boot contract with the baseline values
+    template: templates/boot-contract.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: fails the values-template filled only with the fields chart 1.0.2 marked REQUIRED
+    template: templates/boot-contract.yaml
+    values:
+      - ../values-template.yaml
+    set:
+      global.auth.host: ""
+      brCcs:
+        configmap:
+          ENV_NAME: production
+          TRUSTED_PROXIES: 10.0.0.0/8
+          POSTGRES_HOST: pg.example.internal
+          REDIS_HOST: redis.example.internal:6379
+        secrets:
+          POSTGRES_PASSWORD: placeholder
+          REDIS_PASSWORD: placeholder
+          CCS_CRYPTO_MASTER_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+    asserts:
+      - failedTemplate:
+          errorPattern: "PLUGIN_AUTH_HOST is required"
+
+  # --- 1. Inbound auth ------------------------------------------------------
+  - it: lets global.auth.host reach a values-template install
+    template: templates/configmap.yaml
+    values:
+      - ../values-template.yaml
+      - values/boot-contract.yaml
+    asserts:
+      - equal:
+          path: data.PLUGIN_AUTH_HOST
+          value: https://auth.example.com
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: refuses a boolean the app does not parse (OUTBOX_ENABLED "1")
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.OUTBOX_ENABLED: "1"
+    asserts:
+      - failedTemplate:
+          errorPattern: "OUTBOX_ENABLED must be exactly \"true\" or \"false\""
+
+  - it: refuses a boolean the app does not parse (REDIS_TLS "TRUE")
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.REDIS_TLS: "TRUE"
+    asserts:
+      - failedTemplate:
+          errorPattern: "REDIS_TLS must be exactly \"true\" or \"false\""
+
+  - it: refuses a boolean the app does not parse (CCS_DETAIL_MESSAGE_EMIT_ENABLED "False")
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.CCS_DETAIL_MESSAGE_EMIT_ENABLED: "False"
+    asserts:
+      - failedTemplate:
+          errorPattern: "CCS_DETAIL_MESSAGE_EMIT_ENABLED must be exactly"
+
+  - it: refuses an ENV_NAME the app logger does not accept
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.ENV_NAME: homolog
+    asserts:
+      - failedTemplate:
+          errorPattern: "ENV_NAME=\"homolog\" is not accepted by the app logger"
+
+  - it: refuses a mis-cased production ENV_NAME
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.ENV_NAME: Production
+    asserts:
+      - failedTemplate:
+          errorPattern: "ENV_NAME=\"Production\" is not accepted"
+
+  - it: accepts staging
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.ENV_NAME: staging
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: refuses PLUGIN_AUTH_ENABLED=false in production
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.PLUGIN_AUTH_ENABLED: "false"
+    asserts:
+      - failedTemplate:
+          errorPattern: "PLUGIN_AUTH_ENABLED=false is only accepted with a development ENV_NAME"
+
+  - it: refuses global.auth.enabled=false in production
+    template: templates/boot-contract.yaml
+    set:
+      global.auth.enabled: "false"
+    asserts:
+      - failedTemplate:
+          errorPattern: "PLUGIN_AUTH_ENABLED=false is only accepted"
+
+  - it: refuses PLUGIN_AUTH_ENABLED=false from extraEnvVars in production
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.extraEnvVars.PLUGIN_AUTH_ENABLED: "false"
+    asserts:
+      - failedTemplate:
+          errorPattern: "PLUGIN_AUTH_ENABLED=false is only accepted with a development ENV_NAME"
+
+  - it: accepts PLUGIN_AUTH_ENABLED=false in a development ENV_NAME
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.ENV_NAME: development
+      brCcs.configmap.PLUGIN_AUTH_ENABLED: "false"
+    asserts:
+      - equal:
+          path: data.PLUGIN_AUTH_ENABLED
+          value: "false"
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: refuses PLUGIN_AUTH_ENABLED=false with DEPLOYMENT_MODE=saas even in development
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.ENV_NAME: development
+      brCcs.configmap.DEPLOYMENT_MODE: saas
+      brCcs.configmap.PLUGIN_AUTH_ENABLED: "false"
+    asserts:
+      - failedTemplate:
+          errorPattern: "PLUGIN_AUTH_ENABLED=false is only accepted"
+
+  - it: refuses an auth switch that is not exactly true or false
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.PLUGIN_AUTH_ENABLED: "TRUE"
+    asserts:
+      - failedTemplate:
+          errorPattern: "PLUGIN_AUTH_ENABLED must be exactly"
+
+  # --- 2. Auth host and M2M credentials -------------------------------------
+  - it: requires PLUGIN_AUTH_HOST with auth on
+    template: templates/boot-contract.yaml
+    set:
+      global.auth.host: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "PLUGIN_AUTH_HOST is required when PLUGIN_AUTH_ENABLED=true"
+
+  - it: lets brCcs.configmap.PLUGIN_AUTH_HOST override global.auth.host
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.PLUGIN_AUTH_HOST: https://auth.local.example.com
+    asserts:
+      - equal:
+          path: data.PLUGIN_AUTH_HOST
+          value: https://auth.local.example.com
+
+  - it: requires the STA M2M secret with auth on, even with STA off
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.STA_ENABLED: "false"
+      brCcs.secrets.STA_CLIENT_SECRET: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "brCcs.secrets.STA_CLIENT_SECRET is required when PLUGIN_AUTH_ENABLED=true"
+
+  - it: requires the Reporter M2M client id with auth on
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.secrets.REPORTER_CLIENT_ID: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "brCcs.secrets.REPORTER_CLIENT_ID is required"
+
+  # --- 3. Object-storage encryption -----------------------------------------
+  - it: requires an SSE posture for the bound STA bucket
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.OBJECT_STORAGE_STA_SSE_ALGORITHM: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "OBJECT_STORAGE_STA_SSE_ALGORITHM is required"
+
+  - it: refuses SSE none outside development
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.OBJECT_STORAGE_CCS_SSE_ALGORITHM: none
+    asserts:
+      - failedTemplate:
+          errorPattern: "OBJECT_STORAGE_CCS_SSE_ALGORITHM=none is only accepted"
+
+  - it: requires the KMS key id with aws:kms
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.OBJECT_STORAGE_CCS_SSE_ALGORITHM: aws:kms
+    asserts:
+      - failedTemplate:
+          errorPattern: "OBJECT_STORAGE_CCS_SSE_KMS_KEY_ID is required"
+
+  - it: accepts aws:kms with the KMS key id
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.OBJECT_STORAGE_CCS_SSE_ALGORITHM: aws:kms
+      brCcs.configmap.OBJECT_STORAGE_CCS_SSE_KMS_KEY_ID: arn:aws:kms:sa-east-1:000000000000:key/placeholder
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: refuses an unknown SSE algorithm
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.OBJECT_STORAGE_STA_SSE_ALGORITHM: aes-256
+    asserts:
+      - failedTemplate:
+          errorPattern: "is not accepted. Accepted values: AES256, aws:kms, none"
+
+  # --- 4. License and 5. crypto master key ----------------------------------
+  - it: requires LICENSE_KEY in every environment
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.ENV_NAME: development
+      brCcs.secrets.LICENSE_KEY: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "brCcs.secrets.LICENSE_KEY is required in every environment"
+
+  - it: does not take LICENSE_FILE_PATH for the license, the chart mounts no license file
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.secrets.LICENSE_KEY: ""
+      brCcs.extraEnvVars.LICENSE_FILE_PATH: /etc/lerian/license.json
+    asserts:
+      - failedTemplate:
+          errorPattern: "brCcs.secrets.LICENSE_KEY is required in every environment"
+
+  - it: requires CCS_CRYPTO_MASTER_KEY
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.secrets.CCS_CRYPTO_MASTER_KEY: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "brCcs.secrets.CCS_CRYPTO_MASTER_KEY is required"
+
+  - it: refuses a CCS_CRYPTO_MASTER_KEY that is not 64 hex chars
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.secrets.CCS_CRYPTO_MASTER_KEY: CHANGE_ME
+    asserts:
+      - failedTemplate:
+          errorPattern: "must be 64 hex chars"
+
+  - it: accepts an argocd-vault-plugin placeholder for CCS_CRYPTO_MASTER_KEY
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.secrets.CCS_CRYPTO_MASTER_KEY: "<path:secret/data/client/br-ccs#CCS_CRYPTO_MASTER_KEY>"
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: refuses a secret key in extraEnvVars
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.extraEnvVars.CCS_CRYPTO_MASTER_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+    asserts:
+      - failedTemplate:
+          errorPattern: "CCS_CRYPTO_MASTER_KEY is a secret: set it in brCcs.secrets"
+
+  - it: refuses a secret key in extraEnvVars with useExistingSecret
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.useExistingSecret: true
+      brCcs.existingSecretName: br-ccs-external
+      brCcs.extraEnvVars.LICENSE_KEY: placeholder
+    asserts:
+      - failedTemplate:
+          errorPattern: "LICENSE_KEY is a secret: set it in brCcs.secrets"
+
+  - it: refuses the streaming SASL password in extraEnvVars
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.extraEnvVars.STREAMING_SASL_PASSWORD: placeholder
+    asserts:
+      - failedTemplate:
+          errorPattern: "STREAMING_SASL_PASSWORD is a secret: set it in brCcs.secrets"
+
+  - it: accepts a client id in extraEnvVars
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.secrets.REPORTER_CLIENT_ID: ""
+      brCcs.extraEnvVars.REPORTER_CLIENT_ID: reporter-client
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: skips the secret checks with useExistingSecret
+    template: templates/configmap.yaml
+    set:
+      brCcs.useExistingSecret: true
+      brCcs.existingSecretName: br-ccs-external
+      brCcs.secrets: {}
+    asserts:
+      - equal:
+          path: data.PLUGIN_AUTH_ENABLED
+          value: "true"
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  # --- 6. Production gates --------------------------------------------------
+  - it: requires CORS_ALLOWED_ORIGINS in production
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.CORS_ALLOWED_ORIGINS: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "CORS_ALLOWED_ORIGINS is required when ENV_NAME=production"
+
+  - it: refuses a CORS wildcard in production
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.CORS_ALLOWED_ORIGINS: "https://console.example.com,*"
+    asserts:
+      - failedTemplate:
+          errorPattern: "CORS_ALLOWED_ORIGINS must not contain"
+
+  - it: refuses a wildcard TRUSTED_PROXIES in production
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.TRUSTED_PROXIES: "10.0.0.0/8, 0.0.0.0/0"
+    asserts:
+      - failedTemplate:
+          errorPattern: "TRUSTED_PROXIES must not contain 0.0.0.0/0"
+
+  - it: requires TRUSTED_PROXIES in production
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.TRUSTED_PROXIES: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "TRUSTED_PROXIES is required when ENV_NAME=production"
+
+  # --- 7. Reporter detail templates -----------------------------------------
+  - it: requires the CCS0004 template with message emission on
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.REPORTER_TEMPLATE_NAME_CCS0004: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "REPORTER_TEMPLATE_NAME_CCS0004 \\(or REPORTER_TEMPLATE_ID_CCS0004\\) is required"
+
+  - it: accepts a template id in place of the name
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.REPORTER_TEMPLATE_NAME_CCS0004: ""
+      brCcs.configmap.REPORTER_TEMPLATE_ID_CCS0004: 2f1c7a9e-0000-0000-0000-000000000004
+    asserts:
+      - equal:
+          path: data.REPORTER_TEMPLATE_ID_CCS0004
+          value: 2f1c7a9e-0000-0000-0000-000000000004
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: requires only ACCS005 with message emission off
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.CCS_DETAIL_MESSAGE_EMIT_ENABLED: "false"
+      brCcs.configmap.REPORTER_TEMPLATE_NAME_CCS0002: ""
+      brCcs.configmap.REPORTER_TEMPLATE_NAME_CCS0004: ""
+    asserts:
+      - equal:
+          path: data.REPORTER_TEMPLATE_NAME_ACCS005
+          value: accs005
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: renders emission off written as a YAML boolean, so only ACCS005 is needed
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.CCS_DETAIL_MESSAGE_EMIT_ENABLED: false
+      brCcs.configmap.REPORTER_TEMPLATE_NAME_CCS0002: ""
+      brCcs.configmap.REPORTER_TEMPLATE_NAME_CCS0004: ""
+    asserts:
+      - equal:
+          path: data.CCS_DETAIL_MESSAGE_EMIT_ENABLED
+          value: "false"
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: refuses OUTBOX_ENABLED false written as a YAML boolean, as rendered
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.OUTBOX_ENABLED: false
+    asserts:
+      - failedTemplate:
+          errorPattern: "OUTBOX_ENABLED must be \"true\""
+        template: templates/boot-contract.yaml
+
+  # --- 8. Redis TLS ---------------------------------------------------------
+  - it: refuses plaintext external Redis without the bypass
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.REDIS_TLS: "false"
+    asserts:
+      - failedTemplate:
+          errorPattern: "REDIS_TLS=false needs ALLOW_INSECURE_REDIS"
+
+  - it: accepts plaintext Redis with ALLOW_INSECURE_REDIS
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.REDIS_TLS: "false"
+      brCcs.configmap.ALLOW_INSECURE_REDIS: "true"
+    asserts:
+      - equal:
+          path: data.REDIS_TLS
+          value: "false"
+      - equal:
+          path: data.ALLOW_INSECURE_REDIS
+          value: "true"
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: keeps plaintext external Redis with ALLOW_INSECURE_TLS when REDIS_TLS is unset
+    template: templates/configmap.yaml
+    set:
+      brCcs.extraEnvVars.ALLOW_INSECURE_TLS: "true"
+    asserts:
+      - equal:
+          path: data.REDIS_TLS
+          value: "false"
+      - notExists:
+          path: data.ALLOW_INSECURE_REDIS
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: keeps plaintext external Redis with ALLOW_INSECURE_REDIS when REDIS_TLS is unset
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.ALLOW_INSECURE_REDIS: "true"
+    asserts:
+      - equal:
+          path: data.REDIS_TLS
+          value: "false"
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: keeps an explicit REDIS_TLS false written as a YAML boolean
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.REDIS_TLS: false
+      brCcs.configmap.ALLOW_INSECURE_REDIS: "true"
+    asserts:
+      - equal:
+          path: data.REDIS_TLS
+          value: "false"
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: refuses a YAML boolean false REDIS_TLS without the bypass
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.REDIS_TLS: false
+    asserts:
+      - failedTemplate:
+          errorPattern: "REDIS_TLS=false needs ALLOW_INSECURE_REDIS"
+
+  - it: renders plaintext plus the bypass for the bundled valkey subchart
+    template: templates/configmap.yaml
+    set:
+      valkey.enabled: true
+      valkey.external: false
+      brCcs.configmap.REDIS_HOST: ""
+    asserts:
+      - equal:
+          path: data.REDIS_TLS
+          value: "false"
+      - equal:
+          path: data.ALLOW_INSECURE_REDIS
+          value: "true"
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: treats a custom REDIS_HOST as external Redis with the bundled valkey left on
+    template: templates/configmap.yaml
+    set:
+      valkey.enabled: true
+      valkey.external: false
+      brCcs.configmap.REDIS_HOST: managed-redis.example.internal:6379
+    asserts:
+      - equal:
+          path: data.REDIS_HOST
+          value: managed-redis.example.internal:6379
+      - equal:
+          path: data.REDIS_TLS
+          value: "true"
+      - notExists:
+          path: data.ALLOW_INSECURE_REDIS
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: refuses plaintext to a custom REDIS_HOST without the bypass, bundled valkey on
+    template: templates/boot-contract.yaml
+    set:
+      valkey.enabled: true
+      valkey.external: false
+      brCcs.configmap.REDIS_HOST: managed-redis.example.internal:6379
+      brCcs.configmap.REDIS_TLS: "false"
+    asserts:
+      - failedTemplate:
+          errorPattern: "REDIS_TLS=false needs ALLOW_INSECURE_REDIS"
+
+  - it: refuses plaintext to the bundled valkey when ALLOW_INSECURE_REDIS is set to false
+    template: templates/configmap.yaml
+    set:
+      valkey.enabled: true
+      valkey.external: false
+      brCcs.configmap.REDIS_HOST: ""
+      brCcs.configmap.ALLOW_INSECURE_REDIS: "false"
+    asserts:
+      - failedTemplate:
+          errorPattern: "REDIS_TLS=false needs ALLOW_INSECURE_REDIS"
+        template: templates/boot-contract.yaml
+
+  - it: keeps ALLOW_INSECURE_REDIS false written as a YAML boolean instead of the chart bypass
+    template: templates/configmap.yaml
+    set:
+      valkey.enabled: true
+      valkey.external: false
+      brCcs.configmap.REDIS_HOST: ""
+      brCcs.configmap.REDIS_TLS: "true"
+      brCcs.configmap.ALLOW_INSECURE_REDIS: false
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_REDIS
+          value: "false"
+
+  - it: drops the bypass when the bundled valkey is set to TLS
+    template: templates/configmap.yaml
+    set:
+      valkey.enabled: true
+      valkey.external: false
+      brCcs.configmap.REDIS_HOST: ""
+      brCcs.configmap.REDIS_TLS: "true"
+    asserts:
+      - equal:
+          path: data.REDIS_TLS
+          value: "true"
+      - notExists:
+          path: data.ALLOW_INSECURE_REDIS
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  # --- 9. CRM ---------------------------------------------------------------
+  - it: requires CRM_URL
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.CRM_URL: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "brCcs.configmap.CRM_URL is required"
+
+  - it: refuses a plain http CRM_URL outside development
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.CRM_URL: http://crm.example.com
+    asserts:
+      - failedTemplate:
+          errorPattern: "CRM_URL must use https"
+
+  - it: accepts a plain http CRM_URL in development
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.ENV_NAME: development
+      brCcs.configmap.CRM_URL: http://crm:4003
+    asserts:
+      - equal:
+          path: data.CRM_URL
+          value: http://crm:4003
+      - hasDocuments:
+          count: 0
+        template: templates/boot-contract.yaml
+
+  - it: requires CRM_ORGANIZATION_ID
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.CRM_ORGANIZATION_ID: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "CRM_ORGANIZATION_ID is required"
+
+  # --- 10. Reporter, outbox and circuit breaker -----------------------------
+  - it: requires REPORTER_URL whatever REPORTER_ENABLED says
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.REPORTER_ENABLED: "false"
+      brCcs.configmap.REPORTER_URL: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "REPORTER_URL is required: the app always dials the Reporter"
+
+  - it: refuses OUTBOX_ENABLED=false
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.OUTBOX_ENABLED: "false"
+    asserts:
+      - failedTemplate:
+          errorPattern: "OUTBOX_ENABLED must be \"true\""
+
+  - it: refuses CIRCUIT_BREAKER_ENABLED=false
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.configmap.CIRCUIT_BREAKER_ENABLED: "false"
+    asserts:
+      - failedTemplate:
+          errorPattern: "CIRCUIT_BREAKER_ENABLED must be \"true\""
+
+  - it: reads the effective value from extraEnvVars first
+    template: templates/boot-contract.yaml
+    set:
+      brCcs.extraEnvVars.CRM_URL: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "brCcs.configmap.CRM_URL is required"

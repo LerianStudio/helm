@@ -8,12 +8,12 @@ judicial secrecy (liminares / LC 105) and LGPD.
 
 - Chart name: `br-ccs-helm`
 - Chart type: `single-service`
-- Source: https://github.com/LerianStudio/br-ccs
+- Source: https://github.com/LerianStudio/br-sfn (`services/ccs`)
 
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `brCcs.secrets.CCS_CRYPTO_MASTER_KEY` (AES-256-GCM, 64 hex chars — empty fails fast at boot). `POSTGRES_PASSWORD` and `REDIS_PASSWORD` are single-sourced from the bundled `<release>-{postgresql,valkey}` Secrets via `secretKeyRef` when those subcharts are enabled; supply them (or `<subchart>.auth.existingSecret`) for external infra. `FETCHER_CRYPTO_KEY` is optional (empty = passthrough). See `docs/helm-chart-standard.md`.
+- Required secrets: `brCcs.secrets.CCS_CRYPTO_MASTER_KEY` (AES-256-GCM, 64 hex chars), `brCcs.secrets.LICENSE_KEY` and, with auth on (the default), the Reporter and STA M2M client credentials. The chart refuses to render without them (see [Boot contract](#boot-contract)). `POSTGRES_PASSWORD` and `REDIS_PASSWORD` are single-sourced from the bundled `<release>-{postgresql,valkey}` Secrets via `secretKeyRef` when those subcharts are enabled; supply them (or `<subchart>.auth.existingSecret`) for external infra. `FETCHER_CRYPTO_KEY` is optional (empty = passthrough). See `docs/helm-chart-standard.md`.
 - Dependency notes: Bundled PostgreSQL and Valkey subcharts are used unless external services are configured. No MongoDB.
 - Production overrides: Disable the bundled subcharts (`<subchart>.enabled=false`, `.external=true`), set `POSTGRES_HOST`/`REDIS_HOST`, and supply secrets via a secrets manager or `brCcs.useExistingSecret`; override image tags, ingress, resources, and integration endpoints (Fetcher/STA/Reporter).
 - Source/license: Source is in `github.com/LerianStudio/helm`; chart license is Elastic License 2.0. The br-ccs service itself is proprietary (Lerian Studio).
@@ -21,13 +21,13 @@ judicial secrecy (liminares / LC 105) and LGPD.
 ## TL;DR
 
 ```bash
+cp charts/br-ccs/values-template.yaml my-values.yaml   # fill every REQUIRED field
 helm dependency build charts/br-ccs
-helm install br-ccs charts/br-ccs \
-  --set brCcs.configmap.ENV_NAME=production \
-  --set brCcs.secrets.POSTGRES_PASSWORD=... \
-  --set brCcs.secrets.REDIS_PASSWORD=... \
+helm install br-ccs charts/br-ccs -f my-values.yaml \
   --set brCcs.secrets.CCS_CRYPTO_MASTER_KEY=$(openssl rand -hex 32)
 ```
+
+The render fails, naming the variable, until every value the app needs at boot is set.
 
 ## Service topology
 
@@ -54,9 +54,43 @@ and point the app at external infrastructure (see `values-template.yaml`).
 ## Configuration
 
 Non-secret configuration lives under `brCcs.configmap`; credentials and keys
-under `brCcs.secrets`. Every variable from the application's
-`config/.env.example` is mapped. Optional knobs not modeled explicitly can be
-set via `brCcs.extraEnvVars`.
+under `brCcs.secrets`. Optional knobs not modeled explicitly can be set via
+`brCcs.extraEnvVars`. `LICENSE_FILE_PATH` is not modeled: the chart mounts no
+license file, so use `LICENSE_KEY`.
+
+### Boot contract
+
+The app (CCS 1.1.x) refuses to boot on a set of values. The chart runs the same
+checks at render time (`templates/_validate.tpl`), so `helm template` and
+`helm install` fail with the variable to fix instead of a pod that crash-loops.
+A value in `brCcs.extraEnvVars` counts as set, except a credential the chart
+Secret renders (passwords, `LICENSE_KEY`, `CCS_CRYPTO_MASTER_KEY`, `*_CLIENT_SECRET`,
+`*_API_KEY`, `*_SECRET_KEY`, `STREAMING_SASL_PASSWORD`, …): set there, it fails the
+render, because `extraEnvVars` is rendered into the ConfigMap in plaintext. Put it in
+`brCcs.secrets`. Ids, access-key ids and CA certificates are not refused.
+
+| Value | Rule |
+|-------|------|
+| `ENV_NAME` | `production`, `staging`, `uat` or `local` as written, or a development name in any case. Anything else (`homolog`, `Production`) is refused by the app logger. |
+| `REDIS_TLS`, `OUTBOX_ENABLED`, `CIRCUIT_BREAKER_ENABLED`, `CCS_DETAIL_MESSAGE_EMIT_ENABLED` | Exactly `"true"` or `"false"`: the app refuses `"1"`, `"t"` or `"TRUE"`. |
+| `PLUGIN_AUTH_ENABLED` | Default `"true"`. `"false"` only with a development `ENV_NAME` (`development`, `develop`, `dev`, `local`, `test`) outside `DEPLOYMENT_MODE=saas`. |
+| `PLUGIN_AUTH_HOST` (or `global.auth.host`) | Required with auth on. |
+| `REPORTER_CLIENT_ID/SECRET`, `STA_CLIENT_ID/SECRET` | Required with auth on, even with `STA_ENABLED=false`. |
+| `OBJECT_STORAGE_{STA,CCS}_SSE_ALGORITHM` | Required: both buckets are always bound. `AES256` (recommended), `aws:kms` with `*_SSE_KMS_KEY_ID`, or `none` in development only. |
+| `LICENSE_KEY` | Required in every environment. The chart mounts no license file, so `LICENSE_FILE_PATH` does not count. |
+| `CCS_CRYPTO_MASTER_KEY` | Required, 64 hex chars. An argocd-vault-plugin placeholder (`<path:...>`) passes the shape check; the plugin replaces it after the render. |
+| `TRUSTED_PROXIES`, `CORS_ALLOWED_ORIGINS` | Required with `ENV_NAME=production`; no `0.0.0.0/0` or `*`. |
+| `REPORTER_TEMPLATE_{NAME,ID}_<t>` | One per template: `CCS0002`, `CCS0004` and `ACCS005`; only `ACCS005` with `CCS_DETAIL_MESSAGE_EMIT_ENABLED=false`. |
+| `REDIS_TLS` | Unset, it renders `"true"` for external Redis, or `"false"` when `ALLOW_INSECURE_REDIS` or `ALLOW_INSECURE_TLS` is true (`true`, `1`, `yes`, `on`). `ALLOW_INSECURE_TLS` relaxes every data store, so it turns Redis to plaintext too: set `REDIS_TLS` explicitly if Redis serves TLS. The bundled valkey serves no TLS: when `REDIS_HOST` is empty or exactly its Service name, the chart renders `"false"` plus `ALLOW_INSECURE_REDIS="true"`, unless you set `ALLOW_INSECURE_REDIS` yourself. Any other `REDIS_HOST`, a short Service name included, is external Redis, even with the subchart on. Plaintext needs a true bypass. |
+| `CRM_URL`, `CRM_ORGANIZATION_ID` | Required; `CRM_URL` absolute and https outside development. |
+| `REPORTER_URL` | Required. The app always dials the Reporter; `REPORTER_ENABLED` is no longer read or rendered. |
+| `OUTBOX_ENABLED`, `CIRCUIT_BREAKER_ENABLED` | Default `"true"`; `"false"` is refused (the Reporter needs both). |
+
+With `brCcs.useExistingSecret: true` the chart cannot read the Secret, so the
+checks on secret values are skipped; the app still refuses to boot without them.
+
+`CCS_BACEN_DESTINATARIO_CNPJ_BASE` is not checked: unset, the app sends its
+placeholder `00000000` in the BACEN envelope. Set it to the real value.
 
 ### Required secrets
 
@@ -64,7 +98,11 @@ set via `brCcs.extraEnvVars`.
 |-----|----------|-------|
 | `POSTGRES_PASSWORD` | Yes | Single-sourced from the bundled subchart Secret when `postgresql.enabled=true`; supply here for external Postgres. |
 | `REDIS_PASSWORD` | Yes | Single-sourced from the bundled valkey Secret when `valkey.enabled=true`; supply here for external Redis. |
-| `CCS_CRYPTO_MASTER_KEY` | Yes | AES-256-GCM master key, 64 hex chars (`openssl rand -hex 32`). Empty fails fast at boot. |
+| `CCS_CRYPTO_MASTER_KEY` | Yes | AES-256-GCM master key, 64 hex chars (`openssl rand -hex 32`). The render fails without it. |
+| `LICENSE_KEY` | Yes | Lerian license key, checked at boot in every environment. |
+| `REPORTER_CLIENT_ID` / `REPORTER_CLIENT_SECRET` | With auth on | M2M credentials for the Reporter. |
+| `STA_CLIENT_ID` / `STA_CLIENT_SECRET` | With auth on | M2M credentials for STA, required even with `STA_ENABLED=false`. |
+| `REDIS_CA_CERT` | No | Base64 PEM of a private CA for Redis TLS. |
 | `FETCHER_CRYPTO_KEY` | No | Optional. Empty = passthrough / plaintext (dev/staging); set to the Fetcher `APP_ENC_KEY` to decrypt snapshots. |
 
 ### Plaintext OTEL to the node-local collector (`ALLOW_INSECURE_OTEL`)
@@ -98,6 +136,8 @@ All containers run non-root (`runAsUser: 1000`, `runAsNonRoot: true`), with
 ## Validation
 
 ```bash
-helm lint charts/br-ccs
-helm template charts/br-ccs
+helm lint charts/br-ccs -f charts/br-ccs/tests/values/boot-contract.yaml
+helm template charts/br-ccs -f charts/br-ccs/tests/values/boot-contract.yaml
+helm unittest charts/br-ccs
+python3 charts/br-ccs/tests/test_no_duplicate_env_keys.py
 ```

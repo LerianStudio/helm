@@ -24,7 +24,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `11.3.0` | 4.5.1 | 3.8.4 |
+| `11.4.0` | 4.6.0 | 3.8.4 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -64,7 +64,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `5.4.4` | 4.10.0 | 4.10.0 |
+| `5.4.5` | 4.11.0 | 4.11.0 |
 -----------------
 
 ### Plugin BR Bank Transfer 
@@ -134,7 +134,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `5.5.2` | 1.15.0 | 1.15.0 | 1.15.0 | 1.15.0 | 1.15.0 |
+| `5.6.0` | 1.15.0 | 1.15.0 | 1.15.0 | 1.15.0 | 1.15.0 |
 
 -----------------
 
@@ -301,7 +301,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Agent Version |
 | :---: | :---: |
-| `1.0.6` | 1.0.2 |
+| `1.1.0` | 1.0.2 |
 -----------------
 
 ### Streaming Hub

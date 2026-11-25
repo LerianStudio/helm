@@ -1,5 +1,17 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [5.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.6.0)
+
+Features:
+- Add antifraud backend and pix account to enhance security and functionality. (@fredcamaral)
+
+Fixes:
+- Render the pix service account in the release namespace to ensure correct deployment. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.5.2...plugin-br-pix-indirect-btg-v5.6.0)
+
+---
+
 ## [5.5.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.5.2)
 
 Features:

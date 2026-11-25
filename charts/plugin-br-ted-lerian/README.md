@@ -137,6 +137,19 @@ Non-secret values live in the ConfigMap, credentials in the Secret. A key the Co
 
 `plugin-br-ted-lerian.configmap.ANTIFRAUD_SECRETS_BACKEND` (`aws` or `vault`) sets where the antifraud credentials live. The app has no default: unset means no secret reader, and a flow that is on denies with `INVALID_CONFIG`. The ConfigMap renders it only when set; a key of the same name in `extraEnvVars` renders instead, so it appears once.
 
+The three destination lists below are not rendered by the ConfigMap: set them in `plugin-br-ted-lerian.extraEnvVars`, for example `- { name: ANTIFRAUD_PARTNER_HOSTS, value: "partner.example.com" }`. The plugin sends a partner credential, a token minted with it, its signature and its headers only to destinations approved here.
+
+| Env | Approves | Entry (comma-separated) |
+|---|---|---|
+| `ANTIFRAUD_PARTNER_HOSTS` | the host of a route's `endpoint` and `feedbackEndpoint` | `host` (a URL without an explicit port) or `host:port` |
+| `ANTIFRAUD_PARTNER_TOKEN_URLS` | a route's `tokenUrl`, by exact match | absolute URL |
+| `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` | the host of a route's `endpoint` and `feedbackEndpoint`, also exempt from https and the private-address check | host or IP |
+
+- Empty approves nothing, and every flow that is on denies. An entry with `=`, `*`, a path or an invalid port stops the boot.
+- Whoever guards the credential store sets them, before the image that reads them (in Lerian Cloud, Lerian). List a host only if every route on it authenticates the caller. A host is never approved because a stored route names it.
+- A route naming an unlisted destination is refused on save (HTTP 400 `validation_error`, naming the field and the host) and denies every call (`INVALID_CONFIG`); outcome reports queued for it are dropped.
+- See [Antifraud partner](https://docs.lerian.studio/en/interfaces/ted-lerian/ted-lerian-environment-variables#antifraud-partner).
+
 ### Required app settings
 
 App `1.0.0-beta.86` refuses to boot without these, and the chart does not set them:

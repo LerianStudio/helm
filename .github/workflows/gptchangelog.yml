@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   changelog:
-    uses: LerianStudio/shared-workflows-public/.github/workflows/gptchangelog.yml@tier-1
+    uses: LerianStudio/shared-workflows-public/.github/workflows/release-notes.yml@tier-1
     with:
       filter_paths: |-
         charts/agent
@@ -49,5 +49,4 @@ jobs:
         charts/streaming-hub
         charts/system-facts
         charts/tracer
-      path_level: '2'
     secrets: inherit

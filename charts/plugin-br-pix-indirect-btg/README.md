@@ -136,7 +136,7 @@ The plugin sends a partner credential, a token minted with it, its signature and
 
 This chart does not model `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS`: set it in `pix.extraEnvVars`.
 
-- Empty approves nothing, and every flow that is on denies at request time; an empty list does not stop the boot. The first app tag that reads `ANTIFRAUD_PARTNER_HOSTS` and `ANTIFRAUD_PARTNER_TOKEN_URLS` is v2.2.0-beta.14; an older app ignores both and does not check destinations.
+- Empty approves nothing, and every flow that is on denies at request time; an empty list does not stop the boot. The first app tag that reads `ANTIFRAUD_PARTNER_HOSTS` and `ANTIFRAUD_PARTNER_TOKEN_URLS` is v2.2.0-beta.14; an older app ignores both lists, accepts any public https host and still refuses http and private addresses outside `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS`.
 - What stops the boot: a host entry with `=`, `*`, a path or a space, or a bad port (`ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` takes no port at all); a token URL that is not http(s), has no host, carries userinfo or has a bad port.
 - Whoever guards the credential store sets them, before the image that reads them. List a host only if every route on it authenticates the caller. A host is never approved because a stored route names it.
 - A route naming an unlisted destination is refused on save (HTTP 400 `validation_error`, naming the field and the host) and denies every call (`INVALID_CONFIG`); outcome reports queued for it are dropped.

@@ -4,6 +4,7 @@
 
 - **[Versions](#versions)**
 - **[Where the chart lives](#where-the-chart-lives)**
+- **[Before you upgrade: workflow credentials (app 1.7.0)](#before-you-upgrade-workflow-credentials-app-170)**
 - **[Coming from helm-internal 1.5.x](#coming-from-helm-internal-15x)**
 - **[Coming from the public chart 3.1.x](#coming-from-the-public-chart-31x)**
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
@@ -28,11 +29,28 @@ The chart and both images (`flowker`, `flowker-xsd-validator`) pull without a GH
 The chart version jumps to `4.0.0` so it never collides with the `3.x` line published here before.
 Remove any registry credential you kept only to pull the chart or the images.
 
+## Before you upgrade: workflow credentials (app 1.7.0)
+
+> **Confirm this with the Flowker team before you upgrade a client that runs authenticated workflow steps.** This section comes from a review of the Flowker 1.7.0 source. The chart team has not reproduced it, and the Flowker release notes do not describe it yet.
+
+According to that review, Flowker 1.7.0 changes where workflow credentials (provider configs and node auth) live:
+
+- The `FLOWKER_SECRETS_BACKEND` reader (for example `tenant-manager`, backed by AWS Secrets Manager) no longer has any effect. The chart still renders the key, but the app ignores it.
+- The app reads credentials only as KMS-sealed ciphertext stored in MongoDB, and it needs a key-encryption key configured through `KMS_VENDOR` and its grants. Chart 4.0.0 has no dedicated `KMS_*` values. Pass them through `flowker.extraEnvVars`, or through the existing Secret with `flowker.useExistingSecret: true`.
+- Nothing migrates credentials from the old backend. After the upgrade, every credential-backed step fails without retry: with `ErrCredentialSealerNotConfigured` when `KMS_VENDOR` is unset, or with `has no stored credential` when it is set.
+
+If a client uses credential-backed steps, plan the cutover with the Flowker team:
+
+1. Get the exact `KMS_*` settings and grants for the client's KMS.
+2. Configure them, then upgrade.
+3. Re-supply each provider-config and node-auth credential through the Flowker API.
+4. Run one authenticated workflow and check it succeeds before traffic returns.
+
 ## Coming from helm-internal 1.5.x
 
 The templates are the same as helm-internal `1.5.0`, with these changes:
 
-1. **App `1.7.0`.** `appVersion` and the default `flowker.image.tag` move from `1.7.0-beta.50` to the `1.7.0` stable. The sidecar inherits the same tag. If you pin `flowker.image.tag`, update it.
+1. **App `1.7.0`.** `appVersion` and the default `flowker.image.tag` move from `1.7.0-beta.50` to the `1.7.0` stable. The sidecar inherits the same tag. If you pin `flowker.image.tag`, update it. This is more than a tag bump for workflow credentials: read [the section above](#before-you-upgrade-workflow-credentials-app-170) first.
 2. **`MONGO_URI` from the Secret.** A supplied `flowker.secrets.MONGO_URI` used to be a literal env value in the PodSpec. It is now stored in the chart Secret and read with `secretKeyRef`. With `flowker.useExistingSecret: true` and `flowker.secrets.MONGO_URI` set, the pods read the `MONGO_URI` key **from your existing Secret**. Add that key to the Secret before you upgrade, or the pods fail with `CreateContainerConfigError`.
 3. **Access Manager over `http://`.** With `PLUGIN_AUTH_ENABLED: "true"` and an `http://` `PLUGIN_AUTH_ADDRESS`, the render now fails unless `flowker.xsdValidator.pluginAuth.allowInsecureHttp: "true"` is set. Before, the render passed and the XSD sidecar exited at boot. Set the flag or switch to `https://`. Do not disable the sidecar to clear the error if you have webhooks bound to an XSD: without the sidecar, those webhooks accept schema-invalid XML and run their workflows.
 4. **`lerian-common` 2.7.0.** The library is now the published `lerian-common-helm` `2.7.0` instead of the internal `lerian-common` `1.2.0`. No values were renamed or removed, but two helpers render differently:

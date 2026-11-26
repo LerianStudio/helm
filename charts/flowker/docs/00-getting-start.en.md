@@ -135,6 +135,7 @@ Start from [`values-template.yaml`](../values-template.yaml) for the full set of
 - **XSD sidecar.** On by default. It validates XML webhooks and XSD uploads. With `flowker.xsdValidator.enabled: false`, validation is not wired: webhooks bound to an XSD **accept well-formed but schema-invalid XML and run their workflows**, and XSD uploads are not checked. Disable it only on installs with no schema-bound XML workflows.
 - **Health and rollout.** Probes, PDB and rollout come from the `lerian-common` health preset and are not values. The chart refuses an image tag below `1.7.0-beta.50`. See the chart [README](../README.md#health-drain-and-rollout).
 - **Image pull secrets.** The images are public. `flowker.imagePullSecrets` can stay `[]`.
+- **Workflow credentials.** Flowker 1.7.0 stores provider-config and node-auth credentials KMS-sealed in MongoDB and needs a key-encryption key (`KMS_VENDOR` and its grants). Chart 4.0.0 has no dedicated `KMS_*` values: pass them through `flowker.extraEnvVars` or the existing Secret. `FLOWKER_SECRETS_BACKEND` has no effect on app 1.7.0. Get the exact settings from the Flowker team before you run authenticated workflow steps. See [`UPGRADE-4.0.md`](UPGRADE-4.0.md#before-you-upgrade-workflow-credentials-app-170).
 
 ---
 
@@ -175,4 +176,5 @@ Readiness (`/readyz`) and `/metrics` are served on the internal health port `809
 | api log: MongoDB URI empty or missing, with `useExistingSecret: true` | The existing Secret has no `MONGO_URI` key | Add `MONGO_URI` to the Secret (section 3.2) |
 | Worker `CrashLoopBackOff` right after install | No queue Redis while the scheduler is on | See "Redis" in section 4 |
 | api `CrashLoopBackOff`, log "TLS required" (Mongo) | `ALLOW_INSECURE_TLS: "false"` against a non-TLS MongoDB | Keep `"true"` for bundled infra; `"false"` only with real TLS |
+| Workflow step fails with `ErrCredentialSealerNotConfigured` or `has no stored credential` | No KMS key configured, or credentials not re-supplied after moving to app 1.7.0 | See "Workflow credentials" in section 4 |
 | Render fails: `... is below 1.7.0-beta.50` | `flowker.image.tag` older than the chart supports | Use the chart's default tag, or a tag at or above `1.7.0-beta.50` |

@@ -135,6 +135,7 @@ Parta do [`values-template.yaml`](../values-template.yaml) para ver todas as cha
 - **Sidecar XSD.** Ligado por padrão. Ele valida webhooks XML e uploads de XSD. Com `flowker.xsdValidator.enabled: false`, a validação fica desligada: webhooks vinculados a um XSD **aceitam XML bem formado mas fora do schema e executam os workflows**, e os uploads de XSD não são conferidos. Desligue só em instalações sem workflows XML vinculados a schema.
 - **Health e rollout.** Probes, PDB e rollout vêm do preset de health do `lerian-common` e não são values. O chart recusa tag de imagem abaixo de `1.7.0-beta.50`. Veja o [README](../README.md#health-drain-and-rollout) do chart.
 - **Image pull secrets.** As imagens são públicas. `flowker.imagePullSecrets` pode ficar `[]`.
+- **Credenciais de workflow.** O Flowker 1.7.0 guarda as credenciais de provider config e de node auth seladas por KMS no MongoDB e precisa de uma chave de criptografia (`KMS_VENDOR` e as permissões dela). O chart 4.0.0 não tem values próprios de `KMS_*`: passe por `flowker.extraEnvVars` ou pelo Secret existente. O `FLOWKER_SECRETS_BACKEND` não tem efeito no app 1.7.0. Peça as configurações exatas ao time do Flowker antes de rodar steps de workflow autenticados. Veja o [`UPGRADE-4.0.md`](UPGRADE-4.0.md#before-you-upgrade-workflow-credentials-app-170).
 
 ---
 
@@ -175,4 +176,5 @@ O readiness (`/readyz`) e o `/metrics` ficam na porta interna de health `8099` d
 | Log do api: URI do MongoDB vazia ou ausente, com `useExistingSecret: true` | O Secret existente não tem a chave `MONGO_URI` | Adicione `MONGO_URI` ao Secret (seção 3.2) |
 | Worker em `CrashLoopBackOff` logo após a instalação | Sem Redis de fila com o scheduler ligado | Veja "Redis" na seção 4 |
 | api em `CrashLoopBackOff`, log "TLS required" (Mongo) | `ALLOW_INSECURE_TLS: "false"` contra MongoDB sem TLS | Mantenha `"true"` com infra embutida; `"false"` só com TLS real |
+| Step de workflow falha com `ErrCredentialSealerNotConfigured` ou `has no stored credential` | Chave KMS não configurada, ou credenciais não recadastradas depois de ir para o app 1.7.0 | Veja "Credenciais de workflow" na seção 4 |
 | Render falha: `... is below 1.7.0-beta.50` | `flowker.image.tag` mais antiga que o chart suporta | Use a tag padrão do chart ou uma tag a partir de `1.7.0-beta.50` |

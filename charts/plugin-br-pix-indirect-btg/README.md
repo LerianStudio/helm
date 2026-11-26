@@ -116,8 +116,8 @@ The Plugin BR PIX Indirect BTG system consists of five components: the PIX servi
 | `pix.configmap.DB_SSL_MODE` | TLS to PostgreSQL: `disable`, `allow`, `prefer`, `require`, `verify-ca` or `verify-full`. Only `require` and stricter guarantee encryption; set one of them for an external database. | `"disable"` |
 | `pix.configmap.SWAGGER_ENABLED` | Serves the per-module API reference (`/v1/<module>/docs`, `openapi.json`, `openapi.yaml`). It does not turn off `/swagger/index.html`, `/docs/api` or `/docs/webhooks`. See [API Documentation (Swagger)](#api-documentation-swagger). | `"true"` |
 | `pix.configmap.ANTIFRAUD_SECRETS_BACKEND` | Store of the partner antifraud credentials: `aws` or `vault`. Rendered only when set; a key of the same name in `pix.extraEnvVars` wins. | `""` |
-| `pix.configmap.ANTIFRAUD_PARTNER_HOSTS` | Approved hosts of a route's `endpoint` and `feedbackEndpoint`, comma-separated. Rendered only when set; a key of the same name in `pix.extraEnvVars` wins. | `""` |
-| `pix.configmap.ANTIFRAUD_PARTNER_TOKEN_URLS` | Approved `tokenUrl` values, matched exactly, comma-separated. Rendered only when set; a key of the same name in `pix.extraEnvVars` wins. | `""` |
+| `pix.configmap.ANTIFRAUD_PARTNER_HOSTS` | App v2.2.0-beta.14+: approved hosts of a route's `endpoint` and `feedbackEndpoint`, comma-separated. Rendered only when set; a key of the same name in `pix.extraEnvVars` wins. | `""` |
+| `pix.configmap.ANTIFRAUD_PARTNER_TOKEN_URLS` | App v2.2.0-beta.14+: approved `tokenUrl` values, matched exactly, comma-separated. Rendered only when set; a key of the same name in `pix.extraEnvVars` wins. | `""` |
 | `pix.serviceAccount.create` | Creates a service account for the pix pod only, so a grant for the antifraud credential reaches no other component. Off, the pod runs on the namespace `default` account like the other four components. | `false` |
 | `pix.serviceAccount.name` | Name of the account; with `create: false` it names an existing one. | `""` |
 | `pix.serviceAccount.annotations` | Annotations of the created account, e.g. an IRSA or Roles Anywhere role ARN. | `{}` |
@@ -130,13 +130,14 @@ The plugin sends a partner credential, a token minted with it, its signature and
 
 | Env | Approves | Entry (comma-separated) |
 |---|---|---|
-| `ANTIFRAUD_PARTNER_HOSTS` | the host of a route's `endpoint` and `feedbackEndpoint` | `host` (a URL without an explicit port) or `host:port` |
-| `ANTIFRAUD_PARTNER_TOKEN_URLS` | a route's `tokenUrl`, by exact match | absolute URL |
+| `ANTIFRAUD_PARTNER_HOSTS` | the host of a route's `endpoint` and `feedbackEndpoint` | `host` (admits a URL without an explicit port) or `host:port` (admits that port only) |
+| `ANTIFRAUD_PARTNER_TOKEN_URLS` | a route's `tokenUrl`, by exact match | absolute `http` or `https` URL, no userinfo |
 | `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` | the host of a route's `endpoint` and `feedbackEndpoint`, also exempt from https and the private-address check | host or IP |
 
 This chart does not model `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS`: set it in `pix.extraEnvVars`.
 
-- Empty approves nothing, and every flow that is on denies. An entry with `=`, `*`, a path or an invalid port stops the boot.
+- Empty approves nothing, and every flow that is on denies at request time; an empty list does not stop the boot. The first app tag that reads `ANTIFRAUD_PARTNER_HOSTS` and `ANTIFRAUD_PARTNER_TOKEN_URLS` is v2.2.0-beta.14; an older app ignores both and does not check destinations.
+- What stops the boot: a host entry with `=`, `*`, a path or a space, or a bad port (`ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` takes no port at all); a token URL that is not http(s), has no host, carries userinfo or has a bad port.
 - Whoever guards the credential store sets them, before the image that reads them. List a host only if every route on it authenticates the caller. A host is never approved because a stored route names it.
 - A route naming an unlisted destination is refused on save (HTTP 400 `validation_error`, naming the field and the host) and denies every call (`INVALID_CONFIG`); outcome reports queued for it are dropped.
 - See [Antifraud partner](https://docs.lerian.studio/en/interfaces/pix-btg/indirect-pix-environment-variables#antifraud-partner).

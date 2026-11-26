@@ -1,5 +1,14 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [5.7.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.7.0)
+
+✨ Features:
+- The plugin now models antifraud destination lists, adding support for this concept to its Pix indirect BTG integration. (#3345, @fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.6.0...plugin-br-pix-indirect-btg-v5.7.0)
+
+---
+
 ## [5.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.6.0)
 
 Features:

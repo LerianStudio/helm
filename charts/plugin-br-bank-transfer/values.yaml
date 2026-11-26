@@ -461,13 +461,17 @@ bankTransfer:
 
     # =================================================================
     # Partner antifraud (app v3.7.0) — rendered only when set.
-    # ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: exact hosts (comma-separated) a tenant
-    # route may reach over http or a private address, e.g. an in-cluster
-    # Flowker (BYOC / Lerian operation only; leave unset on Lerian Cloud).
+    # Destination lists (comma-separated, empty approves none, deploy-owned):
+    # ANTIFRAUD_ALLOWED_PRIVATE_HOSTS approves a route host and also exempts it
+    # from https and the private-address check (BYOC / Lerian operation only;
+    # leave unset on Lerian Cloud). ANTIFRAUD_PARTNER_HOSTS approves route
+    # hosts, ANTIFRAUD_PARTNER_TOKEN_URLS approves token URLs (exact match).
     # ANTIFRAUD_SECRETS_BACKEND: where the antifraud credentials live, "aws" or
     # "vault"; no app default, and unset makes an enabled flow deny with
     # INVALID_CONFIG. Credentials come from the secret manager, never env.
     # ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: ""
+    # ANTIFRAUD_PARTNER_HOSTS: ""
+    # ANTIFRAUD_PARTNER_TOKEN_URLS: ""
     # ANTIFRAUD_SECRETS_BACKEND: ""
     # =================================================================
 

@@ -301,7 +301,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Agent Version |
 | :---: | :---: |
-| `1.1.0` | 1.0.2 |
+| `1.1.0` | 3.36.0 |
 -----------------
 
 ### Streaming Hub

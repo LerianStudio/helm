@@ -48,7 +48,7 @@ If a client uses credential-backed steps, plan the cutover with the Flowker team
 3. Configure the KMS settings, then upgrade.
 4. Re-supply each provider-config and node-auth credential through the Flowker API.
 5. Run one authenticated workflow and check it succeeds before traffic returns.
-6. List the scheduled runs that failed between steps 3 and 4 and re-trigger them by hand.
+6. List the scheduled runs that failed from the upgrade in step 3 until the last credential is re-supplied in step 4. **Do not replay them blindly.** A re-trigger starts a fresh execution from the trigger, so any step that already completed (for example an unauthenticated HTTP call, or a provider re-supplied earlier) runs again, which can repeat a ledger or payment write. For each failed run, check its completed steps, reconcile their side effects with the owner of the target system, and only then re-trigger it or finish it by hand.
 
 ## Coming from helm-internal 1.5.x
 

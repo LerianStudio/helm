@@ -511,12 +511,27 @@ A key in `<component>.extraEnvVars` or a non-empty `<component>.secrets.ALLOW_IN
 
 ## Antifraud partner
 
-One block sets the antifraud values the SPI workloads need. The allowlist reaches `spi` and `spiSystemplane`; the backend reaches `spi` only. Set them here, once.
+One block sets the antifraud values the SPI workloads need. The three destination lists reach `spi` and `spiSystemplane`; the backend reaches `spi` only. Set them here, once.
 
 | Value | Env | Workloads | Meaning |
 |---|---|---|---|
-| `antifraud.allowedPrivateHosts` | `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` | `spi`, `spiSystemplane` | Comma-separated private hosts a partner route may target. `spi` checks it on every call; `spiSystemplane` checks it when a route is written. |
+| `antifraud.allowedPrivateHosts` | `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` | `spi`, `spiSystemplane` | Comma-separated hosts a route's `endpoint` and `feedbackEndpoint` may target; also exempt from https and the private-address check. `spi` checks it on every call; `spiSystemplane` checks it when a route is written. |
+| `antifraud.partnerHosts` | `ANTIFRAUD_PARTNER_HOSTS` | `spi`, `spiSystemplane` | Comma-separated hosts a route's `endpoint` and `feedbackEndpoint` may target. Entry: `host` (a URL without an explicit port) or `host:port`. Empty approves none. |
+| `antifraud.partnerTokenUrls` | `ANTIFRAUD_PARTNER_TOKEN_URLS` | `spi`, `spiSystemplane` | Comma-separated absolute URLs a route's `tokenUrl` may name, matched exactly. Empty approves none. |
 | `antifraud.secretsBackend` | `ANTIFRAUD_SECRETS_BACKEND` | `spi` | `aws` or `vault`: where the partner credential is read from. Only `spi` reads it. Empty denies every enabled flow. |
+
+The plugin sends a partner credential, a token minted with it, its signature and its headers only to destinations approved here.
+
+| Env | Approves | Entry (comma-separated) |
+|---|---|---|
+| `ANTIFRAUD_PARTNER_HOSTS` | the host of a route's `endpoint` and `feedbackEndpoint` | `host` (a URL without an explicit port) or `host:port` |
+| `ANTIFRAUD_PARTNER_TOKEN_URLS` | a route's `tokenUrl`, by exact match | absolute URL |
+| `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` | the host of a route's `endpoint` and `feedbackEndpoint`, also exempt from https and the private-address check | host or IP |
+
+- Empty approves nothing, and every flow that is on denies. An entry with `=`, `*`, a path or an invalid port stops the boot.
+- Whoever guards the credential store sets them, before the image that reads them (in Lerian Cloud, Lerian). List a host only if every route on it authenticates the caller. A host is never approved because a stored route names it.
+- A route naming an unlisted destination is refused on save (HTTP 400 `validation_error`, naming the field and the host) and denies every call (`INVALID_CONFIG`); outcome reports queued for it are dropped.
+- See [Antifraud partner](https://docs.lerian.studio/en/interfaces/pix-lerian/pix-lerian-environment-variables#antifraud-partner).
 
 - An empty value renders nothing. Leave the allowlist empty on Lerian Cloud; Lerian Cloud sets `secretsBackend` to `aws` through GitOps.
 - A component's own `configmap.ANTIFRAUD_*` still wins over the block. Set the allowlist only in the block, or the two workloads can disagree.

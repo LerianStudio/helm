@@ -34,6 +34,12 @@ tests:
           path: data.ANTIFRAUD_SECRETS_BACKEND
         template: templates/pix/configmap.yaml
       - notExists:
+          path: data.ANTIFRAUD_PARTNER_HOSTS
+        template: templates/pix/configmap.yaml
+      - notExists:
+          path: data.ANTIFRAUD_PARTNER_TOKEN_URLS
+        template: templates/pix/configmap.yaml
+      - notExists:
           path: spec.template.spec.serviceAccountName
         template: templates/pix/deployment.yaml
       - hasDocuments:
@@ -56,6 +62,32 @@ tests:
       - equal:
           path: data.ANTIFRAUD_SECRETS_BACKEND
           value: aws
+  - it: renders the destination lists when set
+    template: templates/pix/configmap.yaml
+    set:
+      pix.configmap.ANTIFRAUD_PARTNER_HOSTS: partner.example.com
+      pix.configmap.ANTIFRAUD_PARTNER_TOKEN_URLS: https://idp.example.com/oauth/token
+    asserts:
+      - equal:
+          path: data.ANTIFRAUD_PARTNER_HOSTS
+          value: partner.example.com
+      - equal:
+          path: data.ANTIFRAUD_PARTNER_TOKEN_URLS
+          value: https://idp.example.com/oauth/token
+  - it: renders each list once when it is also in extraEnvVars
+    template: templates/pix/configmap.yaml
+    set:
+      pix.configmap.ANTIFRAUD_PARTNER_HOSTS: a.example.com
+      pix.configmap.ANTIFRAUD_PARTNER_TOKEN_URLS: https://a.example.com/token
+      pix.extraEnvVars.ANTIFRAUD_PARTNER_HOSTS: b.example.com
+      pix.extraEnvVars.ANTIFRAUD_PARTNER_TOKEN_URLS: https://b.example.com/token
+    asserts:
+      - equal:
+          path: data.ANTIFRAUD_PARTNER_HOSTS
+          value: b.example.com
+      - equal:
+          path: data.ANTIFRAUD_PARTNER_TOKEN_URLS
+          value: https://b.example.com/token
   - it: creates the account and only the pix pod uses it
     set:
       pix.serviceAccount.create: true

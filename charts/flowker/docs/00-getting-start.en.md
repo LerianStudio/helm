@@ -14,7 +14,6 @@
 | Components | `api` Deployment (port `4021`), `worker` Deployment (port `4022`, `/worker` binary), `xsd-validator` sidecar in both pods (port `8081`, loopback only) |
 | Images | `ghcr.io/lerianstudio/flowker:1.7.0`, `ghcr.io/lerianstudio/flowker-xsd-validator:1.7.0` (both public on GHCR) |
 | Kubernetes | 1.27 or later (`kubeVersion` in `Chart.yaml`) |
-| Coming from another chart | [`UPGRADE-4.0.md`](UPGRADE-4.0.md) |
 | Last review of this runbook | 2026-11-26, against chart 4.0.0 / app 1.7.0 |
 | Escalation contact | `@LerianStudio/G_Github_Devops` |
 
@@ -135,7 +134,7 @@ Start from [`values-template.yaml`](../values-template.yaml) for the full set of
 - **XSD sidecar.** On by default. It validates XML webhooks and XSD uploads. With `flowker.xsdValidator.enabled: false`, validation is not wired: webhooks bound to an XSD **accept well-formed but schema-invalid XML and run their workflows**, and XSD uploads are not checked. Disable it only on installs with no schema-bound XML workflows.
 - **Health and rollout.** Probes, PDB and rollout come from the `lerian-common` health preset and are not values. The chart refuses an image tag below `1.7.0-beta.50`. See the chart [README](../README.md#health-drain-and-rollout).
 - **Image pull secrets.** The images are public. `flowker.imagePullSecrets` can stay `[]`.
-- **Workflow credentials.** Flowker 1.7.0 stores provider-config and node-auth credentials KMS-sealed in MongoDB and needs a key-encryption key (`KMS_VENDOR` and its grants). Chart 4.0.0 has no dedicated `KMS_*` values. Put secret KMS settings (for example a Vault AppRole secret ID) only in the existing Secret (`flowker.useExistingSecret: true`). Never in `flowker.extraEnvVars`: it renders into the ConfigMap. `extraEnvVars` is fine for non-secret settings such as `KMS_VENDOR`. `FLOWKER_SECRETS_BACKEND` has no effect on app 1.7.0. Get the exact settings from the Flowker team before you run authenticated workflow steps. See [`UPGRADE-4.0.md`](UPGRADE-4.0.md#before-you-upgrade-workflow-credentials-app-170).
+- **Workflow credentials.** Flowker 1.7.0 stores provider-config and node-auth credentials KMS-sealed in MongoDB and needs a key-encryption key (`KMS_VENDOR` and its grants). Chart 4.0.0 has no dedicated `KMS_*` values. Put secret KMS settings (for example a Vault AppRole secret ID) only in the existing Secret (`flowker.useExistingSecret: true`). Never in `flowker.extraEnvVars`: it renders into the ConfigMap. `extraEnvVars` is fine for non-secret settings such as `KMS_VENDOR`. `FLOWKER_SECRETS_BACKEND` has no effect on app 1.7.0. Get the exact settings from the Flowker team before you run authenticated workflow steps.
 
 ---
 

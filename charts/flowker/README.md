@@ -34,6 +34,8 @@ The chart renders these workloads (all are toggleable; the api via `flowker.enab
 
 ## Installation
 
+For a step-by-step installation (quickstart, production), validation and known errors, see the getting-started runbook: [English](docs/00-getting-start.en.md) · [Português](docs/00-getting-start.md). Coming from the `helm-internal` chart: [`docs/UPGRADE-4.0.md`](docs/UPGRADE-4.0.md).
+
 Install from the public OCI registry (no login needed):
 
 ```bash

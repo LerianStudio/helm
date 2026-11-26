@@ -1,0 +1,39 @@
+suite: tracer cpu and go runtime defaults
+release:
+  name: midaz
+  namespace: midaz
+set:
+  ledger.secrets.LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  ledger.secrets.RABBITMQ_DEFAULT_PASS: sample
+  ledger.secrets.RABBITMQ_CONSUMER_PASS: sample
+  ledger.secrets.LICENSE_KEY: sample
+  ledger.configmap.ENV_NAME: development
+  rabbitmq.authentication.erlangCookie.value: "0123456789abcdef0123456789abcdef"
+  tracer.enabled: true
+tests:
+  - it: gives the tracer 2 CPUs of limit and 1 of request by default
+    template: templates/tracer/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: "2"
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: "1"
+  - it: renders GOGC 400 by default
+    template: templates/tracer/configmap.yaml
+    asserts:
+      - equal: {path: data.GOGC, value: "400"}
+  - it: renders the configmap override
+    template: templates/tracer/configmap.yaml
+    set:
+      tracer.configmap.GOGC: "200"
+    asserts:
+      - equal: {path: data.GOGC, value: "200"}
+  - it: lets extraEnvVars set GOGC without a duplicate key
+    template: templates/tracer/configmap.yaml
+    set:
+      tracer.extraEnvVars.GOGC: "800"
+    asserts:
+      - equal: {path: data.GOGC, value: "800"}

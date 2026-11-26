@@ -949,14 +949,18 @@ tracer:
     #  - secretName: chart-example-tls
     #  hosts:
     #      - chart-example.local
+  # The ledger waits up to 250 ms (default) for each reservation and, with
+  # failPosture=open, moves the money without it when the tracer is late. At ~100
+  # transfers/s a 500m tracer missed that budget for ~54% of reservations; 2 CPUs
+  # brought it to ~3%. See the CPU note in the README.
   resources:
     # -- CPU and memory limits for pods
     limits:
-      cpu: 500m
+      cpu: "2"
       memory: 512Mi
     # -- Minimum CPU and memory requests
     requests:
-      cpu: 100m
+      cpu: "1"
       memory: 128Mi
   autoscaling:
     # -- Enable or disable horizontal pod autoscaling

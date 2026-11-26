@@ -1988,7 +1988,7 @@
               "description": "CPU and memory limits for pods",
               "properties": {
                 "cpu": {
-                  "default": "500m"
+                  "default": "2"
                 },
                 "memory": {
                   "default": "512Mi"
@@ -2001,7 +2001,7 @@
               "description": "Minimum CPU and memory requests",
               "properties": {
                 "cpu": {
-                  "default": "100m"
+                  "default": "1"
                 },
                 "memory": {
                   "default": "128Mi"
@@ -2195,6 +2195,7 @@
               "DEPLOYMENT_MODE",
               "ENABLE_TELEMETRY",
               "ENV_NAME",
+              "GOGC",
               "GOMEMLIMIT",
               "GOOGLE_APPLICATION_CREDENTIALS",
               "IDP_DECLARATION_ENABLED",

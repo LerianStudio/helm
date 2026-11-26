@@ -1,5 +1,14 @@
 # Plugin-br-pix-lerian Changelog
 
+## [2.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.3.0)
+
+✨ Features:
+- Added antifraud destination lists to the Pix plugin. (#3339, @fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.2.2...plugin-br-pix-lerian-v2.3.0)
+
+---
+
 ## [2.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.2.2)
 
 Fixes:

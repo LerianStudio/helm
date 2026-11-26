@@ -37,7 +37,7 @@
 |---|---|---|
 | Licença Lerian | Sempre. O Flowker 1.6 ou mais novo não sobe sem ela | `flowker.secrets.LICENSE_KEY`, ou `flowker.licenseFile.existingSecret` (chave `license.lic`), ou `LICENSE_KEY` no Secret indicado em `flowker.existingSecretName` |
 | MongoDB | Sempre | Embutido (`mongodb.enabled: true`, o padrão) ou externo (`mongodb.enabled: false` + `flowker.secrets.MONGO_URI` + `flowker.configmap.MONGO_HOST`) |
-| Redis / Valkey | Sempre, enquanto o scheduler está ligado (`SCHEDULER_ENABLED: "true"`, o padrão) | Embutido (`valkey.enabled: true`) ou externo (`flowker.configmap.REDIS_HOST`, `REDIS_PORT`, `REDIS_TLS`, `flowker.secrets.REDIS_PASSWORD`) |
+| Redis / Valkey | Sempre: o worker precisa de um Redis de fila, e toda instalação precisa do worker | Embutido (`valkey.enabled: true`) ou externo (`flowker.configmap.REDIS_HOST`, `REDIS_PORT`, `REDIS_TLS`, `flowker.secrets.REDIS_PASSWORD`) |
 | plugin-access-manager | Obrigatório com `ENV_NAME: "production"`: o Flowker 1.7.0 recusa `PLUGIN_AUTH_ENABLED: "false"` nesse ambiente. Opcional nos outros | `flowker.configmap.PLUGIN_AUTH_ENABLED: "true"` + `flowker.configmap.PLUGIN_AUTH_ADDRESS` (use `https://`) |
 | Tenant manager | Só com multi-tenancy | `flowker.multiTenant.enabled` + `flowker.configmap.MULTI_TENANT_URL` e `MULTI_TENANT_REDIS_*` + `flowker.secrets.MULTI_TENANT_SERVICE_API_KEY`. Defina a URL e as chaves de Redis em `flowker.configmap`: valores só em `global.multiTenant` não chegam ao app no chart 4.0.0 |
 
@@ -130,7 +130,7 @@ Parta do [`values-template.yaml`](../values-template.yaml) para ver todas as cha
 ## 4. Notas de operação
 
 - **MongoDB externo.** O `MONGO_URI` é lido do Secret (`secretKeyRef`) e nunca vai para o PodSpec. O init container `wait-for-mongodb` verifica o `MONGO_HOST` na porta `27017`, então um MongoDB em outra porta deixa os pods em `Init`. Use uma senha sem `:`, `/`, `@` ou `%`, ou faça percent-encoding dela na URI.
-- **Redis.** Com os padrões (`SCHEDULER_ENABLED: "true"`, `valkey.enabled: false`, `REDIS_HOST` vazio), o worker fica sem fila e não sobe. Ligue o Valkey ou defina o `REDIS_HOST`. Se não usa triggers `schedule`, dá para rodar sem Redis: defina `SCHEDULER_ENABLED: "false"` e `worker.enabled: false` juntos. O binário `/worker` não sobe com o scheduler desligado, então desligar só o scheduler troca um crash loop por outro.
+- **Redis.** Com os padrões (`SCHEDULER_ENABLED: "true"`, `valkey.enabled: false`, `REDIS_HOST` vazio), o worker fica sem fila e não sobe. Ligue o Valkey ou defina o `REDIS_HOST`. Mantenha o worker ligado mesmo sem triggers `schedule`: no Flowker 1.7.0, só o worker inicia execuções `durable_external`, acorda nós `wait` e encerra com falha as execuções com lease expirado. Com `worker.enabled: false`, essas execuções ficam pendentes ou esperando para sempre. O binário `/worker` não sobe com `SCHEDULER_ENABLED: "false"`, então toda instalação precisa de um Redis de fila.
 - **Access Manager em `http://`.** O sidecar XSD herda o `PLUGIN_AUTH_*` e sai com endereço sem TLS. O chart recusa o render até você definir `flowker.xsdValidator.pluginAuth.allowInsecureHttp: "true"` ou usar `https://`. Desligar o sidecar também tira o erro, mas leia o próximo item antes.
 - **Sidecar XSD.** Ligado por padrão. Ele valida webhooks XML e uploads de XSD. Com `flowker.xsdValidator.enabled: false`, a validação fica desligada: webhooks vinculados a um XSD **aceitam XML bem formado mas fora do schema e executam os workflows**, e os uploads de XSD não são conferidos. Desligue só em instalações sem workflows XML vinculados a schema.
 - **Health e rollout.** Probes, PDB e rollout vêm do preset de health do `lerian-common` e não são values. O chart recusa tag de imagem abaixo de `1.7.0-beta.50`. Veja o [README](../README.md#health-drain-and-rollout) do chart.
@@ -145,7 +145,6 @@ kubectl -n flowker get pods
 # esperado: flowker-* (2/2: api + sidecar), flowker-worker-* (2/2) e, quando ligados,
 # flowker-mongodb / flowker-valkey
 kubectl -n flowker rollout status deploy/flowker --timeout=300s
-# pule a próxima linha quando worker.enabled for false
 kubectl -n flowker rollout status deploy/flowker-worker --timeout=300s
 ```
 
@@ -169,7 +168,7 @@ O readiness (`/readyz`) e o `/metrics` ficam na porta interna de health `8099` d
 | Render falha: `flowker.configmap.MONGO_HOST is required when mongodb is external` | `mongodb.enabled: false` sem `MONGO_HOST` | Defina o `MONGO_HOST` com o host do MongoDB |
 | Render falha: `flowker.xsdValidator: PLUGIN_AUTH_ADDRESS ... is cleartext http://` | Auth ligado com Access Manager em `http://` | Defina `allowInsecureHttp: "true"` ou use `https://` (veja "Sidecar XSD" na seção 4 antes de desligá-lo) |
 | api e worker saem no boot: `PLUGIN_AUTH_ENABLED=false is not permitted in production` | `ENV_NAME: "production"` com auth desligado | Defina `PLUGIN_AUTH_ENABLED: "true"` e `PLUGIN_AUTH_ADDRESS` (seção 3.4) |
-| Worker sai: `worker binary requires SCHEDULER_ENABLED=true` | Scheduler desligado com o worker ligado | Defina também `worker.enabled: false`, ou religue o scheduler com um Redis |
+| Worker sai: `worker binary requires SCHEDULER_ENABLED=true` | Scheduler desligado | Mantenha `SCHEDULER_ENABLED: "true"` e dê um Redis ao worker (veja "Redis" na seção 4). Não desligue o worker |
 | Render falha: `lerian-common: MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true` | Multi-tenancy ligado com a URL só em `global.multiTenant` | Defina `flowker.configmap.MULTI_TENANT_URL` (e `MULTI_TENANT_REDIS_HOST`) |
 | Pods presos em `Init`, `wait-for-mongodb` em loop em `<host>:27017` | MongoDB inacessível, em outra porta ou em outro namespace | Confira `MONGO_HOST`, a porta e a regra de namespace (seção 3.1) |
 | Pods em `CreateContainerConfigError` | Secret ou chave ausente no namespace do pod | Confira o `existingSecretName`, as chaves e a regra de namespace |

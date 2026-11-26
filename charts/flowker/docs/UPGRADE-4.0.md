@@ -36,15 +36,19 @@ Remove any registry credential you kept only to pull the chart or the images.
 According to that review, Flowker 1.7.0 changes where workflow credentials (provider configs and node auth) live:
 
 - The `FLOWKER_SECRETS_BACKEND` reader (for example `tenant-manager`, backed by AWS Secrets Manager) no longer has any effect. The chart still renders the key, but the app ignores it.
-- The app reads credentials only as KMS-sealed ciphertext stored in MongoDB, and it needs a key-encryption key configured through `KMS_VENDOR` and its grants. Chart 4.0.0 has no dedicated `KMS_*` values. Pass them through `flowker.extraEnvVars`, or through the existing Secret with `flowker.useExistingSecret: true`.
+- The app reads credentials only as KMS-sealed ciphertext stored in MongoDB, and it needs a key-encryption key configured through `KMS_VENDOR` and its grants. Chart 4.0.0 has no dedicated `KMS_*` values.
+  - **Secret settings** (for example a Vault AppRole secret ID) go **only** in the existing Secret, with `flowker.useExistingSecret: true`. The api and worker load that whole Secret as env.
+  - **Never put a KMS credential in `flowker.extraEnvVars`.** It renders into the chart ConfigMap, so anyone who can read ConfigMaps in the namespace can read it, and that credential unwraps every sealed workflow credential. Use `extraEnvVars` only for non-secret settings, such as `KMS_VENDOR` or a key ID.
 - Nothing migrates credentials from the old backend. After the upgrade, every credential-backed step fails without retry: with `ErrCredentialSealerNotConfigured` when `KMS_VENDOR` is unset, or with `has no stored credential` when it is set.
 
 If a client uses credential-backed steps, plan the cutover with the Flowker team:
 
-1. Get the exact `KMS_*` settings and grants for the client's KMS.
-2. Configure them, then upgrade.
-3. Re-supply each provider-config and node-auth credential through the Flowker API.
-4. Run one authenticated workflow and check it succeeds before traffic returns.
+1. Get the exact `KMS_*` settings and grants for the client's KMS. Split them: secret values into the existing Secret, non-secret values into `extraEnvVars` or the Secret.
+2. Pick a window with no credential-backed **scheduled** runs, or agree with the Flowker team how to pause those schedules. Holding inbound traffic is not enough: the scheduler runs in the api and the worker, and a credential-backed schedule that fires before step 4 fails without retry or replay.
+3. Configure the KMS settings, then upgrade.
+4. Re-supply each provider-config and node-auth credential through the Flowker API.
+5. Run one authenticated workflow and check it succeeds before traffic returns.
+6. List the scheduled runs that failed between steps 3 and 4 and re-trigger them by hand.
 
 ## Coming from helm-internal 1.5.x
 

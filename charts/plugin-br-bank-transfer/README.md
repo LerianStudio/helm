@@ -319,9 +319,9 @@ Key environment variables configured via `bankTransfer.configmap`:
 | `FEES_BASE_URL` | Fees adapter base URL | **Required** |
 | `JD_BASE_URL` | JD SPB SOAP API URL | **Required** (unless `JD_SANDBOX_MODE=true`) |
 | `JD_LEGACY_CODE` | JD legacy code; `JD_USER_CODE`, `JD_PASSWORD`, `JD_PRIVATE_KEY_KEYINFO` and, in `local_pem` signing, `JD_PRIVATE_KEY_PEM` go in `bankTransfer.secrets`. The origin ISPB is the systemplane key `tenancy.ispb_organization_bindings`, not env | **Required** single-tenant (unless `JD_SANDBOX_MODE=true`) |
-| `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` | App v3.7.0+: approved antifraud destination hosts (comma-separated), also reachable over http or a private address, e.g. an in-cluster Flowker. BYOC / Lerian operation only; leave unset on Lerian Cloud. Rendered only when set | — |
-| `ANTIFRAUD_PARTNER_HOSTS` | Approved antifraud route hosts (comma-separated). Rendered only when set | — |
-| `ANTIFRAUD_PARTNER_TOKEN_URLS` | Approved antifraud token URLs (comma-separated, exact match). Rendered only when set | — |
+| `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` | App v3.7.0+: antifraud destination hosts (comma-separated) reachable over http or a private address, e.g. an in-cluster Flowker; from app v3.9.0-beta.2 the entry also approves the host as a destination. BYOC / Lerian operation only; leave unset on Lerian Cloud. Rendered only when set | — |
+| `ANTIFRAUD_PARTNER_HOSTS` | App v3.9.0-beta.2+: approved antifraud route hosts (comma-separated). Rendered only when set | — |
+| `ANTIFRAUD_PARTNER_TOKEN_URLS` | App v3.9.0-beta.2+: approved antifraud token URLs (comma-separated, exact match). Rendered only when set | — |
 | `ANTIFRAUD_SECRETS_BACKEND` | App v3.7.0+: where the antifraud credentials live, `aws` or `vault`. No app default: unset means no backend, and an enabled antifraud flow denies with `INVALID_CONFIG`. The credentials are read from the secret manager only, never from env. Rendered only when set | — |
 | `ORGANIZATION_IDS` | Organizations the licence is validated for (or set it under `bankTransfer.secrets`) | **Required** by newer app images, in every environment |
 | `COURIER_ACCOUNT_CLAIMS_ENABLED` | App v3.2.0+: sweep that claims this engine's CRM accounts on the Courier. When `"true"`, single-tenant also needs `COURIER_BASE_URL`, the `COURIER_CLIENT_ID`/`COURIER_CLIENT_SECRET` pair and `ORGANIZATION_ID` (the render fails without the URL or the organization) | `false` |
@@ -334,7 +334,8 @@ The plugin sends a partner credential, a token minted with it, its signature and
 | `ANTIFRAUD_PARTNER_TOKEN_URLS` | a route's `tokenUrl`, by exact match | absolute URL |
 | `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` | the host of a route's `endpoint` and `feedbackEndpoint`, also exempt from https and the private-address check | host or IP |
 
-- Empty approves nothing, and every flow that is on denies. An entry with `=`, `*`, a path or an invalid port stops the boot.
+- Empty approves nothing, and every flow that is on denies. The first app tag that reads `ANTIFRAUD_PARTNER_HOSTS` and `ANTIFRAUD_PARTNER_TOKEN_URLS` is v3.9.0-beta.2; an older app ignores both and does not check destinations.
+- What stops the boot: a host entry with `=`, `*`, a path or a bad port (`ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` takes no port at all); a token URL that is not http(s), has no host, carries userinfo or has a bad port.
 - Whoever guards the credential store sets them, before the image that reads them (in Lerian Cloud, Lerian). List a host only if every route on it authenticates the caller. A host is never approved because a stored route names it.
 - A route naming an unlisted destination is refused on save (HTTP 400 `validation_error`, naming the field and the host) and denies every call (`INVALID_CONFIG`); outcome reports queued for it are dropped.
 - See [Antifraud partner](https://docs.lerian.studio/en/interfaces/ted-jd/ted-environment-variables#antifraud-partner).

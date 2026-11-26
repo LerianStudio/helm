@@ -137,6 +137,34 @@ Non-secret values live in the ConfigMap, credentials in the Secret. A key the Co
 
 `plugin-br-ted-lerian.configmap.ANTIFRAUD_SECRETS_BACKEND` (`aws` or `vault`) sets where the antifraud credentials live. The app has no default: unset means no secret reader, and a flow that is on denies with `INVALID_CONFIG`. The ConfigMap renders it only when set; a key of the same name in `extraEnvVars` renders instead, so it appears once.
 
+The three destination lists below are not rendered by the ConfigMap keys of this chart: set each in `plugin-br-ted-lerian.extraEnvVars`. The plugin sends a partner credential, a token minted with it, its signature and its headers only to destinations approved here.
+
+```yaml
+plugin-br-ted-lerian:
+  extraEnvVars:
+    - name: ANTIFRAUD_PARTNER_HOSTS
+      value: "partner.example,partner.example:8443"
+    - name: ANTIFRAUD_PARTNER_TOKEN_URLS
+      value: "https://auth.partner.example/oauth/token"
+    - name: ANTIFRAUD_ALLOWED_PRIVATE_HOSTS
+      value: "10.0.0.10"
+```
+
+| Env | Approves | Entry (comma-separated) |
+|---|---|---|
+| `ANTIFRAUD_PARTNER_HOSTS` | the host of a route's `endpoint` and `feedbackEndpoint`, never its `tokenUrl` | `host` (approves a URL without an explicit port) or `host:port` (approves a URL that names that port) |
+| `ANTIFRAUD_PARTNER_TOKEN_URLS` | a route's `tokenUrl`, by exact match | absolute `https` URL (`http` boots, but the route is refused on a host outside `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS`) |
+| `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` | the host of a route's `endpoint` and `feedbackEndpoint`, on any port; also exempt from https and the private-address check | host or IP, no port |
+
+- The first app tag that reads `ANTIFRAUD_PARTNER_HOSTS` and `ANTIFRAUD_PARTNER_TOKEN_URLS` is 1.1.0-beta.14; the earlier release candidates 1.1.0-rc.1 and 1.1.0-rc.2 do not read them. From 1.1.0-beta.14 on, `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` also approves the host. An older app ignores the two new lists and reads only `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS`, as an exemption: it refuses plain http and private addresses outside that list and accepts any public https host.
+- An empty list approves nothing; with no list set, the app boots and every flow that is on denies when it reads the route.
+- What stops the boot: a host entry with a scheme, a path, a space inside the entry, `=`, `*`, userinfo (`@`) or a bad port (`ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` takes no port at all); a token URL that is not http(s), has no host, carries userinfo or has a bad port.
+- A token URL is approved only by `ANTIFRAUD_PARTNER_TOKEN_URLS`, also when its host is on `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS`. A host entry approves the URL host only.
+- A change to a list needs no manual restart: `extraEnvVars` entries land in the ConfigMap, whose content the Deployment's `checksum/config` annotation hashes, so `helm upgrade` rolls the pods. The app reads the lists at boot only.
+- Whoever guards the credential store sets them, before the image that reads them (in Lerian Cloud, Lerian). List a host only if every endpoint it serves authenticates the caller.
+- A route naming an unlisted destination is refused when it is saved, and a stored route that names one denies every call (`INVALID_CONFIG`).
+- See [Antifraud partner](https://docs.lerian.studio/en/interfaces/ted-lerian/ted-lerian-environment-variables#antifraud-partner).
+
 ### Required app settings
 
 App `1.0.0-beta.86` refuses to boot without these, and the chart does not set them:

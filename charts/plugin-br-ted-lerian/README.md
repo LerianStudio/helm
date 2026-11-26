@@ -157,7 +157,7 @@ plugin-br-ted-lerian:
 | `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` | the host of a route's `endpoint` and `feedbackEndpoint`, on any port; also exempt from https and the private-address check | host or IP, no port |
 
 - The first app tag that reads `ANTIFRAUD_PARTNER_HOSTS` and `ANTIFRAUD_PARTNER_TOKEN_URLS` is 1.1.0-beta.14, and from it `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` also approves the host. An older app ignores the two new lists and reads only `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS`, as an exemption: it refuses plain http and private addresses outside that list and accepts any public https host.
-- Empty approves nothing: the app boots, and every flow that is on denies when it reads the route.
+- An empty list approves nothing; with no list set, the app boots and every flow that is on denies when it reads the route.
 - What stops the boot: a host entry with a scheme, a path, a space inside the entry, `=`, `*`, userinfo (`@`) or a bad port (`ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` takes no port at all); a token URL that is not http(s), has no host, carries userinfo or has a bad port.
 - A token URL is approved only by `ANTIFRAUD_PARTNER_TOKEN_URLS`, also when its host is on `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS`. A host entry approves the URL host only.
 - A change to a list needs no manual restart: `extraEnvVars` entries land in the ConfigMap, whose content the Deployment's `checksum/config` annotation hashes, so `helm upgrade` rolls the pods. The app reads the lists at boot only.

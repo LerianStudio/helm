@@ -10,12 +10,20 @@ tests:
   - it: renders the keys when set
     set:
       bankTransfer.configmap.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: flowker.flowker.svc.cluster.local
+      bankTransfer.configmap.ANTIFRAUD_PARTNER_HOSTS: partner.example.com
+      bankTransfer.configmap.ANTIFRAUD_PARTNER_TOKEN_URLS: https://idp.example.com/oauth/token
       bankTransfer.configmap.ANTIFRAUD_SECRETS_BACKEND: aws
       bankTransfer.configmap.AUTH_CACHE_TTL: 30s
     asserts:
       - equal:
           path: data.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS
           value: flowker.flowker.svc.cluster.local
+      - equal:
+          path: data.ANTIFRAUD_PARTNER_HOSTS
+          value: partner.example.com
+      - equal:
+          path: data.ANTIFRAUD_PARTNER_TOKEN_URLS
+          value: https://idp.example.com/oauth/token
       - equal:
           path: data.ANTIFRAUD_SECRETS_BACKEND
           value: aws
@@ -27,17 +35,27 @@ tests:
       - notExists:
           path: data.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS
       - notExists:
+          path: data.ANTIFRAUD_PARTNER_HOSTS
+      - notExists:
+          path: data.ANTIFRAUD_PARTNER_TOKEN_URLS
+      - notExists:
           path: data.ANTIFRAUD_SECRETS_BACKEND
       - notExists:
           path: data.AUTH_CACHE_TTL
   - it: treats empty values as unset
     set:
       bankTransfer.configmap.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS: ""
+      bankTransfer.configmap.ANTIFRAUD_PARTNER_HOSTS: ""
+      bankTransfer.configmap.ANTIFRAUD_PARTNER_TOKEN_URLS: ""
       bankTransfer.configmap.ANTIFRAUD_SECRETS_BACKEND: ""
       bankTransfer.configmap.AUTH_CACHE_TTL: ""
     asserts:
       - notExists:
           path: data.ANTIFRAUD_ALLOWED_PRIVATE_HOSTS
+      - notExists:
+          path: data.ANTIFRAUD_PARTNER_HOSTS
+      - notExists:
+          path: data.ANTIFRAUD_PARTNER_TOKEN_URLS
       - notExists:
           path: data.ANTIFRAUD_SECRETS_BACKEND
       - notExists:

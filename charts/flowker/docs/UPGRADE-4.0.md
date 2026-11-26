@@ -34,10 +34,10 @@ The templates are the same as helm-internal `1.5.0`, with these changes:
 
 1. **App `1.7.0`.** `appVersion` and the default `flowker.image.tag` move from `1.7.0-beta.50` to the `1.7.0` stable. The sidecar inherits the same tag. If you pin `flowker.image.tag`, update it.
 2. **`MONGO_URI` from the Secret.** A supplied `flowker.secrets.MONGO_URI` used to be a literal env value in the PodSpec. It is now stored in the chart Secret and read with `secretKeyRef`. With `flowker.useExistingSecret: true` and `flowker.secrets.MONGO_URI` set, the pods read the `MONGO_URI` key **from your existing Secret**. Add that key to the Secret before you upgrade, or the pods fail with `CreateContainerConfigError`.
-3. **Access Manager over `http://`.** With `PLUGIN_AUTH_ENABLED: "true"` and an `http://` `PLUGIN_AUTH_ADDRESS`, the render now fails unless `flowker.xsdValidator.pluginAuth.allowInsecureHttp: "true"` is set. Before, the render passed and the XSD sidecar exited at boot. Set the flag, switch to `https://`, or disable the sidecar.
-4. **`lerian-common`.** The library is now the published `lerian-common-helm` `2.7.0` instead of the internal `lerian-common` `1.2.0`. The helpers flowker uses render the same objects. No values change.
-
-No values were renamed or removed.
+3. **Access Manager over `http://`.** With `PLUGIN_AUTH_ENABLED: "true"` and an `http://` `PLUGIN_AUTH_ADDRESS`, the render now fails unless `flowker.xsdValidator.pluginAuth.allowInsecureHttp: "true"` is set. Before, the render passed and the XSD sidecar exited at boot. Set the flag or switch to `https://`. Do not disable the sidecar to clear the error if you have webhooks bound to an XSD: without the sidecar, those webhooks accept schema-invalid XML and run their workflows.
+4. **`lerian-common` 2.7.0.** The library is now the published `lerian-common-helm` `2.7.0` instead of the internal `lerian-common` `1.2.0`. No values were renamed or removed, but two helpers render differently:
+   - **Multi-tenancy (action required if you use it).** The component keys in `flowker.configmap` now win whenever they are present, even when empty. The chart ships `MULTI_TENANT_URL: ""` and empty `MULTI_TENANT_REDIS_*` keys, so a URL or Redis host set only under `global.multiTenant` no longer reaches the app. With `flowker.multiTenant.enabled: true`, the render fails with `lerian-common: MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true`, and a global Redis host is replaced with an empty one. Before you upgrade, set `flowker.configmap.MULTI_TENANT_URL` and `flowker.configmap.MULTI_TENANT_REDIS_HOST` (plus `MULTI_TENANT_REDIS_PORT` and `MULTI_TENANT_REDIS_TLS` if they differ from the defaults).
+   - **OpenTelemetry.** With `flowker.otel.enabled: true`, the api and worker containers now also get `ALLOW_INSECURE_OTEL` in their env.
 
 ## Coming from the public chart 3.1.x
 

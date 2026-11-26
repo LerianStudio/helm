@@ -42,6 +42,8 @@ global:
 antifraud:
   secretsBackend: ""
   # allowedPrivateHosts: "flowker.flowker.svc.cluster.local"
+  # partnerHosts: "partner.example.com"
+  # partnerTokenUrls: "https://idp.example.com/oauth/token"
 
 # ------------------------------------------------------------
 # spi/api — PIX SPI (single-tenant identity REQUIRED)

@@ -1,5 +1,14 @@
 # Plugin-br-bank-transfer Changelog
 
+## [3.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.4.0)
+
+✨ Features:
+- The bank transfer plugin now renders the antifraud destination lists. (#3341, @fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.3.1...plugin-br-bank-transfer-v3.4.0)
+
+---
+
 ## [3.3.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.3.1)
 
 Features:

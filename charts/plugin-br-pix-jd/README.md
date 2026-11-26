@@ -72,6 +72,7 @@ Set these only when your institution needs them.
 | `api.configmap.IDP_M2M_CLIENT_ID` | only with `IDP_DECLARATION_ENABLED="true"`; may be set in `api.secrets` instead | client ID of the plugin's M2M application in the Access Manager | empty |
 | `api.secrets.IDP_M2M_CLIENT_SECRET` | only with `IDP_DECLARATION_ENABLED="true"` | client secret of that application | empty |
 | `api.serviceAccount.create` / `.name` / `.annotations` | only to give the API an account the worker does not share, so a cloud grant to it does not reach the worker | create flag, existing account name, annotations | off: the API uses the shared account |
+| `api.extraConfigmap` and `worker.extraConfigmap` | only if an antifraud partner is configured. Set the same keys in both, because both processes call the partner: `ANTIFRAUD_SECRETS_BACKEND`, `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS`, `ANTIFRAUD_PARTNER_HOSTS`, `ANTIFRAUD_PARTNER_TOKEN_URLS` | map of env name to value | empty: no antifraud destination is approved |
 
 - **The encryption key** protects the delivery secret of each indirect participant. Create it with `openssl rand -hex 32`. The render fails on a value that is not 64 hex characters. See [Hosting indirect participants](https://docs.lerian.studio/en/interfaces/pix-jd/hosting-indirect-participants).
 - **The signing key and the certificate go together: set both or neither.** With only one, the render fails, because the plugin would refuse every payment order. With neither, the plugin sends unsigned orders, which a JD that does not require the signature accepts.
@@ -79,6 +80,32 @@ Set these only when your institution needs them.
   - `api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE` must be **the same certificate** you registered at JD; JD refuses every order signed against a different one. Compare its SHA-1 fingerprint with the one JD shows: `openssl x509 -in payment-signing.crt -outform DER | shasum -a 1 | tr a-f A-F`.
   - Pass each file with `--set-file`, as the install example shows, or as a YAML block scalar (`|`). A set value without a `-----BEGIN` PEM header, or an algorithm outside the three above, fails the render.
   - To create the pair and register the certificate, see [Payment-order signing](https://docs.lerian.studio/en/interfaces/pix-jd/payment-order-signing).
+
+### Antifraud destinations
+
+The plugin sends a partner credential, a token minted with it, its signature and its headers only to destinations approved here.
+
+| Env | Approves | Entry (comma-separated) |
+| :-- | :------- | :---------------------- |
+| `ANTIFRAUD_PARTNER_HOSTS` | the host of a route's `endpoint` and `feedbackEndpoint` | `host` (a URL without an explicit port) or `host:port` |
+| `ANTIFRAUD_PARTNER_TOKEN_URLS` | a route's `tokenUrl`, by exact match | absolute URL |
+| `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` | the host of a route's `endpoint` and `feedbackEndpoint`, also exempt from https and the private-address check | host or IP |
+
+```yaml
+api:
+  extraConfigmap:
+    ANTIFRAUD_PARTNER_HOSTS: "partner.example.com"
+    ANTIFRAUD_PARTNER_TOKEN_URLS: "https://idp.example.com/oauth/token"
+worker:
+  extraConfigmap:
+    ANTIFRAUD_PARTNER_HOSTS: "partner.example.com"
+    ANTIFRAUD_PARTNER_TOKEN_URLS: "https://idp.example.com/oauth/token"
+```
+
+- Empty approves nothing, and every flow that is on denies. An entry with `=`, `*`, a path or an invalid port stops the boot.
+- Whoever guards the credential store sets them, before the image that reads them. List a host only if every route on it authenticates the caller. A host is never approved because a stored route names it.
+- A route naming an unlisted destination is refused on save (HTTP 400 `validation_error`, naming the field and the host) and denies every call (`INVALID_CONFIG`); outcome reports queued for it are dropped.
+- See [Antifraud partner](https://docs.lerian.studio/en/interfaces/pix-jd/pix-jd-environment-variables#antifraud-partner).
 
 ### Secrets and `existingSecret`
 

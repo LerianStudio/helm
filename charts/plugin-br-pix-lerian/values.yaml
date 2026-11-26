@@ -146,6 +146,12 @@ antifraud:
   # route may target. Sent to spi (checks it on every call) and spiSystemplane
   # (checks it when a route is written) so the two never disagree. Empty renders nothing.
   allowedPrivateHosts: ""
+  # -- ANTIFRAUD_PARTNER_HOSTS: comma-separated hosts (or host:port) a route's endpoint
+  # and feedbackEndpoint may target. Sent to spi and spiSystemplane. Empty approves none.
+  partnerHosts: ""
+  # -- ANTIFRAUD_PARTNER_TOKEN_URLS: comma-separated absolute token URLs, matched exactly.
+  # Sent to spi and spiSystemplane. Empty approves none.
+  partnerTokenUrls: ""
   # -- ANTIFRAUD_SECRETS_BACKEND: "aws" or "vault". Sent to spi only, the one process
   # that reads the credential. Empty renders nothing and every enabled flow denies.
   secretsBackend: ""

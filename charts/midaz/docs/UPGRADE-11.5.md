@@ -79,13 +79,21 @@ At about 390 bytes per row of `transaction`, the defaults split the work into th
 | 2 GiB to 12 GiB | 5.5 to 33 million | The daily CronJob at 06:00, within 24 hours of the upgrade |
 | Above 12 GiB | Above 33 million | You, with the on-demand build CronJob |
 
-Read the size on the transaction database:
+Read the size on the transaction database (in a multi-tenant deployment, on each tenant's transaction database: the runner reconciles each one on its own):
 
 ```sql
 SELECT pg_size_pretty(pg_relation_size('transaction'));
 ```
 
-On the partitioned layout the bound applies to each partition, so read the largest partition instead.
+On the partitioned layout the bound applies to each partition, so read the largest partition instead:
+
+```sql
+SELECT p.relname, pg_size_pretty(pg_relation_size(p.oid))
+FROM pg_inherits i JOIN pg_class p ON p.oid = i.inhrelid
+WHERE i.inhparent = 'transaction'::regclass
+ORDER BY pg_relation_size(p.oid) DESC
+LIMIT 1;
+```
 
 ## Building a large index by hand
 
@@ -126,9 +134,9 @@ Use this when the table is above `ledger.partition.maxBuildBytes`, or when you s
    WHERE r.dropped_at IS NULL;
    ```
 
-   Every row must show `indisvalid = true`. NULL means the index was not built yet; `false` means the next run rebuilds it.
+   Every row must show `indisvalid = true`. NULL means the index was not built yet; `false` means the next run rebuilds it. In a multi-tenant deployment, run it on every tenant's transaction database: the build Job visits them all, and one tenant can still be pending.
 
-6. **Set `ledger.partition.build.enabled` back to `false`** and apply again. The CronJob and its Jobs go away.
+6. **Set `ledger.partition.build.enabled` back to `false`** once every database shows its indexes valid, and apply again. The CronJob and its Jobs go away.
 
 For the tracer, use `tracer.partition.build.enabled` and `cronjob/midaz-tracer-partition-build` against the tracer database.
 
@@ -136,18 +144,43 @@ For the tracer, use `tracer.partition.build.enabled` and `cronjob/midaz-tracer-p
 
 Images before `4.7.0` ignore both variables, so the chart renders with any image tag. On those images a large index still runs into the Job deadline, as before.
 
-For those images, on the unpartitioned layout, have the table owner build the index by hand before the upgrade, with `CREATE INDEX CONCURRENTLY` and the registered name and definition:
+For those images, have the table owner build the index by hand before the upgrade, on each transaction database, with the registered name and definition. First list what is registered and what already exists:
 
 ```sql
-SELECT index_name, table_name, definition
-FROM partition_index_registry
-WHERE dropped_at IS NULL;
+SELECT r.index_name, r.table_name, r.definition, i.indisvalid
+FROM partition_index_registry r
+LEFT JOIN pg_class c ON c.relname = r.index_name AND c.relnamespace = current_schema()::regnamespace
+LEFT JOIN pg_index i ON i.indexrelid = c.oid
+WHERE r.dropped_at IS NULL;
+```
 
--- for each index that does not exist yet:
+On the unpartitioned layout:
+
+```sql
+-- indisvalid = false (left by an interrupted build): drop it first; an older runner
+-- would rebuild it in the hook with no bound, and the upgrade would stop again
+DROP INDEX CONCURRENTLY <index_name>;
+
+-- indisvalid NULL, or after the drop:
 CREATE INDEX CONCURRENTLY <index_name> ON <table_name> <definition>;
 ```
 
-The hook then finds the index, adopts it and sets its fingerprint. PostgreSQL builds no partitioned index concurrently: on the partitioned layout, the owner builds one index per partition instead, under the name the `Partition index build deferred` line gives as `build_index`, and the next run attaches them.
+The hook then finds the index, adopts it and sets its fingerprint.
+
+PostgreSQL builds no partitioned index concurrently, so on the partitioned layout the owner builds one index per partition, under the name the runner gives that partition's index; any other name is never attached. This lists each partition with that name:
+
+```sql
+SELECT p.relname AS partition,
+       left('<index_name>', 50) || '_' ||
+       left(md5(convert_to('<index_name>', 'UTF8') || '\x00'::bytea || convert_to(p.relname, 'UTF8')), 12) AS partition_index
+FROM pg_inherits i JOIN pg_class p ON p.oid = i.inhrelid
+WHERE i.inhparent = '<table_name>'::regclass;
+
+-- for each partition whose index does not exist yet (drop an invalid one first, as above):
+CREATE INDEX CONCURRENTLY <partition_index> ON <partition> <definition>;
+```
+
+The next run attaches them to the parent index.
 
 ## If you raised the hook deadline
 

@@ -357,6 +357,8 @@ Read only by app versions from 1.5.0. The module ships off: with neither `MULTI_
 | `ACCOUNTING_ROUTES_ENABLED` | unset (app default) |
 | `ACCOUNTING_ROUTES_CACHE_TTL_SEC` | unset (app default) |
 | `ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC` | unset (app default) |
+| `ACCOUNTING_ROUTES_SOURCE` | unset (app default) |
+| `SYSTEMPLANE_ENABLED` | unset (app default) |
 
 </details>
 
@@ -497,6 +499,8 @@ The accounting-route resolver attaches a `routeId` to the plugin's Midaz transac
 | `ACCOUNTING_ROUTES_ENABLED` | `false` | Gates the resolver as a whole. |
 | `ACCOUNTING_ROUTES_CACHE_TTL_SEC` | `900` | Per-tenant route inventory cache TTL, in seconds; `<= 0` disables the cache. |
 | `ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC` | `60` | Budget for one full route resolution, in seconds; `<= 0` falls back to the default. |
+| `ACCOUNTING_ROUTES_SOURCE` | `discovery` | Where the routes come from: `discovery` (route markers in Midaz), `shadow` (discovery answers, the tenant policy document is compared and measured) or `systemplane` (the tenant policy document `routing.organizations` answers). Any value other than `discovery` needs `ACCOUNTING_ROUTES_ENABLED` and `SYSTEMPLANE_ENABLED` set to `"true"`, or the pod does not start. |
+| `SYSTEMPLANE_ENABLED` | `false` | Turns on the tenant policy plane: the `/tenant-system` admin API and the `routing.organizations` document. Needs the core migrations `000097` (`systemplane_entries`) and `000098` (`systemplane_history`), which the app applies at startup. |
 | `RECONCILIATION_WEBHOOK_CLAIM_LEASE` | `2h` | How long one replica's claim on a webhook row stays exclusive. |
 
 Turn it on per environment, one deployment at a time, after the per-tenant credentials exist — a tenant whose credential is not provisioned yet is taken down, not degraded, by the first request that reaches the resolver:
@@ -505,6 +509,16 @@ Turn it on per environment, one deployment at a time, after the per-tenant crede
 app:
   configmap:
     ACCOUNTING_ROUTES_ENABLED: "true"
+```
+
+To take the routes from the tenant policy document instead of the Midaz markers, set all three keys. Write each tenant's document before switching the source: an organization the document does not enable posts without routes. The plugin's accounting-routes source cutover runbook has the full sequence, with the export of the discovered routes and the preflight check.
+
+```yaml
+app:
+  configmap:
+    ACCOUNTING_ROUTES_ENABLED: "true"
+    SYSTEMPLANE_ENABLED: "true"
+    ACCOUNTING_ROUTES_SOURCE: "systemplane"
 ```
 
 If you also disable the routes cache (`ACCOUNTING_ROUTES_CACHE_TTL_SEC` `<= 0`), raise `RECONCILIATION_WEBHOOK_CLAIM_LEASE` first, to at least `RECONCILIATION_MAX_MONEY_ITEMS_PER_CYCLE x (65s + ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC)` — `3h30m` at the defaults. The lease is a fencing token's lifetime, not a timeout: shorter than the batch it covers, it lets a second replica take rows the first is still working. The full rollout sequence is the plugin's accounting-routes runbook.

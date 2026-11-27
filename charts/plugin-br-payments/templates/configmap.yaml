@@ -344,6 +344,12 @@ data:
   {{- if hasKey $cm "ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC" }}
   ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC: {{ index $cm "ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC" | quote }}
   {{- end }}
+  {{- if hasKey $cm "ACCOUNTING_ROUTES_SOURCE" }}
+  ACCOUNTING_ROUTES_SOURCE: {{ index $cm "ACCOUNTING_ROUTES_SOURCE" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "SYSTEMPLANE_ENABLED" }}
+  SYSTEMPLANE_ENABLED: {{ index $cm "SYSTEMPLANE_ENABLED" | quote }}
+  {{- end }}
   # ====================================================================
   # RECONCILIATION
   # ====================================================================

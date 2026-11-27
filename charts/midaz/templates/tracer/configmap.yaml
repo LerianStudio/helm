@@ -91,6 +91,12 @@ data:
   # GOMEMLIMIT must track resources.limits.memory (~90%); the image default of
   # 1800MiB assumes a 2Gi container and would let the heap outgrow the cgroup.
   GOMEMLIMIT: {{ $cm.GOMEMLIMIT | default "460MiB" | quote }}
+  {{- /* GOGC 400 runs the collector ~4 times a second instead of ~19 under load:
+     the live heap is small (tens of MB) and GOMEMLIMIT still caps it. A key in
+     tracer.extraEnvVars renders below instead. */}}
+  {{- if not (hasKey (.Values.tracer.extraEnvVars | default dict) "GOGC") }}
+  GOGC: {{ $cm.GOGC | default "400" | quote }}
+  {{- end }}
 
   # RESERVATIONS — background reaper that returns capacity held past a
   # reservation's expiry (the app defaults it on), and the long-lived TTL.

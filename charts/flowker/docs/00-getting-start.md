@@ -38,7 +38,7 @@
 | MongoDB | Sempre | Embutido (`mongodb.enabled: true`, o padrão) ou externo (`mongodb.enabled: false` + `flowker.secrets.MONGO_URI` + `flowker.configmap.MONGO_HOST`) |
 | Redis / Valkey | Sempre: o worker precisa de um Redis de fila, e toda instalação precisa do worker | Embutido (`valkey.enabled: true`) ou externo (`flowker.configmap.REDIS_HOST`, `REDIS_PORT`, `REDIS_TLS`, `flowker.secrets.REDIS_PASSWORD`) |
 | Bucket S3 (Schema Registry) | Para os providers nativos (ledger do Midaz, Tracer, CRM e outros), os uploads de XSD e as rotas de schema OpenAPI. O app sobe sem ele, mas essas funções falham na hora do uso | `flowker.configmap.SCHEMA_REGISTRY_S3_BUCKET` + `SCHEMA_REGISTRY_S3_REGION`. As credenciais AWS vêm da cadeia do SDK: IRSA (`flowker.serviceAccount.annotations` e `worker.serviceAccount.annotations`) ou Roles Anywhere (`aws.rolesAnywhere`) |
-| Chave KMS (selagem de credenciais) | Obrigatória para salvar qualquer provider com segredo (`key`, `token`, `password`, `secret`, `client_secret`), ou seja, quase todo provider com autenticação. O app sobe sem ela | Configurações não secretas (`KMS_VENDOR` e, com AWS KMS, `KMS_AWS_KEY_ID`) por `flowker.extraEnvVars`. Configurações secretas só no Secret existente. Dê acesso à chave às service accounts do api e do worker |
+| Chave KMS (selagem de credenciais) | Obrigatória para salvar qualquer provider com segredo (`key`, `token`, `password`, `secret`, `client_secret`), ou seja, quase todo provider com autenticação. O app sobe sem ela | Configurações não secretas (`KMS_VENDOR` e, com AWS KMS, `KMS_AWS_KEY_ID` e `AWS_REGION`) por `flowker.extraEnvVars`. Configurações secretas só no Secret existente. Dê acesso à chave às service accounts do api e do worker |
 | plugin-access-manager | Obrigatório com `ENV_NAME: "production"`: o Flowker 1.7.0 recusa `PLUGIN_AUTH_ENABLED: "false"` nesse ambiente. Opcional nos outros | `flowker.configmap.PLUGIN_AUTH_ENABLED: "true"` + `flowker.configmap.PLUGIN_AUTH_ADDRESS` (use `https://`) |
 | Tenant manager | Só com multi-tenancy | `flowker.multiTenant.enabled` + `flowker.configmap.MULTI_TENANT_URL` e `MULTI_TENANT_REDIS_*` + `flowker.secrets.MULTI_TENANT_SERVICE_API_KEY`. Defina a URL e as chaves de Redis em `flowker.configmap`: valores só em `global.multiTenant` não chegam ao app no chart 4.0.0 |
 
@@ -100,7 +100,7 @@ flowker:
     DEPLOYMENT_MODE: "byoc"              # o padrão "local" do chart é só para desenvolvimento
     ALLOW_INSECURE_TLS: "false"          # só com MongoDB e Redis com TLS
     PLUGIN_AUTH_ENABLED: "true"          # obrigatório em produção: o app recusa "false"
-    PLUGIN_AUTH_ADDRESS: "https://auth.example.com"   # public HTTPS host (see "Outbound URLs" in section 4)
+    PLUGIN_AUTH_ADDRESS: "https://auth.example.com"   # host HTTPS público (veja "URLs de saída" na seção 4)
     MONGO_HOST: "mongo.example.internal" # host que o init container wait-for-mongodb verifica
     REDIS_HOST: "redis.example.internal"
     REDIS_PORT: "6379"
@@ -113,6 +113,7 @@ flowker:
   extraEnvVars:                          # só valores não secretos: isto vai para o ConfigMap
     KMS_VENDOR: "aws-kms"                # o 1.7.0 aceita só "aws-kms" ou "hashicorp-vault"
     KMS_AWS_KEY_ID: "<id-ou-arn-da-chave-kms>"
+    AWS_REGION: "sa-east-1"              # região da chave KMS; obrigatória com Roles Anywhere
     CRM_BASE_URL: "https://crm.example.com"   # host HTTPS público; sem value próprio no chart 4.0.0
   ingress:
     enabled: true
@@ -154,7 +155,7 @@ Parta do [`values-template.yaml`](../values-template.yaml) para ver todas as cha
 - **Provider CRM.** O app lê `CRM_BASE_URL`, mas o chart 4.0.0 só tem os values `MIDAZ_BASE_URL` e `TRACER_BASE_URL`. Defina o `CRM_BASE_URL` por `flowker.extraEnvVars`, com um host HTTPS público (veja o próximo item).
 - **URLs de saída (proteção contra SSRF).** O Flowker confere toda chamada de saída contra uma proteção de SSRF. Ela bloqueia hostnames `.internal`, `.local` e `.cluster.local` antes do DNS e, com `SSRF_ALLOW_PRIVATE: "false"` (o padrão do chart, e o único valor seguro em produção), também bloqueia nomes que resolvem para IP privado. Isso vale para o `PLUGIN_AUTH_ADDRESS` (a URL do token M2M dos workflows é montada a partir dele), o `CRM_BASE_URL`, o `MIDAZ_BASE_URL`, o `TRACER_BASE_URL` e as URLs base dos providers. Use hosts HTTPS públicos para eles. Um nome de Service interno do cluster faz falhar todo step que o chama, enquanto os health checks e o rollout passam. `MONGO_HOST` e `REDIS_HOST` não são afetados.
 - **Image pull secrets.** As imagens são públicas. `flowker.imagePullSecrets` pode ficar `[]`.
-- **Credenciais de workflow.** O Flowker 1.7.0 guarda as credenciais de provider config e de node auth seladas por KMS no MongoDB e precisa de uma chave de criptografia (`KMS_VENDOR` e as permissões dela). O chart 4.0.0 não tem values próprios de `KMS_*`. Coloque as configurações secretas de KMS (por exemplo o secret ID de um AppRole do Vault) só no Secret existente (`flowker.useExistingSecret: true`). Nunca em `flowker.extraEnvVars`: ele vai para o ConfigMap. O `extraEnvVars` serve para configurações não secretas, como `KMS_VENDOR`. O `FLOWKER_SECRETS_BACKEND` não tem efeito no app 1.7.0. Sem `KMS_VENDOR`, a instalação fica saudável mas recusa guardar qualquer segredo de provider (409 `FLK-0966`). Confirme com o time do Flowker o valor do vendor e as configurações da chave do seu KMS.
+- **Credenciais de workflow.** O Flowker 1.7.0 guarda as credenciais de provider config e de node auth seladas por KMS no MongoDB e precisa de uma chave de criptografia (`KMS_VENDOR` e as permissões dela). O chart 4.0.0 não tem values próprios de `KMS_*`. Coloque as configurações secretas de KMS (por exemplo o secret ID de um AppRole do Vault) só no Secret existente (`flowker.useExistingSecret: true`). Nunca em `flowker.extraEnvVars`: ele vai para o ConfigMap. O `extraEnvVars` serve para configurações não secretas, como `KMS_VENDOR`. O `FLOWKER_SECRETS_BACKEND` não tem efeito no app 1.7.0. Sem `KMS_VENDOR`, a instalação fica saudável mas recusa guardar qualquer segredo de provider (409 `FLK-0966`). O cliente KMS pega a região da cadeia do SDK da AWS, não do `SCHEMA_REGISTRY_S3_REGION`. No EKS com IRSA a região é injetada automaticamente. Com Roles Anywhere (fora do EKS), não: defina `AWS_REGION` com a região da chave em `flowker.extraEnvVars`, ou todo save de provider falha enquanto a instalação parece saudável.
 
 ---
 

@@ -500,7 +500,7 @@ The accounting-route resolver attaches a `routeId` to the plugin's Midaz transac
 | `ACCOUNTING_ROUTES_CACHE_TTL_SEC` | `900` | Per-tenant route inventory cache TTL, in seconds; `<= 0` disables the cache. |
 | `ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC` | `60` | Budget for one full route resolution, in seconds; `<= 0` falls back to the default. |
 | `ACCOUNTING_ROUTES_SOURCE` | `discovery` | Where the routes come from: `discovery` (route markers in Midaz), `shadow` (discovery answers, the tenant policy document is compared and measured) or `systemplane` (the tenant policy document `routing.organizations` answers). Any value other than `discovery` needs `ACCOUNTING_ROUTES_ENABLED` and `SYSTEMPLANE_ENABLED` set to `"true"`, or the pod does not start. |
-| `SYSTEMPLANE_ENABLED` | `false` | Turns on the tenant policy plane: the `/tenant-system` admin API and the `routing.organizations` document. Needs the core migration `000093`, which the app applies at startup. |
+| `SYSTEMPLANE_ENABLED` | `false` | Turns on the tenant policy plane: the `/tenant-system` admin API and the `routing.organizations` document. Needs the core migrations `000097` (`systemplane_entries`) and `000098` (`systemplane_history`), which the app applies at startup. |
 | `RECONCILIATION_WEBHOOK_CLAIM_LEASE` | `2h` | How long one replica's claim on a webhook row stays exclusive. |
 
 Turn it on per environment, one deployment at a time, after the per-tenant credentials exist — a tenant whose credential is not provisioned yet is taken down, not degraded, by the first request that reaches the resolver:

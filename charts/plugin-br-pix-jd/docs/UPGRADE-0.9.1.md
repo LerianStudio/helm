@@ -6,7 +6,9 @@
 - **[Application Version Update](#application-version-update)**
   - [Image Tag Changes](#image-tag-changes)
 - **[Antifraud destinations (breaking in 1.8.0)](#antifraud-destinations-breaking-in-180)**
+- **[New operator routes need permissions](#new-operator-routes-need-permissions)**
 - **[Database migrations](#database-migrations)**
+- **[Mixed versions during the rollout](#mixed-versions-during-the-rollout)**
 - **[Rolling back](#rolling-back)**
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
@@ -106,6 +108,17 @@ worker:
 
 Entry formats and the full rules: [Antifraud destinations](../README.md#antifraud-destinations) in the chart README and [Antifraud partner](https://docs.lerian.studio/en/interfaces/pix-jd/pix-jd-environment-variables#antifraud-partner). Pass your values file to the upgrade (`-f`), or the lists never reach the ConfigMaps.
 
+## New operator routes need permissions
+
+1.8.0 adds two routes that only a person (role `editor` or `operator`) can call:
+
+| Route | Resource | Used for |
+|-------|----------|----------|
+| `POST /v1/manual-reviews/{transactionId}/resolution` | `manual-reviews` / `post` | settle or revert a sent Pix left in `MANUAL_REVIEW`. Manual review is on by default |
+| `POST /v1/med/refunds/{idSolDevolucao}/reserve-resolution` | `med-reserve-resolutions` / `post` | resolve a MED refund whose reserve attempt is unresolved (`409 PIX-0181`) |
+
+With plugin auth on, a route answers `403` until the access manager carries its resource. The app publishes its own manifest only with `api.configmap.IDP_DECLARATION_ENABLED="true"` (default `"false"`). Otherwise, register both resources in the access manager before the upgrade. No Caradhras RBAC migration carries them yet.
+
 ## Database migrations
 
 Application 1.8.0 adds migrations `000080` to `000091`. Who runs them, and when, depends on the install:
@@ -124,9 +137,26 @@ Follow the Job while it runs (with the `hook-succeeded` delete policy, it is gon
 kubectl -n midaz-plugins logs -f job/plugin-br-pix-jd-migrations
 ```
 
+## Mixed versions during the rollout
+
+`helm upgrade` changes the api and worker tags together, so for a few minutes 1.7.0 and 1.8.0 pods serve the same database.
+
+- Keep `antifraud.intra_out.review_window_minutes` at `0` (the value migration `000081` seeds) until every api and worker pod runs 1.8.0. A 1.7.0 worker that finds a cross-ledger internal transfer held in `FRAUD_ANALYSIS` marks it `ERROR` and does not release its reserve on the payer's ledger. The reserve stays until someone cancels it in Midaz.
+- Turn on `antifraud.holds_paused`, `antifraud.in.cautelar_enabled` and `antifraud.intra_in.cautelar_enabled` only after every pod runs 1.8.0. 1.7.0 pods do not read these keys.
+- Antifraud feedback that a 1.7.0 pod ends after the migrations Job ran is not in the `000086` copy, and 1.8.0 does not send it. The feedback is advisory. To send it, run the SQL of `000086_backfill_antifraud_feedback_outbox.up.sql` again within 24 h of the rollout: it skips events already queued.
+
 ## Rolling back
 
 The chart runs `migrate up` only. It never runs the `down` files.
+
+> **Warning:** 1.7.0 has no code for the states 1.8.0 creates. Before you roll back, set `antifraud.intra_out.review_window_minutes` to `0` and the two `cautelar_enabled` keys to `false`. Then wait until every tenant database has no row in these states:
+>
+> - cautelar block alive (`cautelar_status` in `AWAITING`, `UNBATCHED`, `BLOCKED`, `RETURNING`). Under 1.7.0, the Midaz hold stays past `cautelar_expires_at`, and the holder's funds stay unavailable.
+> - internal transfer in `FRAUD_ANALYSIS`. A 1.7.0 worker marks it `ERROR` and keeps the payer's reserve.
+> - sent Pix in `MANUAL_REVIEW`. 1.7.0 has no route to resolve it.
+> - MED refund with an unresolved reserve attempt (`eff_status = 0` and `eff_status_at` set). A 1.7.0 retry reserves again.
+>
+> Decide or cancel open analyses and blocks, or call `POST /v1/fraud-analyses/expire-due` after their deadlines. Resolve manual reviews and reserve attempts through their routes.
 
 - `helm rollback` to the 0.9.0 revision does not run the migrations Job (the Job has no rollback hook). 1.7.0 then runs on the 1.8.0 schema, and it ignores `ANTIFRAUD_PARTNER_HOSTS` and `ANTIFRAUD_PARTNER_TOKEN_URLS`: a route can again reach any public https host.
 - `helm upgrade --version 0.9.0` (or an Argo CD sync to 0.9.0) runs the 1.7.0 migrations Job, which fails with `no migration found for version 91`, and the upgrade fails.

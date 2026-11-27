@@ -328,6 +328,10 @@ ledger:
     timeZone: ""
     # -- Hard timeout for one run, in seconds
     activeDeadlineSeconds: 1800
+    # -- Largest relation, in bytes, whose index build the scheduled run starts (12 GiB); 0 sets no limit
+    maxBuildBytes: 12884901888
+    # -- Seconds from the start of the scheduled run during which it starts index builds; 0 sets no window
+    buildWindowSeconds: 600
     reconcile:
       # -- Run reconcile-indexes after migration as a Sync/upgrade hook. Empty
       # registries, unpartitioned tables and older schemas exit 0 without blocking sync.
@@ -340,6 +344,17 @@ ledger:
       activeDeadlineSeconds: 1800
       # -- How long a reconcile Job that stays after finishing, a failed one,
       # is kept for inspection; a successful hook Job is deleted at once
+      ttlSecondsAfterFinished: 259200
+      # -- Largest relation, in bytes, whose index build the reconcile hook starts (2 GiB); 0 sets no limit
+      maxBuildBytes: 2147483648
+      # -- Seconds from the start of the reconcile hook during which it starts index builds; 0 sets no window
+      buildWindowSeconds: 60
+    build:
+      # -- Render a suspended CronJob that runs reconcile-indexes with no build bounds
+      enabled: false
+      # -- Hard timeout for the on-demand build, in seconds; empty sets none
+      activeDeadlineSeconds:
+      # -- How long a finished on-demand build Job is kept for inspection
       ttlSecondsAfterFinished: 259200
     resources:
       # -- CPU and memory limits for the partition runner
@@ -867,6 +882,10 @@ tracer:
     timeZone: ""
     # -- Hard timeout for one run, in seconds
     activeDeadlineSeconds: 1800
+    # -- Largest relation, in bytes, whose index build the scheduled run starts (12 GiB); 0 sets no limit
+    maxBuildBytes: 12884901888
+    # -- Seconds from the start of the scheduled run during which it starts index builds; 0 sets no window
+    buildWindowSeconds: 600
     reconcile:
       # -- Run reconcile-indexes after migration as a Sync hook (post-install/post-upgrade on plain Helm). Empty
       # registries, unpartitioned tables and older schemas exit 0; a startup error
@@ -880,6 +899,17 @@ tracer:
       activeDeadlineSeconds: 1800
       # -- How long a reconcile Job that stays after finishing, a failed one,
       # is kept for inspection; a successful hook Job is deleted at once
+      ttlSecondsAfterFinished: 259200
+      # -- Largest relation, in bytes, whose index build the reconcile hook starts (2 GiB); 0 sets no limit
+      maxBuildBytes: 2147483648
+      # -- Seconds from the start of the reconcile hook during which it starts index builds; 0 sets no window
+      buildWindowSeconds: 60
+    build:
+      # -- Render a suspended CronJob that runs reconcile-indexes with no build bounds
+      enabled: false
+      # -- Hard timeout for the on-demand build, in seconds; empty sets none
+      activeDeadlineSeconds:
+      # -- How long a finished on-demand build Job is kept for inspection
       ttlSecondsAfterFinished: 259200
     resources:
       # -- CPU and memory limits for the partition runner

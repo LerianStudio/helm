@@ -30,14 +30,36 @@ true
 {{- end -}}
 
 {{/* A CronJob name is capped at 52 characters (the controller appends an 11-character suffix to each Job it spawns). */}}
-{{- define "midaz.partitionCronJobName" -}}
+{{- define "midaz.partitionCronJobNameWithSuffix" -}}
 {{- $full := include (printf "midaz-%s.fullname" .product) .context -}}
-{{- if or (eq .product "ledger") (le (len $full) 42) -}}
-{{- printf "%s-partition" ($full | trunc 42 | trimSuffix "-") -}}
+{{- $room := sub 51 (len .suffix) | int -}}
+{{- if or (eq .product "ledger") (le (len $full) $room) -}}
+{{- printf "%s-%s" ($full | trunc $room | trimSuffix "-") .suffix -}}
 {{- else -}}
 {{- /* Truncation drops the "-tracer" tail: a hash of the whole name keeps it apart from the ledger's. */ -}}
-{{- printf "%s-%s-partition" ($full | trunc 33 | trimSuffix "-") (sha256sum $full | trunc 8) -}}
+{{- printf "%s-%s-%s" ($full | trunc (sub $room 9 | int) | trimSuffix "-") (sha256sum $full | trunc 8) .suffix -}}
 {{- end -}}
+{{- end -}}
+
+{{- define "midaz.partitionCronJobName" -}}
+{{- include "midaz.partitionCronJobNameWithSuffix" (dict "context" .context "product" .product "suffix" "partition") -}}
+{{- end -}}
+
+{{- define "midaz.partitionBuildCronJobName" -}}
+{{- include "midaz.partitionCronJobNameWithSuffix" (dict "context" .context "product" .product "suffix" "partition-build") -}}
+{{- end -}}
+
+{{/* One index build bound as a quoted integer. */}}
+{{- define "midaz.partitionBuildBound" -}}
+{{- $v := .value -}}
+{{- $kind := kindOf $v -}}
+{{- if not (has $kind (list "int" "int64" "float64")) -}}
+{{- fail (printf "midaz: %s must be a non-negative integer (0 means no bound), got %v" .path $v) -}}
+{{- end -}}
+{{- if or (lt (float64 $v) 0.0) (ne (float64 $v) (floor $v)) -}}
+{{- fail (printf "midaz: %s must be a non-negative integer (0 means no bound), got %v" .path $v) -}}
+{{- end -}}
+{{- int64 $v | toString | quote -}}
 {{- end -}}
 
 {{/* Include the image tag in the immutable reconcile Job name. */}}
@@ -87,7 +109,51 @@ spec:
           labels:
             {{- include $podLabelsFn $labels | nindent 12 }}
         spec:
-          {{- include "midaz.partitionPodSpec" (dict "context" $ctx "product" .product "args" (list "ensure" "--reconcile-indexes")) | nindent 10 }}
+          {{- include "midaz.partitionPodSpec" (dict "context" $ctx "product" .product "args" (list "ensure" "--reconcile-indexes") "maxBuildBytes" (dig "maxBuildBytes" 12884901888 $partition) "buildWindowSeconds" (dig "buildWindowSeconds" 600 $partition) "boundsPath" (printf "%s.partition" .product)) | nindent 10 }}
+{{- end -}}
+
+{{/* Suspended: an operator starts it with kubectl create job --from=cronjob/<name>. */}}
+{{- define "midaz.partitionBuildCronJob" -}}
+{{- $ctx := .context -}}
+{{- $partition := (index $ctx.Values .product).partition | default dict -}}
+{{- $build := dig "build" dict $partition -}}
+{{- $component := printf "%s-partition-build" (index $ctx.Values .product).name -}}
+{{- $labels := dict "context" $ctx "component" $component "name" $component "fit" true }}
+{{- $labelsFn := ternary "midaz.labels" "midaz-tracer.labels" (eq .product "ledger") }}
+{{- $podLabelsFn := ternary "midaz.podLabels" "midaz-tracer.podLabels" (eq .product "ledger") }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "midaz.partitionBuildCronJobName" . }}
+  labels:
+    {{- include $labelsFn $labels | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ include "midaz.partitionLastWave" . | quote }}
+spec:
+  suspend: true
+  schedule: {{ $partition.schedule | default "0 6 * * *" | quote }}
+  {{- with $partition.timeZone }}
+  timeZone: {{ . | quote }}
+  {{- end }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    metadata:
+      labels:
+        {{- include $labelsFn $labels | nindent 8 }}
+    spec:
+      backoffLimit: 0
+      {{- with dig "activeDeadlineSeconds" nil $build }}
+      activeDeadlineSeconds: {{ . | int64 }}
+      {{- end }}
+      ttlSecondsAfterFinished: {{ dig "ttlSecondsAfterFinished" 259200 $build | int64 }}
+      template:
+        metadata:
+          labels:
+            {{- include $podLabelsFn $labels | nindent 12 }}
+        spec:
+          {{- include "midaz.partitionPodSpec" (dict "context" $ctx "product" .product "args" (list "reconcile-indexes") "maxBuildBytes" 0 "buildWindowSeconds" 0 "boundsPath" (printf "%s.partition.build" .product)) | nindent 10 }}
 {{- end -}}
 
 {{/* Run after migrations; the daily pass retries unavailable databases or indexes. */}}
@@ -142,12 +208,17 @@ spec:
       labels:
         {{- include $podLabelsFn $labels | nindent 8 }}
     spec:
-      {{- include "midaz.partitionPodSpec" (dict "context" $ctx "product" .product "args" (list "reconcile-indexes" "--tolerate-unavailable") "licenseHook" $hookSecret) | nindent 6 }}
+      {{- include "midaz.partitionPodSpec" (dict "context" $ctx "product" .product "args" (list "reconcile-indexes" "--tolerate-unavailable") "licenseHook" $hookSecret "maxBuildBytes" (dig "maxBuildBytes" 2147483648 $reconcile) "buildWindowSeconds" (dig "buildWindowSeconds" 60 $reconcile) "boundsPath" (printf "%s.partition.reconcile" .product)) | nindent 6 }}
 {{- end -}}
 
-{{/* Both partition workloads use the product's connections and migration credentials. */}}
+{{/* Every partition workload uses the product's connections and migration credentials. */}}
 {{- define "midaz.partitionPodSpec" -}}
 {{- $ctx := .context -}}
+{{- if or (not (hasKey . "maxBuildBytes")) (not (hasKey . "buildWindowSeconds")) -}}
+{{- fail "midaz.partitionPodSpec: the caller must pass maxBuildBytes and buildWindowSeconds" -}}
+{{- end -}}
+{{- $maxBuildBytes := include "midaz.partitionBuildBound" (dict "value" .maxBuildBytes "path" (printf "%s.maxBuildBytes" .boundsPath)) -}}
+{{- $buildWindowSeconds := include "midaz.partitionBuildBound" (dict "value" .buildWindowSeconds "path" (printf "%s.buildWindowSeconds" .boundsPath)) -}}
 {{- $p := index $ctx.Values .product -}}
 {{- $partition := $p.partition | default dict -}}
 {{- $secretName := ternary $p.existingSecretName (include (printf "midaz-%s.fullname" .product) $ctx) $p.useExistingSecret -}}
@@ -193,6 +264,10 @@ containers:
       {{- with include (printf "midaz-%s.partitionSecretEnv" .product) (dict "context" $ctx "secretName" $secretName) }}
       {{- . | nindent 6 }}
       {{- end }}
+      - name: PARTITION_INDEX_BUILD_MAX_BYTES
+        value: {{ $maxBuildBytes }}
+      - name: PARTITION_INDEX_BUILD_WINDOW_SECONDS
+        value: {{ $buildWindowSeconds }}
     {{- with include "midaz.licenseFileVolumeMount" $p }}
     volumeMounts:
       {{- . | nindent 6 }}

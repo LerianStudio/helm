@@ -5,13 +5,15 @@
 - **[Overview](#overview)**
 - **[Application Version Update](#application-version-update)**
   - [Image Tag Changes](#image-tag-changes)
-- **[Migration Steps](#migration-steps)**
+- **[Antifraud destinations (breaking in 1.8.0)](#antifraud-destinations-breaking-in-180)**
+- **[Database migrations](#database-migrations)**
+- **[Rolling back](#rolling-back)**
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
 
 ## Overview
 
-This is a **patch release** that updates the application version from 1.7.0 to 1.8.0. The chart version increments from 0.9.0 to 0.9.1 with no changes to chart templates, configuration structure, or default values beyond the image tags.
+The chart is a **patch release** (0.9.0 to 0.9.1): it changes no templates, configuration structure or default values beyond the image tags. The application it ships is a **minor release with a breaking change** (1.7.0 to 1.8.0): antifraud partner destinations must now be approved, or routed antifraud flows deny every call. Read [Antifraud destinations](#antifraud-destinations-breaking-in-180) before you upgrade.
 
 | Setting | v0.9.0 | v0.9.1 |
 |---------|--------|--------|
@@ -75,25 +77,65 @@ migrations:
 
 > **Important:** The migrations image version must match the application version. The chart maintains this alignment by default, but if you override `api.image.tag` without updating `migrations.image.tag`, the migration Job may apply an incompatible schema version.
 
-## Migration Steps
+## Antifraud destinations (breaking in 1.8.0)
 
-**No configuration changes required.** This upgrade only updates container image tags and can be applied directly to existing installations.
+Application 1.8.0 sends an antifraud partner's credential, token, signature and headers only to destinations the installation approved. The three lists are empty by default, and an empty list approves nothing.
 
-The upgrade process will:
+**Who is affected:**
 
-1. Run the migrations Job with the `1.8.0` schema (if `migrations.enabled=true`)
-2. Roll out the API Deployment with the `1.8.0` image
-3. Roll out the worker Deployment with the `1.8.0` image (if `worker.enabled=true`)
+- An installation where any tenant stores an antifraud route with an endpoint (`antifraud.<flow>.route`, namespace `tenant_policy`; flows `in`, `out`, `intra_out`, `intra_in`). With empty lists, saving that route returns HTTP 400 `validation_error`, and a flow that is on denies every call with cause `INVALID_CONFIG`.
+- An installation with an `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` entry that holds `=` or `*`. 1.7.0 accepted it; the 1.8.0 api and worker refuse to boot.
+- Not affected: every route is `{}` (the default) and no private-host entry holds `=` or `*`.
 
-> **Note:** If you are using the bundled PostgreSQL subchart (`postgresql.enabled=true`), the migrations Job runs as a `post-upgrade` hook and will complete after the API begins rolling out. Monitor the Job to ensure schema changes land successfully:
-> ```bash
-> kubectl -n midaz-plugins logs job/plugin-br-pix-jd-migrations
-> ```
+**Before you upgrade:**
+
+1. In each tenant, find the routed flows: `GET /system/tenant_policy/antifraud.<flow>.enabled` and `GET /system/tenant_policy/antifraud.<flow>.route`.
+2. Remove every `ANTIFRAUD_ALLOWED_PRIVATE_HOSTS` entry that holds `=` or `*`.
+3. Approve each partner destination under `api.extraConfigmap` and `worker.extraConfigmap`, with the same values in both: both processes call the partner. The chart has no dedicated keys. 1.7.0 does not read `ANTIFRAUD_PARTNER_HOSTS` or `ANTIFRAUD_PARTNER_TOKEN_URLS`, so you can set them before the upgrade.
+
+```yaml
+api:
+  extraConfigmap:
+    ANTIFRAUD_PARTNER_HOSTS: "partner.example.com"
+    ANTIFRAUD_PARTNER_TOKEN_URLS: "https://idp.example.com/oauth/token"
+worker:
+  extraConfigmap:
+    ANTIFRAUD_PARTNER_HOSTS: "partner.example.com"
+    ANTIFRAUD_PARTNER_TOKEN_URLS: "https://idp.example.com/oauth/token"
+```
+
+Entry formats and the full rules: [Antifraud destinations](../README.md#antifraud-destinations) in the chart README and [Antifraud partner](https://docs.lerian.studio/en/interfaces/pix-jd/pix-jd-environment-variables#antifraud-partner). Pass your values file to the upgrade (`-f`), or the lists never reach the ConfigMaps.
+
+## Database migrations
+
+Application 1.8.0 adds migrations `000080` to `000091`. Who runs them, and when, depends on the install:
+
+| Install | Runs the migrations | When |
+|---------|---------------------|------|
+| External PostgreSQL (default) | Job `plugin-br-pix-jd-migrations`, `pre-upgrade` hook | before the api and worker roll out |
+| Bundled PostgreSQL (`postgresql.enabled=true`) | the same Job, `post-upgrade` hook | after the api rolls out. The 1.8.0 api returns errors on PIX routes until the Job finishes (issue #2605) |
+| Multi-tenant (`MULTI_TENANT_ENABLED=true`) | the Tenant Manager, in each tenant database | the chart renders no Job |
+
+> **Warning (large tables):** `000080` and `000082` add a `CHECK` constraint to `transaction`, and `000090` adds columns with a `CHECK` to `med_refund_request`. PostgreSQL checks every row while it holds an `ACCESS EXCLUSIVE` lock, so reads and writes on that table wait. `000083` and `000088` also build indexes on `transaction`, and `000086` copies pending feedback into a new table. The Job stops at `migrations.activeDeadlineSeconds` (default `600`). A Job stopped in the middle of a file leaves `schema_migrations` dirty, and every later run refuses until an operator runs `migrate force`. On a large `transaction` table, upgrade off-peak, raise `migrations.activeDeadlineSeconds`, and keep `--timeout` above it. The duration was not measured.
+
+Follow the Job while it runs (with the `hook-succeeded` delete policy, it is gone once it succeeds):
+
+```bash
+kubectl -n midaz-plugins logs -f job/plugin-br-pix-jd-migrations
+```
+
+## Rolling back
+
+The chart runs `migrate up` only. It never runs the `down` files.
+
+- `helm rollback` to the 0.9.0 revision does not run the migrations Job (the Job has no rollback hook). 1.7.0 then runs on the 1.8.0 schema, and it ignores `ANTIFRAUD_PARTNER_HOSTS` and `ANTIFRAUD_PARTNER_TOKEN_URLS`: a route can again reach any public https host.
+- `helm upgrade --version 0.9.0` (or an Argo CD sync to 0.9.0) runs the 1.7.0 migrations Job, which fails with `no migration found for version 91`, and the upgrade fails.
+- Do not run the `down` files by hand after you used manual review or the cautelar block. The down of `000080` clears `pending_reason = 'MANUAL_REVIEW'` and drops `manual_review`; the down of `000082` drops the `cautelar_*` columns.
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-br-pix-jd oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm -n midaz-plugins --version 0.9.1
+helm diff upgrade plugin-br-pix-jd oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm -n midaz-plugins --version 0.9.1 -f <your-values>.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -101,5 +143,7 @@ helm diff upgrade plugin-br-pix-jd oci://ghcr.io/lerianstudio/plugin-br-pix-jd-h
 ## Command to upgrade
 
 ```bash
-helm upgrade plugin-br-pix-jd oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm -n midaz-plugins --version 0.9.1
+helm upgrade plugin-br-pix-jd oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm -n midaz-plugins --version 0.9.1 -f <your-values>.yaml --timeout 15m
 ```
+
+> **Note:** Without `-f`, Helm reuses the stored values, so the antifraud lists and any tag-pin change above never land. With `-f`, Helm drops the stored values: repeat every `--set` and `--set-file` you used at install (signing key, certificate). Keep `--timeout` above `migrations.activeDeadlineSeconds`; the default `5m` is shorter than the Job's `600` seconds.

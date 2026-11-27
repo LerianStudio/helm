@@ -1,5 +1,14 @@
 # Reporter Changelog
 
+## [5.4.7](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.4.7)
+
+🧰 Maintenance:
+- Updated the Helm chart components to `reporter-manager@4.13.0` and `reporter-worker@4.13.0`. (#3358, @lerian-studio-midaz-push-bot)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.4.6...reporter-v5.4.7)
+
+---
+
 ## [5.4.6](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.4.6)
 
 🧰 Maintenance:

@@ -106,25 +106,16 @@ The 4.5.0 migrations register `idx_transaction_organization_ledger_id_live` on t
 - Helm waits for each hook Job up to `--timeout`, 5 minutes by default. If the Job still runs at that point, `helm upgrade` fails. The migrations are already applied and the pods are still on 4.4.3.
 - Kubernetes stops the Job after `activeDeadlineSeconds` (1800 s). An interrupted build leaves an invalid index, which the next pass rebuilds with `REINDEX INDEX CONCURRENTLY`.
 
-The build time on a large table was not measured. If your `transaction` table is large, choose one option and add its block to `values-11.2.yaml`:
+The build time on a large table was not measured. If your `transaction` table is large, set `--timeout` above the Job deadline, for example `--timeout 35m`. Raise the deadline if needed, and raise `--timeout` with it. Add the block to `values-11.2.yaml`:
 
-- Set `--timeout` above the Job deadline, for example `--timeout 35m`. Raise the deadline if needed, and raise `--timeout` with it:
+```yaml
+ledger:
+  partition:
+    reconcile:
+      activeDeadlineSeconds: 7200
+```
 
-  ```yaml
-  ledger:
-    partition:
-      reconcile:
-        activeDeadlineSeconds: 7200
-  ```
-
-- Skip the hook and let the daily CronJob build the index. The CronJob runs `ensure --reconcile-indexes` at 06:00, with the 1800 s limit of `ledger.partition.activeDeadlineSeconds`:
-
-  ```yaml
-  ledger:
-    partition:
-      reconcile:
-        enabled: false
-  ```
+Do not skip the hook to leave the build to the daily CronJob: the CronJob has its own 1800 s deadline, so on a large table it starts the same build every day and is stopped again. Chart 11.5.0, with ledger image 4.7.0 or later, bounds the builds of the hook and the CronJob and adds an on-demand build for a large table; see the [11.5 guide](UPGRADE-11.5.md#which-run-builds-your-index).
 
 `ledger.partition.timeZone` pins the CronJob schedule to a zone. Empty uses the zone of the kube-controller-manager, UTC on most managed clusters. `ledger.partition.enabled: false` removes both the CronJob and the hook.
 

@@ -309,6 +309,18 @@
               "default": 1800,
               "description": "Hard timeout for one run, in seconds"
             },
+            "maxBuildBytes": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 12884901888,
+              "description": "Largest relation, in bytes, whose index build the scheduled run starts; 0 sets no limit"
+            },
+            "buildWindowSeconds": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 600,
+              "description": "Seconds from the start of the scheduled run during which it starts index builds; 0 sets no window"
+            },
             "reconcile": {
               "type": "object",
               "properties": {
@@ -336,6 +348,44 @@
                   "minimum": 0,
                   "default": 259200,
                   "description": "How long the finished reconcile Job is kept for inspection"
+                },
+                "maxBuildBytes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 2147483648,
+                  "description": "Largest relation, in bytes, whose index build the reconcile hook starts; 0 sets no limit"
+                },
+                "buildWindowSeconds": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 60,
+                  "description": "Seconds from the start of the reconcile hook during which it starts index builds; 0 sets no window"
+                }
+              },
+              "additionalProperties": true
+            },
+            "build": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Render the suspended on-demand index build CronJob"
+                },
+                "activeDeadlineSeconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "default": null,
+                  "description": "Hard timeout for the on-demand build, in seconds; empty sets no deadline"
+                },
+                "ttlSecondsAfterFinished": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 259200,
+                  "description": "How long a finished on-demand build Job is kept for inspection"
                 }
               },
               "additionalProperties": true
@@ -1790,6 +1840,18 @@
               "default": 1800,
               "description": "Hard timeout for one run, in seconds"
             },
+            "maxBuildBytes": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 12884901888,
+              "description": "Largest relation, in bytes, whose index build the scheduled run starts; 0 sets no limit"
+            },
+            "buildWindowSeconds": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 600,
+              "description": "Seconds from the start of the scheduled run during which it starts index builds; 0 sets no window"
+            },
             "reconcile": {
               "type": "object",
               "properties": {
@@ -1817,6 +1879,44 @@
                   "minimum": 0,
                   "default": 259200,
                   "description": "How long the finished reconcile Job is kept for inspection"
+                },
+                "maxBuildBytes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 2147483648,
+                  "description": "Largest relation, in bytes, whose index build the reconcile hook starts; 0 sets no limit"
+                },
+                "buildWindowSeconds": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 60,
+                  "description": "Seconds from the start of the reconcile hook during which it starts index builds; 0 sets no window"
+                }
+              },
+              "additionalProperties": true
+            },
+            "build": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Render the suspended on-demand index build CronJob"
+                },
+                "activeDeadlineSeconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "default": null,
+                  "description": "Hard timeout for the on-demand build, in seconds; empty sets no deadline"
+                },
+                "ttlSecondsAfterFinished": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 259200,
+                  "description": "How long a finished on-demand build Job is kept for inspection"
                 }
               },
               "additionalProperties": true

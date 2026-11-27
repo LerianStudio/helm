@@ -328,6 +328,15 @@ ledger:
     timeZone: ""
     # -- Hard timeout for one run, in seconds
     activeDeadlineSeconds: 1800
+    # -- Largest relation, in bytes (the table, or one partition), whose index
+    # build the scheduled run starts (PARTITION_INDEX_BUILD_MAX_BYTES, read by
+    # images 4.7.0 and later); a larger one is deferred (`build_deferred`) and the
+    # run exits 1 until the index exists. 0 sets no limit. Default 12 GiB.
+    maxBuildBytes: 12884901888
+    # -- Seconds from the start of the scheduled run during which it starts index
+    # builds (PARTITION_INDEX_BUILD_WINDOW_SECONDS, images 4.7.0 and later); a
+    # build due later is deferred. 0 sets no window.
+    buildWindowSeconds: 600
     reconcile:
       # -- Run reconcile-indexes after migration as a Sync/upgrade hook. Empty
       # registries, unpartitioned tables and older schemas exit 0 without blocking sync.
@@ -340,6 +349,24 @@ ledger:
       activeDeadlineSeconds: 1800
       # -- How long a reconcile Job that stays after finishing, a failed one,
       # is kept for inspection; a successful hook Job is deleted at once
+      ttlSecondsAfterFinished: 259200
+      # -- Largest relation, in bytes (the table, or one partition), whose index
+      # build the reconcile hook starts (images 4.7.0 and later); a larger one
+      # stays pending (`build_deferred`) and the hook still exits 0. 0 sets no
+      # limit. Default 2 GiB. Raise it together with `activeDeadlineSeconds`.
+      maxBuildBytes: 2147483648
+      # -- Seconds from the start of the reconcile hook during which it starts
+      # index builds (images 4.7.0 and later). 0 sets no window.
+      buildWindowSeconds: 60
+    build:
+      # -- Render a suspended CronJob (`<fullname>-partition-build`) that runs
+      # `reconcile-indexes` with no build bounds, for an index the bounded runs
+      # deferred. It never runs by itself: start it with
+      # `kubectl create job --from=cronjob/<name> <job-name>`.
+      enabled: false
+      # -- Hard timeout for the on-demand build, in seconds. Empty sets no deadline.
+      activeDeadlineSeconds:
+      # -- How long a finished on-demand build Job is kept for inspection
       ttlSecondsAfterFinished: 259200
     resources:
       # -- CPU and memory limits for the partition runner
@@ -867,6 +894,15 @@ tracer:
     timeZone: ""
     # -- Hard timeout for one run, in seconds
     activeDeadlineSeconds: 1800
+    # -- Largest relation, in bytes (the table, or one partition), whose index
+    # build the scheduled run starts (PARTITION_INDEX_BUILD_MAX_BYTES, read by
+    # images 4.7.0 and later); a larger one is deferred (`build_deferred`) and the
+    # run exits 1 until the index exists. 0 sets no limit. Default 12 GiB.
+    maxBuildBytes: 12884901888
+    # -- Seconds from the start of the scheduled run during which it starts index
+    # builds (PARTITION_INDEX_BUILD_WINDOW_SECONDS, images 4.7.0 and later); a
+    # build due later is deferred. 0 sets no window.
+    buildWindowSeconds: 600
     reconcile:
       # -- Run reconcile-indexes after migration as a Sync hook (post-install/post-upgrade on plain Helm). Empty
       # registries, unpartitioned tables and older schemas exit 0; a startup error
@@ -880,6 +916,24 @@ tracer:
       activeDeadlineSeconds: 1800
       # -- How long a reconcile Job that stays after finishing, a failed one,
       # is kept for inspection; a successful hook Job is deleted at once
+      ttlSecondsAfterFinished: 259200
+      # -- Largest relation, in bytes (the table, or one partition), whose index
+      # build the reconcile hook starts (images 4.7.0 and later); a larger one
+      # stays pending (`build_deferred`) and the hook still exits 0. 0 sets no
+      # limit. Default 2 GiB. Raise it together with `activeDeadlineSeconds`.
+      maxBuildBytes: 2147483648
+      # -- Seconds from the start of the reconcile hook during which it starts
+      # index builds (images 4.7.0 and later). 0 sets no window.
+      buildWindowSeconds: 60
+    build:
+      # -- Render a suspended CronJob (`<fullname>-partition-build`) that runs
+      # `reconcile-indexes` with no build bounds, for an index the bounded runs
+      # deferred. It never runs by itself: start it with
+      # `kubectl create job --from=cronjob/<name> <job-name>`.
+      enabled: false
+      # -- Hard timeout for the on-demand build, in seconds. Empty sets no deadline.
+      activeDeadlineSeconds:
+      # -- How long a finished on-demand build Job is kept for inspection
       ttlSecondsAfterFinished: 259200
     resources:
       # -- CPU and memory limits for the partition runner

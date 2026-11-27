@@ -1,0 +1,3 @@
+{{- if and .Values.ledger.enabled (include "midaz.partitionEnabled" (dict "context" . "product" "ledger")) (eq (toString (dig "partition" "build" "enabled" false .Values.ledger)) "true") }}
+{{ include "midaz.partitionBuildCronJob" (dict "context" . "product" "ledger") | trim }}
+{{- end }}

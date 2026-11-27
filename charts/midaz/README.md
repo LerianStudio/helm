@@ -310,6 +310,13 @@ Midaz deploys the following core services:
 | `ledger.partition.reconcile.syncWave` | Argo CD sync wave of the reconcile Job (plain Helm orders it with hook weight `10`). | `"1"` |
 | `ledger.partition.reconcile.activeDeadlineSeconds` | Hard timeout for the reconcile Job, in seconds. | `1800` |
 | `ledger.partition.reconcile.ttlSecondsAfterFinished` | How long a failed reconcile Job is kept for inspection; a successful hook Job is deleted at once. | `259200` |
+| `ledger.partition.maxBuildBytes` | Largest relation, in bytes (the table, or one partition), whose index build the `ensure` CronJob starts (`PARTITION_INDEX_BUILD_MAX_BYTES`, images 4.7.0 and later); a larger one is deferred and the run exits 1 until the index exists. `0` sets no limit. | `12884901888` |
+| `ledger.partition.buildWindowSeconds` | Seconds from the start of the `ensure` run during which it starts index builds (`PARTITION_INDEX_BUILD_WINDOW_SECONDS`). `0` sets no window. | `600` |
+| `ledger.partition.reconcile.maxBuildBytes` | Same bound for the reconcile hook, which still exits 0 on a deferred build. Raise it with `reconcile.activeDeadlineSeconds` to keep building a larger table in the hook. | `2147483648` |
+| `ledger.partition.reconcile.buildWindowSeconds` | Same window for the reconcile hook. | `60` |
+| `ledger.partition.build.enabled` | Render the suspended `<fullname>-partition-build` CronJob, which runs `reconcile-indexes` with no bounds; start it with `kubectl create job --from=cronjob/<name>` (see [docs/UPGRADE-11.5.md](docs/UPGRADE-11.5.md)). | `false` |
+| `ledger.partition.build.activeDeadlineSeconds` | Hard timeout for the on-demand build, in seconds; empty sets none. | empty |
+| `ledger.partition.build.ttlSecondsAfterFinished` | How long a finished on-demand build Job is kept. | `259200` |
 | `ledger.partition.resources.*` | CPU/Memory requests/limits of the partition runner pods. | See `values.yaml` |
 
 #### Partition Runner

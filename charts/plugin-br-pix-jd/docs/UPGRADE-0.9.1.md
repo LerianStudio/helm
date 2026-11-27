@@ -153,7 +153,7 @@ The chart runs `migrate up` only. It never runs the `down` files.
 >
 > - cautelar block alive (`cautelar_status` in `AWAITING`, `UNBATCHED`, `BLOCKED`, `RETURNING`). Under 1.7.0, the Midaz hold stays past `cautelar_expires_at`, and the holder's funds stay unavailable.
 > - cautelar block a MED took whose hold is not `CANCELED` (`cautelar_status = 'MED'`; read each `cautelar_hold_id` in Midaz). Re-run the effectuation under 1.8.0 until the hold is `CANCELED`: a 1.7.0 effectuation reserves the MED amount and never cancels the hold.
-> - internal transfer that 1.8.0 held for review and did not allow, still `PENDING` (`fraud_check->>'decideBy'` set and `fraud_check->>'resolution'` not `ALLOW`). This covers one still in `FRAUD_ANALYSIS` and one decided or expired whose reserve release failed. A 1.7.0 worker marks it `ERROR` and keeps the payer's reserve. A `200` with status `PENDING` from the decision, or a `204` from `expire-due`, does not prove the release.
+> - internal transfer that 1.8.0 held for review, still `PENDING` (`fraud_check->>'decideBy'` set, whatever `resolution` holds; `resolution` is absent while the analysis is open). This covers one still in `FRAUD_ANALYSIS`, one decided or expired whose reserve release failed, and a same-ledger one allowed whose commit failed. A 1.7.0 worker marks a refused one `ERROR` and parks an allowed one, and both keep the payer's reserve. A `200` with status `PENDING` from the decision, or a `204` from `expire-due`, does not prove the release.
 > - sent Pix in `MANUAL_REVIEW`. 1.7.0 has no route to resolve it. No setting stops new rows from entering this state, so check it right before the rollback. 1.7.0 still settles a primary order, but never a scheduled order that JD accepted.
 > - MED refund with an unresolved reserve attempt (`eff_status = 0` and `eff_status_at` set). A 1.7.0 retry reserves again.
 >
@@ -186,6 +186,6 @@ Then move the worker to 1.8.0 (the same command without the pin). With `worker.e
 helm upgrade plugin-br-pix-jd oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm -n midaz-plugins --version 0.9.1 -f <your-values>.yaml --timeout 15m
 ```
 
-With Argo CD, do the same with two commits: first pin `worker.image.tag: "1.7.0"` in the values, then remove the pin.
+With Argo CD, do the same with two commits: first pin `worker.image.tag: "1.7.0"` in the values. Push the commit that removes the pin only after the sync finished and every api pod runs 1.8.0. Argo CD applies two commits that land within one poll as one sync.
 
 > **Note:** Without `-f`, Helm reuses the stored values, so the antifraud lists and any tag-pin change above never land. With `-f`, Helm drops the stored values: repeat every `--set` and `--set-file` you used at install (signing key, certificate). Keep `--timeout` above `migrations.activeDeadlineSeconds`; the default `5m` is shorter than the Job's `600` seconds.

@@ -1,0 +1,84 @@
+suite: matcher refuses what the health preset owns
+templates:
+  - templates/matcher/deployment.yaml
+  # loaded so the deployment can include and hash the rendered ConfigMap and Secret
+  - templates/matcher/configmap.yaml
+  - templates/matcher/secrets.yaml
+release:
+  name: matcher
+  namespace: matcher
+set:
+  matcher.configmap.DEPLOYMENT_MODE: saas
+  matcher.secrets.RABBITMQ_PASSWORD: x
+tests:
+  - it: refuses an image that predates the health port
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.image.tag: "6.0.0-beta.60"
+    asserts:
+      - failedTemplate:
+          errorPattern: "is below 6.1.0-beta.1"
+
+  - it: refuses a 6.0 release candidate without the health port
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.image.tag: "6.0.0-rc.1"
+    asserts:
+      - failedTemplate:
+          errorPattern: "is below 6.1.0-beta.1"
+
+  - it: refuses a 6.0 stable image without the health port
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.image.tag: "6.0.0"
+    asserts:
+      - failedTemplate:
+          errorPattern: "is below 6.1.0-beta.1"
+
+  - it: refuses the old PDB enabled true setting
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.pdb.enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: "matcher.pdb.enabled is owned by the health preset"
+
+  - it: refuses the old PDB enabled false setting
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.pdb.enabled: false
+    asserts:
+      - failedTemplate:
+          errorPattern: "matcher.pdb.enabled is owned by the health preset"
+
+  - it: refuses the old PDB minAvailable setting
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.pdb.minAvailable: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "matcher.pdb.minAvailable is owned by the health preset"
+
+  - it: refuses the old PDB maxUnavailable setting
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.pdb.maxUnavailable: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "matcher.pdb.maxUnavailable is owned by the health preset"
+
+  - it: refuses the old deployment update strategy
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.deploymentUpdate.type: Recreate
+    asserts:
+      - failedTemplate:
+          errorPattern: "matcher.deploymentUpdate is owned by the health preset"
+
+  - it: refuses a probe override, the preset owns probes
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.readinessProbe.path: /readyz
+    asserts:
+      - failedTemplate:
+          errorPattern: "readinessProbe is owned by the health preset"

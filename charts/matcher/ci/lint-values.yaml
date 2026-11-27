@@ -1,0 +1,3 @@
+matcher:
+  configmap:
+    DEPLOYMENT_MODE: local

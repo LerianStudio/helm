@@ -1,0 +1,141 @@
+suite: licence wiring (LICENSE_KEY or a mounted licence file)
+templates:
+  - templates/matcher/deployment.yaml
+  - templates/matcher/configmap.yaml
+  - templates/matcher/secrets.yaml
+  - templates/migrations/job.yaml
+  - templates/migrations/secrets.yaml
+  - templates/migrations/license-secret.yaml
+release:
+  name: matcher
+  namespace: matcher
+set:
+  matcher.configmap.DEPLOYMENT_MODE: saas
+  matcher.secrets.RABBITMQ_PASSWORD: x
+  matcher.secrets.POSTGRES_PASSWORD: x
+  migrations.enabled: true
+tests:
+  - it: key mode hands LICENSE_KEY to the migration Job from the hook Secret and mounts nothing
+    template: templates/migrations/job.yaml
+    set:
+      matcher.secrets.LICENSE_KEY: placeholder-license-key
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: matcher-license-hook
+                key: LICENSE_KEY
+                optional: true
+      - notExists:
+          path: spec.template.spec.volumes
+
+  - it: key mode renders a licence hook Secret with only LICENSE_KEY
+    template: templates/migrations/license-secret.yaml
+    set:
+      matcher.secrets.LICENSE_KEY: placeholder-license-key
+    asserts:
+      - equal:
+          path: metadata.name
+          value: matcher-license-hook
+      - equal:
+          path: stringData
+          value:
+            LICENSE_KEY: placeholder-license-key
+
+  - it: a configmap LICENSE_KEY reaches the licence hook Secret
+    template: templates/migrations/license-secret.yaml
+    set:
+      matcher.configmap.LICENSE_KEY: from-configmap
+    asserts:
+      - equal:
+          path: stringData.LICENSE_KEY
+          value: from-configmap
+
+  - it: no key from values renders no licence hook Secret
+    template: templates/migrations/license-secret.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: licenseFile null (--reuse-values shape) mounts nothing and keeps key-mode env
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.licenseFile: null
+      matcher.secrets.LICENSE_KEY: placeholder-license-key
+    asserts:
+      - notExists:
+          path: spec.template.spec.volumes[1]
+      - notContains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: license-file
+            mountPath: /etc/lerian/license
+            readOnly: true
+
+  - it: file mode mounts the licence Secret as a directory on the app
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.licenseFile.existingSecret: matcher-license
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_FILE_PATH
+            value: /etc/lerian/license/license.lic
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: license-file
+            mountPath: /etc/lerian/license
+            readOnly: true
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: license-file
+            secret:
+              secretName: matcher-license
+              defaultMode: 292
+              items:
+                - key: license.lic
+                  path: license.lic
+      - notExists:
+          path: spec.template.spec.containers[0].volumeMounts[1].subPath
+
+  - it: file mode renders without LICENSE_KEY and mounts the file on the migration Job
+    template: templates/migrations/job.yaml
+    set:
+      matcher.licenseFile.existingSecret: matcher-license
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_FILE_PATH
+            value: /etc/lerian/license/license.lic
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: license-file
+            mountPath: /etc/lerian/license
+            readOnly: true
+      - equal:
+          path: spec.template.spec.volumes[0].secret.secretName
+          value: matcher-license
+
+  - it: an existing Secret is the Job's LICENSE_KEY source
+    template: templates/migrations/job.yaml
+    set:
+      matcher.useExistingSecret: true
+      matcher.existingSecretName: matcher-creds
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: matcher-creds
+                optional: true
+                key: LICENSE_KEY

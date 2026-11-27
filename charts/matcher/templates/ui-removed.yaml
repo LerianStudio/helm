@@ -1,0 +1,3 @@
+{{- if hasKey .Values "ui" }}
+{{- fail "ui is no longer part of this chart: the Matcher console UI ships in product-console (set MATCHER_BASE_PATH on the product-console chart). Remove the ui block and move the public API host to matcher.ingress (hosts[].paths /v1 and /system, the proxy-body-size 20m annotation and tls), or that host stops being served." }}
+{{- end }}

@@ -1,0 +1,243 @@
+{{- if .Values.matcher.enabled }}
+{{- /* The pod reads its ConfigMap through envFrom, once, at process start, and
+  Kubernetes does not restart a pod when that ConfigMap changes. Hashing the
+  RENDERED ConfigMap rolls the pods on any change to what the
+  process would see, including template-side changes to keys or defaults. */}}
+{{- $configChecksum := include (print $.Template.BasePath "/matcher/configmap.yaml") . | sha256sum }}
+{{- /* Same for the chart-rendered Secret. An existing Secret is one this chart
+  never renders, so its checksum is empty (as in lender): roll those pods by
+  hand when rotating it. argocd-vault-plugin resolves <path:...> after helm, so
+  a Vault-only rotation does not move this hash either. */}}
+{{- $secretChecksum := "" }}
+{{- if not .Values.matcher.useExistingSecret }}
+{{- $secretChecksum = include (print $.Template.BasePath "/matcher/secrets.yaml") . | sha256sum }}
+{{- end }}
+{{- $podAnnotations := mergeOverwrite (deepCopy (.Values.matcher.podAnnotations | default dict)) (dict "checksum/config" $configChecksum "checksum/secret" $secretChecksum) }}
+{{- $h := include "matcher.health" . | fromYaml }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "matcher.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "matcher.labels" (dict "context" . "component" .Values.matcher.name "name" .Values.matcher.name ) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.matcher.revisionHistoryLimit | default 10 }}
+  strategy:
+    {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "matcher.selectorLabels" (dict "context" . "name" .Values.matcher.name ) | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- toYaml $podAnnotations | nindent 8 }}
+      labels:
+        {{- include "matcher.labels" (dict "context" . "component" .Values.matcher.name "name" .Values.matcher.name ) | nindent 8 }}
+    spec:
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
+      {{- with .Values.matcher.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "matcher.serviceAccountName" . }}
+      {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+      securityContext:
+        fsGroup: 65532
+      {{- else }}
+      securityContext:
+        {{- toYaml .Values.matcher.podSecurityContext | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox:1.37
+          securityContext:
+            {{- toYaml .Values.matcher.securityContext | nindent 12 }}
+          resources:
+            limits:
+              cpu: 100m
+              memory: 64Mi
+            requests:
+              cpu: 10m
+              memory: 32Mi
+          envFrom:
+          - configMapRef:
+              name: {{ include "matcher.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              wait_for() {
+                HOST="$1"; PORT="$2"
+                TIMEOUT=300; ELAPSED=0
+                echo "Checking $HOST:$PORT..."
+                while ! nc -z "$HOST" "$PORT"; do
+                  if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
+                    echo "Timeout waiting for $HOST:$PORT after ${TIMEOUT}s"
+                    exit 1
+                  fi
+                  echo "$HOST:$PORT is not ready yet, waiting... (${ELAPSED}s/${TIMEOUT}s)"
+                  sleep 5
+                  ELAPSED=$((ELAPSED + 5))
+                done
+                echo "$HOST:$PORT is ready!"
+              }
+              wait_for "$POSTGRES_HOST" "$POSTGRES_PORT"
+              wait_for "$POSTGRES_REPLICA_HOST" "$POSTGRES_REPLICA_PORT"
+              # REDIS_HOST may or may not carry a port; default to 6379.
+              case "$REDIS_HOST" in
+                *:*) REDIS_SVC="${REDIS_HOST%%:*}"; REDIS_PORT="${REDIS_HOST##*:}" ;;
+                *) REDIS_SVC="$REDIS_HOST"; REDIS_PORT="6379" ;;
+              esac
+              wait_for "$REDIS_SVC" "$REDIS_PORT"
+      containers:
+        - name: {{ include "matcher.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.matcher.securityContext | nindent 12 }}
+          image: "{{ .Values.matcher.image.repository }}:{{ .Values.matcher.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.matcher.image.pullPolicy }}
+          envFrom:
+          - secretRef:
+              name: {{ if .Values.matcher.useExistingSecret }}{{ .Values.matcher.existingSecretName }}{{ else }}{{ include "matcher.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "matcher.fullname" . }}
+          env:
+            {{- toYaml $h.env | nindent 12 }}
+            {{- with include "matcher.licenseFileEnv" . }}{{- . | trim | nindent 12 }}{{- end }}
+            {{- $secretName := ternary .Values.matcher.existingSecretName (include "matcher.fullname" .) .Values.matcher.useExistingSecret }}
+            {{- $pg := .Values.postgresql | default dict }}
+            {{- $pgAuth := $pg.auth | default dict }}
+            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+            {{- include "matcher.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
+            {{- include "matcher.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "replication-password" "envName" "POSTGRES_REPLICA_PASSWORD") | nindent 12 }}
+            {{- else }}
+            {{- if .Values.matcher.secrets.POSTGRES_PASSWORD }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: POSTGRES_PASSWORD
+            {{- end }}
+            {{- if .Values.matcher.secrets.POSTGRES_REPLICA_PASSWORD }}
+            - name: POSTGRES_REPLICA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: POSTGRES_REPLICA_PASSWORD
+            {{- end }}
+            {{- end }}
+            {{- $vk := .Values.valkey | default dict }}
+            {{- $vkAuth := $vk.auth | default dict }}
+            {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
+            {{- include "matcher.infraSecretRef" (dict "context" $ "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 12 }}
+            {{- else if .Values.matcher.secrets.REDIS_PASSWORD }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: REDIS_PASSWORD
+            {{- end }}
+            {{- if eq (toString .Values.matcher.configmap.ENABLE_TELEMETRY) "true" }}
+            - name: "HOST_IP"
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "http://$(HOST_IP):4317"
+            {{- end }}
+            {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+            - name: AWS_EC2_METADATA_SERVICE_ENDPOINT
+              value: "http://127.0.0.1:{{ .Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
+            - name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
+              value: "IPv4"
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
+          startupProbe:
+            {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe:
+            {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml $h.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.matcher.resources | nindent 12 }}
+          # The export worker writes its file under /tmp before the upload; the root is read-only.
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- with include "matcher.licenseFileMount" . }}{{- . | trim | nindent 12 }}{{- end }}
+        {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+        - name: aws-signing-helper
+          image: "{{ .Values.aws.rolesAnywhere.sidecar.image.repository }}:{{ .Values.aws.rolesAnywhere.sidecar.image.tag }}"
+          imagePullPolicy: {{ .Values.aws.rolesAnywhere.sidecar.image.pullPolicy | default "IfNotPresent" }}
+          args:
+            - serve
+            - --certificate
+            - /certs/tls.crt
+            - --private-key
+            - /certs/tls.key
+            - --trust-anchor-arn
+            - "{{ required "aws.rolesAnywhere.trustAnchorArn is required when rolesAnywhere is enabled" .Values.aws.rolesAnywhere.trustAnchorArn }}"
+            - --profile-arn
+            - "{{ required "aws.rolesAnywhere.profileArn is required when rolesAnywhere is enabled" .Values.aws.rolesAnywhere.profileArn }}"
+            - --role-arn
+            - "{{ required "aws.rolesAnywhere.roleArn is required when rolesAnywhere is enabled" .Values.aws.rolesAnywhere.roleArn }}"
+            - --region
+            - "{{ .Values.aws.rolesAnywhere.region | default "us-east-2" }}"
+            - --session-duration
+            - "{{ .Values.aws.rolesAnywhere.sessionDuration | default 3600 }}"
+            - --port
+            - "{{ .Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
+          ports:
+            - name: imds
+              containerPort: {{ .Values.aws.rolesAnywhere.sidecar.port | default 9911 }}
+              protocol: TCP
+          volumeMounts:
+            - name: iam-certs
+              mountPath: /certs
+              readOnly: true
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          resources:
+            {{- toYaml .Values.aws.rolesAnywhere.sidecar.resources | nindent 12 }}
+        {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- with include "matcher.licenseFileVolume" . }}{{- . | trim | nindent 8 }}{{- end }}
+        {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+        - name: iam-certs
+          secret:
+            secretName: {{ .Values.aws.rolesAnywhere.certificateSecretName | default "matcher-iam-tls" }}
+            defaultMode: 0440
+            items:
+              - key: tls.crt
+                path: tls.crt
+              - key: tls.key
+                path: tls.key
+        {{- end }}
+      {{- with .Values.matcher.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.matcher.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.matcher.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

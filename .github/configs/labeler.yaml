@@ -98,6 +98,10 @@ streaming-hub:
   - changed-files:
       - any-glob-to-any-file: charts/streaming-hub/**
 
+matcher:
+  - changed-files:
+      - any-glob-to-any-file: charts/matcher/**
+
 flowker:
   - changed-files:
       - any-glob-to-any-file: charts/flowker/**

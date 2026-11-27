@@ -1,0 +1,3 @@
+matcher:
+  configmap:
+    FOO_BYTES: 104857600

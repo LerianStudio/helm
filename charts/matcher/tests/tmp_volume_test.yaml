@@ -1,0 +1,40 @@
+suite: the matcher container has a writable /tmp under a read-only root
+templates:
+  - templates/matcher/deployment.yaml
+  # loaded so the deployment can include and hash the rendered ConfigMap
+  - templates/matcher/configmap.yaml
+  - templates/matcher/secrets.yaml
+release:
+  name: matcher
+  namespace: matcher
+set:
+  matcher.configmap.DEPLOYMENT_MODE: saas
+  matcher.secrets.RABBITMQ_PASSWORD: x
+tests:
+  # The export worker writes its file under os.TempDir before the upload, and the
+  # root filesystem is read-only, so /tmp must be a volume.
+  - it: mounts an emptyDir at /tmp on the matcher container
+    template: templates/matcher/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: tmp
+            mountPath: /tmp
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: tmp
+            emptyDir: {}
+
+  - it: keeps the roles anywhere certificate volume beside it
+    set:
+      aws.rolesAnywhere.enabled: true
+      aws.rolesAnywhere.trustAnchorArn: arn:aws:rolesanywhere:us-east-2:1:trust-anchor/x
+      aws.rolesAnywhere.profileArn: arn:aws:rolesanywhere:us-east-2:1:profile/x
+      aws.rolesAnywhere.roleArn: arn:aws:iam::1:role/x
+    template: templates/matcher/deployment.yaml
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.volumes
+          count: 2

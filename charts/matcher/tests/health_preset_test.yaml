@@ -1,0 +1,50 @@
+suite: matcher health comes from the lerian-common preset
+templates:
+  - templates/matcher/deployment.yaml
+  - templates/matcher/service.yaml
+  # loaded so the deployment can include and hash the rendered ConfigMap and Secret
+  - templates/matcher/configmap.yaml
+  - templates/matcher/secrets.yaml
+release:
+  name: matcher
+  namespace: matcher
+set:
+  matcher.configmap.DEPLOYMENT_MODE: saas
+  matcher.secrets.RABBITMQ_PASSWORD: x
+tests:
+  - it: opens the health port and sets the drain env on the matcher container
+    template: templates/matcher/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content: {name: health, containerPort: 8099}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HEALTH_PORT, value: "8099"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: SHUTDOWN_DRAIN_DELAY, value: 15s}
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 55
+
+  - it: keeps the health env off the roles anywhere sidecar
+    template: templates/matcher/deployment.yaml
+    set:
+      aws.rolesAnywhere.enabled: true
+      aws.rolesAnywhere.trustAnchorArn: arn:aws:rolesanywhere:us-east-2:1:trust-anchor/x
+      aws.rolesAnywhere.profileArn: arn:aws:rolesanywhere:us-east-2:1:profile/x
+      aws.rolesAnywhere.roleArn: arn:aws:iam::1:role/x
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[1].env
+      - notContains:
+          path: spec.template.spec.containers[1].ports
+          content: {name: health, containerPort: 8099}
+
+  - it: exposes the health port as an internal Service port
+    template: templates/matcher/service.yaml
+    asserts:
+      - contains:
+          path: spec.ports
+          content: {name: health, port: 8099, targetPort: 8099, protocol: TCP}

@@ -1,0 +1,123 @@
+suite: matcher configmap renders every operator key
+templates:
+  - templates/matcher/configmap.yaml
+release:
+  name: matcher
+  namespace: matcher
+set:
+  matcher.configmap.DEPLOYMENT_MODE: saas
+  matcher.secrets.RABBITMQ_PASSWORD: x
+tests:
+  # ---------------------------------------------------------------------------
+  # The ConfigMap used to be an allowlist: a key under matcher.configmap that the
+  # template did not name was dropped without a warning (benedita prd-st set
+  # ADVISOR_* / DOC_EXTRACTION_* / RULE_ADVISOR_* and none reached the pod). The
+  # chart now renders every key and only supplies defaults for the ones it names.
+  # These tests pin both halves: pass-through, and the `| default` semantics.
+  # ---------------------------------------------------------------------------
+  - it: renders a key the chart does not name
+    set:
+      matcher.configmap.ADVISOR_ENABLED: "true"
+    asserts:
+      - equal:
+          path: data.ADVISOR_ENABLED
+          value: "true"
+
+  - it: renders the chart default for a named key the operator left unset
+    asserts:
+      - equal:
+          path: data.LOG_LEVEL
+          value: info
+
+  - it: renders an operator-set named key once, with the operator value
+    set:
+      matcher.configmap.LOG_LEVEL: debug
+    asserts:
+      # A second LOG_LEVEL line would make the document fail to parse.
+      - equal:
+          path: data.LOG_LEVEL
+          value: debug
+      - notMatchRegexRaw:
+          pattern: 'LOG_LEVEL:[^\n]*\n(.*\n)*\s*LOG_LEVEL:'
+
+  - it: renders the chart default when a named key is set to an empty string
+    set:
+      matcher.configmap.LOG_LEVEL: ""
+    asserts:
+      - equal:
+          path: data.LOG_LEVEL
+          value: info
+
+  - it: renders a non-string operator value as a string
+    set:
+      matcher.configmap.FOO_MAX: 10
+    asserts:
+      - equal:
+          path: data.FOO_MAX
+          value: "10"
+
+  - it: renders a large integer from a values file without scientific notation
+    values:
+      - ./values/large-int.yaml
+    asserts:
+      - equal:
+          path: data.FOO_BYTES
+          value: "104857600"
+
+  - it: lets extraEnvVars override a named key, once
+    set:
+      matcher.configmap.ALLOW_INSECURE_TLS: "false"
+      matcher.extraEnvVars.ALLOW_INSECURE_TLS: "true"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_TLS
+          value: "true"
+
+  - it: lets a falsy extraEnvVars value override a named key
+    set:
+      matcher.extraEnvVars.ALLOW_INSECURE_TLS: false
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_TLS
+          value: "false"
+
+  - it: lets an empty extraEnvVars value clear an operator key
+    set:
+      matcher.configmap.FOO: old
+      matcher.extraEnvVars.FOO: ""
+    asserts:
+      - equal:
+          path: data.FOO
+          value: ""
+
+
+  # The gated groups must stay gated on a default install: no chart default may
+  # reach the pod through pass-through while its gate is closed.
+  - it: keeps the multi-tenant group and GOMEMLIMIT out when their gates are closed
+    asserts:
+      - notExists:
+          path: data.MULTI_TENANT_URL
+      - notExists:
+          path: data.MULTI_TENANT_MAX_TENANT_POOLS
+      - notExists:
+          path: data.GOMEMLIMIT
+
+  - it: renders the multi-tenant defaults when multi-tenancy is enabled
+    set:
+      matcher.configmap.MULTI_TENANT_ENABLED: "true"
+    asserts:
+      - equal:
+          path: data.MULTI_TENANT_MAX_TENANT_POOLS
+          value: "100"
+      - equal:
+          path: data.MULTI_TENANT_IDLE_TIMEOUT_SEC
+          value: "300"
+      - equal:
+          path: data.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD
+          value: "5"
+      - equal:
+          path: data.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC
+          value: "30"
+      - equal:
+          path: data.MULTI_TENANT_URL
+          value: ""

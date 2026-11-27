@@ -1,5 +1,14 @@
 # Plugin-br-bank-transfer Changelog
 
+## [3.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.4.1)
+
+🧰 Maintenance:
+- Automated update of the Helm chart components to reference `plugin-br-bank-transfer@3.9.0`. (#3351, @lerian-studio-midaz-push-bot)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.4.0...plugin-br-bank-transfer-v3.4.1)
+
+---
+
 ## [3.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.4.0)
 
 ✨ Features:

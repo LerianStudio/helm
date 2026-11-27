@@ -1,5 +1,17 @@
 # Plugin-br-pix-jd Changelog
 
+## [0.9.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.9.1)
+
+🛠️ Fixes:
+- The Helm chart now deploys the updated `plugin-br-pix-jd` version `1.8.0`, so installs and upgrades pick up the latest plugin release. (#3352, @lerian-studio-midaz-push-bot)
+
+🧰 Maintenance:
+- Documentation added a Helm upgrade guide for `v0.9.0` and a description of the antifraud destination lists. (#3321, @lerian-studio-midaz-push-bot; #3338, @fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.9.0...plugin-br-pix-jd-v0.9.1)
+
+---
+
 ## [0.9.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.9.0)
 
 Features:

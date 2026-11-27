@@ -1,0 +1,23 @@
+{{- if .Values.matcher.enabled }}
+{{- $health := include "matcher.health" . | fromYaml }}
+{{- if $health.pdb }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "matcher.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "matcher.labels" (dict "context" . "component" .Values.matcher.name "name" .Values.matcher.name ) | nindent 4 }}
+  {{- with .Values.matcher.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- toYaml $health.pdb | nindent 2 }}
+  selector:
+    matchLabels:
+      {{- include "matcher.selectorLabels" (dict "context" . "name" .Values.matcher.name ) | nindent 6 }}
+{{- end }}
+{{- end }}

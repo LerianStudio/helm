@@ -1,0 +1,24 @@
+suite: the removed ui component cannot be configured silently
+templates:
+  - templates/ui-removed.yaml
+release:
+  name: matcher
+  namespace: matcher
+set:
+  matcher.configmap.DEPLOYMENT_MODE: saas
+  matcher.secrets.RABBITMQ_PASSWORD: x
+tests:
+  # A stale ui: block in an environment's values used to render the UI ingress
+  # that carried the public API host. Rendering it cleanly after the removal
+  # would drop that host without a word, so the chart refuses instead.
+  - it: refuses a values file that still sets ui
+    set:
+      ui.enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: "ui is no longer part of this chart"
+
+  - it: renders nothing by default
+    asserts:
+      - hasDocuments:
+          count: 0

@@ -1,0 +1,121 @@
+{{- if .Values.migrations.enabled }}
+# PreSync migration Job. Runs the dedicated, up-only matcher-migrations image
+# (entrypoint /postgres-migrations from Dockerfile.migrations) which applies the
+# embedded schema and exits. matcher v3+ is DETACHED: it checks migration compat
+# on boot and refuses to start against an unmigrated DB, and the app image ships
+# no migration binary. hook-weight -1 puts this after the PreSync Secret (-2) and
+# before the main-sync matcher Deployment, so the app never boots unmigrated.
+# Single-tenant: MULTI_TENANT_ENABLED is left UNSET (the runner refuses MT=true;
+# the Tenant Manager owns tenant DB migrations).
+{{- $pgHost := .Values.migrations.postgres.host | default .Values.matcher.configmap.POSTGRES_HOST | default (printf "%s-%s.%s.svc.cluster.local." (include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" .)) (.Values.postgresql.primary.name | default "primary") (include "global.namespace" .)) }}
+{{- $pgPort := .Values.migrations.postgres.port | default .Values.matcher.configmap.POSTGRES_PORT | default "5432" }}
+{{- $pgUser := .Values.migrations.postgres.user | default .Values.matcher.configmap.POSTGRES_USER | default "matcher" }}
+{{- $pgDb := .Values.migrations.postgres.database | default .Values.matcher.configmap.POSTGRES_DB | default "matcher" }}
+{{- $pgSslMode := .Values.migrations.postgres.sslMode | default .Values.matcher.configmap.POSTGRES_SSLMODE | default "disable" }}
+{{- $secretName := ternary .Values.matcher.existingSecretName (include "matcher-migrations.fullname" .) .Values.matcher.useExistingSecret }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "matcher-migrations.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "matcher-migrations.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-weight: "-1"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit | default 3 }}
+  activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds | default 600 }}
+  ttlSecondsAfterFinished: {{ .Values.migrations.ttlSecondsAfterFinished | default 600 }}
+  template:
+    metadata:
+      labels:
+        {{- include "matcher-migrations.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      {{- with .Values.migrations.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: wait-for-postgres
+          image: {{ .Values.migrations.waitImage | default "busybox" }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              echo "Waiting for {{ $pgHost }}:{{ $pgPort }}...";
+              until nc -z {{ $pgHost }} {{ $pgPort }}; do
+                echo "{{ $pgHost }}:{{ $pgPort }} not ready, waiting...";
+                sleep 5;
+              done;
+              echo "{{ $pgHost }}:{{ $pgPort }} is ready!";
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      containers:
+        - name: migrations
+          image: "{{ .Values.migrations.image.repository }}:{{ .Values.migrations.image.tag | default .Values.matcher.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.migrations.image.pullPolicy | default "IfNotPresent" }}
+          env:
+            - name: POSTGRES_HOST
+              value: {{ $pgHost | quote }}
+            - name: POSTGRES_PORT
+              value: {{ $pgPort | quote }}
+            - name: POSTGRES_USER
+              value: {{ $pgUser | quote }}
+            - name: POSTGRES_DB
+              value: {{ $pgDb | quote }}
+            - name: POSTGRES_SSLMODE
+              value: {{ $pgSslMode | quote }}
+            {{- $pg := .Values.postgresql | default dict }}
+            {{- $pgAuth := $pg.auth | default dict }}
+            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+            {{- /* Bundled PostgreSQL: same single-sourced password the app reads. */}}
+            {{- include "matcher.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
+            {{- else }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: POSTGRES_PASSWORD
+            {{- end }}
+            # The app Secret does not exist at PreSync: read the operator Secret, else the licence hook Secret.
+            - name: LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ ternary .Values.matcher.existingSecretName (printf "%s-license-hook" (include "matcher.fullname" .)) .Values.matcher.useExistingSecret }}
+                  key: LICENSE_KEY
+                  optional: true
+            {{- with include "matcher.licenseFileEnv" . }}{{- . | trim | nindent 12 }}{{- end }}
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            {{- toYaml .Values.migrations.resources | nindent 12 }}
+          {{- with include "matcher.licenseFileMount" . }}
+          volumeMounts:
+            {{- . | trim | nindent 12 }}
+          {{- end }}
+      {{- with include "matcher.licenseFileVolume" . }}
+      volumes:
+        {{- . | trim | nindent 8 }}
+      {{- end }}
+{{- end }}

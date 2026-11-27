@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "namespaceOverride": {
+      "type": "string"
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "matcher": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object",
+          "required": [
+            "DEPLOYMENT_MODE"
+          ],
+          "properties": {
+            "IDP_DECLARATION_ENABLED": {
+              "type": ["string", "boolean"],
+              "description": "Publish the RI permission manifest to the Access Manager at boot. Off unless \"true\"; with it on, IDP_HOST, secrets.IDP_M2M_CLIENT_ID/SECRET and PLUGIN_AUTH_ENABLED=\"true\" are required by the application."
+            },
+            "IDP_HOST": {
+              "type": "string",
+              "description": "Access Manager identity base URL for the RI declaration."
+            },
+            "DEPLOYMENT_MODE": {
+              "type": "string",
+              "enum": [
+                "saas",
+                "byoc",
+                "local"
+              ],
+              "description": "Deployment posture the application boots in. Required, no default: saas = Lerian-hosted multi-tenant, byoc = client-hosted, local = development posture."
+            }
+          }
+        },
+        "licenseFile": {
+          "type": "object",
+          "properties": {
+            "existingSecret": {
+              "type": "string",
+              "description": "Operator-created Secret holding the signed licence file, mounted as a directory. Needs an image on lib-license-go v5."
+            }
+          },
+          "additionalProperties": false
+        },
+        "secrets": {
+          "type": "object",
+          "properties": {
+            "LICENSE_KEY": {
+              "type": "string",
+              "description": "Licence key."
+            },
+            "IDP_M2M_CLIENT_ID": {
+              "type": "string",
+              "description": "RI declaration M2M client ID. Emitted only when set."
+            },
+            "IDP_M2M_CLIENT_SECRET": {
+              "type": "string",
+              "description": "RI declaration M2M client secret. Emitted only when set."
+            }
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "migrations": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "valkey": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "postgresql": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "rabbitmq": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "aws": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

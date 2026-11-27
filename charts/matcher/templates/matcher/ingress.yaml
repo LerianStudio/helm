@@ -1,0 +1,49 @@
+{{- /* Gated on matcher.enabled like the Service it routes to: an Ingress whose
+backend Service never renders would 503 every request. Chart.yaml pins
+kubeVersion >=1.27, so only networking.k8s.io/v1 is emitted. */}}
+{{- if and .Values.matcher.enabled .Values.matcher.ingress.enabled -}}
+{{- $ingressName := include "matcher.fullname" . -}}
+{{- $svcPort := .Values.matcher.service.port -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $ingressName }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "matcher.labels" (dict "context" . "component" .Values.matcher.name "name" .Values.matcher.name ) | nindent 4 }}
+  {{- with .Values.matcher.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.matcher.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- if .Values.matcher.ingress.tls }}
+  tls:
+    {{- range .Values.matcher.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.matcher.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            {{- with .pathType }}
+            pathType: {{ . }}
+            {{- end }}
+            backend:
+              service:
+                name: {{ $ingressName }}
+                port:
+                  number: {{ $svcPort }}
+          {{- end }}
+    {{- end }}
+{{- end }}

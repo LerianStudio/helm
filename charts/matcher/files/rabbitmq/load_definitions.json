@@ -1,0 +1,59 @@
+{
+  "users": [
+    {
+      "name": "matcher",
+      "tags": ""
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "matcher",
+      "vhost": "/",
+      "configure": "^(matcher\\..*|amq\\.gen.*)$",
+      "write": "^(matcher\\..*|amq\\.gen.*|amq\\.default)$",
+      "read": "^(matcher\\..*|amq\\.gen.*|amq\\.default)$"
+    }
+  ],
+  "queues": [
+    {
+      "name": "matcher.events.dlq",
+      "vhost": "/",
+      "durable": true,
+      "arguments": {}
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "matcher.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "matcher.events.dlx",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "matcher.events.dlx",
+      "vhost": "/",
+      "destination": "matcher.events.dlq",
+      "destination_type": "queue",
+      "routing_key": "#"
+    }
+  ]
+}

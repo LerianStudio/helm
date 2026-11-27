@@ -1,0 +1,117 @@
+suite: matcher config changes roll the pods
+templates:
+  - templates/matcher/deployment.yaml
+  # loaded so the deployment can include and hash the rendered ConfigMap
+  - templates/matcher/configmap.yaml
+  - templates/matcher/secrets.yaml
+release:
+  name: matcher
+  namespace: matcher
+set:
+  matcher.configmap.DEPLOYMENT_MODE: saas
+  matcher.secrets.RABBITMQ_PASSWORD: x
+  matcher.image.tag: "6.1.0-beta.1"
+tests:
+  # ---------------------------------------------------------------------------
+  # The matcher container reads its ConfigMap through envFrom, once, at process
+  # start, and Kubernetes does not restart a pod when that ConfigMap changes. The
+  # pod-template checksum is what turns a config change into a rollout. It hashes
+  # the rendered ConfigMap, so it also moves when the chart changes a key or a
+  # default without any values change.
+  #
+  # Assertions are `equal` against literal digests: a shape check cannot fail if
+  # the expression is frozen to a constant. REGENERATING: the golden covers the
+  # chart's default matcher.configmap, so changing a shipped default moves it.
+  # Read the new digest off the failure and paste it; do not weaken the check:
+  #   helm unittest charts/matcher -f 'tests/config_checksum_test.yaml'
+  # ---------------------------------------------------------------------------
+  - it: gives the pod template a config checksum
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.configmap.LOG_LEVEL: info
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["checksum/config"]
+          value: "cc570dacd955c3585be1e65854c9e09a3e60dfe31da75fb2b2a333ffa962e1f2"
+
+  # Same values as above, rendered again: the digest is stable, so an unchanged
+  # values set never rolls the pods.
+  - it: keeps the checksum stable when nothing changes
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.configmap.LOG_LEVEL: info
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["checksum/config"]
+          value: "cc570dacd955c3585be1e65854c9e09a3e60dfe31da75fb2b2a333ffa962e1f2"
+
+  # One configmap value differs, nothing else; read with the two tests above.
+  - it: moves the checksum when a config value changes
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.configmap.LOG_LEVEL: debug
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["checksum/config"]
+          value: "9863220c93299836c40e18517d5866d9f2c9a41e3cf9224c3d6951584568abeb"
+      - notEqual:
+          path: spec.template.metadata.annotations["checksum/config"]
+          value: "cc570dacd955c3585be1e65854c9e09a3e60dfe31da75fb2b2a333ffa962e1f2"
+
+  # An operator-only key (pass-through) must move the digest too.
+  - it: moves the checksum when an operator-only key is added
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.configmap.LOG_LEVEL: info
+      matcher.configmap.ADVISOR_ENABLED: "true"
+    asserts:
+      - notEqual:
+          path: spec.template.metadata.annotations["checksum/config"]
+          value: "cc570dacd955c3585be1e65854c9e09a3e60dfe31da75fb2b2a333ffa962e1f2"
+
+  - it: keeps operator pod annotations alongside the checksum
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.podAnnotations:
+        prometheus.io/scrape: "true"
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["prometheus.io/scrape"]
+          value: "true"
+      - isNotEmpty:
+          path: spec.template.metadata.annotations["checksum/config"]
+
+  # ---------------------------------------------------------------------------
+  # The Secret half, as in lender: hashes the rendered Secret, empty when the
+  # Secret is managed out of band (this chart never sees it).
+  # ---------------------------------------------------------------------------
+  - it: computes the secret checksum from the rendered Secret
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.secrets.APP_ENC_KEY: k1
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["checksum/secret"]
+          value: "e35494e0a2d551d1c59cfe6ac36a46c75dd9d968f1917b3a287c238e29261e8b"
+
+  - it: moves the secret checksum when a credential changes
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.secrets.APP_ENC_KEY: k2
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["checksum/secret"]
+          value: "6458974c1c581fd14912cffa4fd0bb2f8ead043db6d0301f4c01cdd242addfe7"
+      - notEqual:
+          path: spec.template.metadata.annotations["checksum/secret"]
+          value: "e35494e0a2d551d1c59cfe6ac36a46c75dd9d968f1917b3a287c238e29261e8b"
+
+  - it: leaves the secret checksum empty when the Secret is managed out of band
+    template: templates/matcher/deployment.yaml
+    set:
+      matcher.useExistingSecret: true
+      matcher.existingSecretName: matcher-app-secret
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["checksum/secret"]
+          value: ""

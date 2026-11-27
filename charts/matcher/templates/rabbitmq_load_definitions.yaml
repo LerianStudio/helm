@@ -1,0 +1,28 @@
+{{- /*
+Rendered only for the bundled RabbitMQ (the fixed name matches
+rabbitmq.extraSecrets, which only mounts it when the subchart is enabled).
+The matcher user's password is injected from matcher.secrets.RABBITMQ_PASSWORD
+(the same value the app reads), so the broker provisions the operator-selected
+password instead of importing a static hash. The app Secret template requires
+this value for the bundled broker, so a render normally fails loud when it is
+empty; only with matcher.useExistingSecret (which skips that validation) can
+the user be imported without credentials, unable to log in until a password is
+provisioned on the broker out-of-band.
+*/}}
+{{- if .Values.rabbitmq.enabled }}
+{{- $defs := .Files.Get "files/rabbitmq/load_definitions.json" | fromJson }}
+{{- if .Values.matcher.secrets.RABBITMQ_PASSWORD }}
+{{- range $user := $defs.users }}
+{{- if eq $user.name "matcher" }}
+{{- $_ := set $user "password" $.Values.matcher.secrets.RABBITMQ_PASSWORD }}
+{{- end }}
+{{- end }}
+{{- end }}
+kind: Secret
+apiVersion: v1
+metadata:
+  name: "matcher-rabbitmq-load-definition"
+  namespace: {{ include "global.namespace" . }}
+data:
+  load_definition.json: {{ $defs | toJson | b64enc | quote }}
+{{- end }}

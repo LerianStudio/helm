@@ -139,7 +139,7 @@ kubectl -n midaz-plugins logs -f job/plugin-br-pix-jd-migrations
 
 ## Mixed versions during the rollout
 
-`helm upgrade` changes the api and worker tags together, so for a few minutes 1.7.0 and 1.8.0 pods serve the same database.
+1.8.0 moves the end of antifraud holds from the worker to the api. Upgrade the api first, and move the worker only after every api pod runs 1.8.0 (see [Command to upgrade](#command-to-upgrade)). A 1.7.0 api with a 1.8.0 worker ends no hold. While the 1.7.0 worker runs next to the 1.8.0 api, it still ends holds itself.
 
 - Keep `antifraud.intra_out.review_window_minutes` at `0` (the value migration `000081` seeds) until every api and worker pod runs 1.8.0. A 1.7.0 worker that finds a cross-ledger internal transfer held in `FRAUD_ANALYSIS` marks it `ERROR` and does not release its reserve on the payer's ledger. The reserve stays until someone cancels it in Midaz.
 - Turn on `antifraud.holds_paused`, `antifraud.in.cautelar_enabled` and `antifraud.intra_in.cautelar_enabled` only after every pod runs 1.8.0. 1.7.0 pods do not read these keys.
@@ -152,8 +152,9 @@ The chart runs `migrate up` only. It never runs the `down` files.
 > **Warning:** 1.7.0 has no code for the states 1.8.0 creates. Before you roll back, set `antifraud.intra_out.review_window_minutes` to `0` and the two `cautelar_enabled` keys to `false`. Then wait until every tenant database has no row in these states:
 >
 > - cautelar block alive (`cautelar_status` in `AWAITING`, `UNBATCHED`, `BLOCKED`, `RETURNING`). Under 1.7.0, the Midaz hold stays past `cautelar_expires_at`, and the holder's funds stay unavailable.
-> - internal transfer in `FRAUD_ANALYSIS`. A 1.7.0 worker marks it `ERROR` and keeps the payer's reserve.
-> - sent Pix in `MANUAL_REVIEW`. 1.7.0 has no route to resolve it.
+> - cautelar block a MED took whose hold is not `CANCELED` (`cautelar_status = 'MED'`; read each `cautelar_hold_id` in Midaz). Re-run the effectuation under 1.8.0 until the hold is `CANCELED`: a 1.7.0 effectuation reserves the MED amount and never cancels the hold.
+> - internal transfer that 1.8.0 held for review and did not allow, still `PENDING` (`fraud_check->>'decideBy'` set and `fraud_check->>'resolution'` not `ALLOW`). This covers one still in `FRAUD_ANALYSIS` and one decided or expired whose reserve release failed. A 1.7.0 worker marks it `ERROR` and keeps the payer's reserve. A `200` with status `PENDING` from the decision, or a `204` from `expire-due`, does not prove the release.
+> - sent Pix in `MANUAL_REVIEW`. 1.7.0 has no route to resolve it. No setting stops new rows from entering this state, so check it right before the rollback. 1.7.0 still settles a primary order, but never a scheduled order that JD accepted.
 > - MED refund with an unresolved reserve attempt (`eff_status = 0` and `eff_status_at` set). A 1.7.0 retry reserves again.
 >
 > Decide or cancel open analyses and blocks, or call `POST /v1/fraud-analyses/expire-due` after their deadlines. Resolve manual reviews and reserve attempts through their routes.
@@ -172,8 +173,19 @@ helm diff upgrade plugin-br-pix-jd oci://ghcr.io/lerianstudio/plugin-br-pix-jd-h
 
 ## Command to upgrade
 
+With `worker.enabled=true`, upgrade in two steps so the api runs 1.8.0 before the worker does. First, keep the worker on 1.7.0 and wait for the api:
+
+```bash
+helm upgrade plugin-br-pix-jd oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm -n midaz-plugins --version 0.9.1 -f <your-values>.yaml --set worker.image.tag=1.7.0 --timeout 15m
+kubectl -n midaz-plugins rollout status deployment/plugin-br-pix-jd-api
+```
+
+Then move the worker to 1.8.0 (the same command without the pin). With `worker.enabled=false`, run only this command:
+
 ```bash
 helm upgrade plugin-br-pix-jd oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm -n midaz-plugins --version 0.9.1 -f <your-values>.yaml --timeout 15m
 ```
+
+With Argo CD, do the same with two commits: first pin `worker.image.tag: "1.7.0"` in the values, then remove the pin.
 
 > **Note:** Without `-f`, Helm reuses the stored values, so the antifraud lists and any tag-pin change above never land. With `-f`, Helm drops the stored values: repeat every `--set` and `--set-file` you used at install (signing key, certificate). Keep `--timeout` above `migrations.activeDeadlineSeconds`; the default `5m` is shorter than the Job's `600` seconds.

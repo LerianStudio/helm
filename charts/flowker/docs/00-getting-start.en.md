@@ -100,7 +100,7 @@ flowker:
     DEPLOYMENT_MODE: "byoc"              # the chart default "local" is for development only
     ALLOW_INSECURE_TLS: "false"          # only with TLS-enabled MongoDB and Redis
     PLUGIN_AUTH_ENABLED: "true"          # required in production: the app refuses "false"
-    PLUGIN_AUTH_ADDRESS: "https://plugin-access-manager-auth.example.internal"
+    PLUGIN_AUTH_ADDRESS: "https://auth.example.com"   # public HTTPS host (see "Outbound URLs" in section 4)
     MONGO_HOST: "mongo.example.internal" # host checked by the wait-for-mongodb init container
     REDIS_HOST: "redis.example.internal"
     REDIS_PORT: "6379"
@@ -111,9 +111,9 @@ flowker:
     annotations:
       eks.amazonaws.com/role-arn: "<role with access to the bucket and the KMS key>"   # IRSA on EKS
   extraEnvVars:                          # non-secret values only: this renders into the ConfigMap
-    KMS_VENDOR: "<kms-vendor>"           # confirm the value with the Flowker team
+    KMS_VENDOR: "aws-kms"                # 1.7.0 accepts only "aws-kms" or "hashicorp-vault"
     KMS_AWS_KEY_ID: "<kms-key-id-or-arn>"
-    CRM_BASE_URL: "https://crm.example.internal"   # no dedicated chart value in 4.0.0
+    CRM_BASE_URL: "https://crm.example.com"   # public HTTPS host; no dedicated chart value in 4.0.0
   ingress:
     enabled: true
     className: "<your-ingress-class>"
@@ -151,7 +151,8 @@ Start from [`values-template.yaml`](../values-template.yaml) for the full set of
 - **Health and rollout.** Probes, PDB and rollout come from the `lerian-common` health preset and are not values. The chart refuses an image tag below `1.7.0-beta.50`. See the chart [README](../README.md#health-drain-and-rollout).
 - **Schema Registry (S3).** Health checks pass without `SCHEMA_REGISTRY_S3_BUCKET`, so a green rollout does not prove native providers work. Set the bucket in every profile that runs native-provider workflows or XSD-bound webhooks, and grant the api and worker access to it. **Open point:** the native provider specs must also be in the bucket, or every native provider fails at use time. The Lerian publish pipeline only writes to Lerian-owned buckets, and there is no documented procedure yet for a client-owned bucket. Agree on it with the Flowker team (object keys, versions and who uploads them) before the client runs native-provider workflows.
 - **Deployment mode.** The chart defaults `DEPLOYMENT_MODE` to `local`. With `ENV_NAME: "production"` the app logs a warning at boot, and `local` also allows Vault token auth for the KMS. Set `DEPLOYMENT_MODE: "byoc"` on client installs.
-- **CRM provider.** The app reads `CRM_BASE_URL`, but chart 4.0.0 only has `MIDAZ_BASE_URL` and `TRACER_BASE_URL` values. Set `CRM_BASE_URL` through `flowker.extraEnvVars`.
+- **CRM provider.** The app reads `CRM_BASE_URL`, but chart 4.0.0 only has `MIDAZ_BASE_URL` and `TRACER_BASE_URL` values. Set `CRM_BASE_URL` through `flowker.extraEnvVars`, with a public HTTPS host (see the next item).
+- **Outbound URLs (SSRF guard).** Flowker checks every outbound call against an SSRF guard. It blocks `.internal`, `.local` and `.cluster.local` hostnames before DNS, and with `SSRF_ALLOW_PRIVATE: "false"` (the chart default, and the only safe value in production) it also blocks names that resolve to private IPs. This applies to `PLUGIN_AUTH_ADDRESS` (the workflow M2M token URL is built from it), `CRM_BASE_URL`, `MIDAZ_BASE_URL`, `TRACER_BASE_URL` and provider base URLs. Use public HTTPS hosts for them. An in-cluster Service name fails every step that calls it, while health and rollout checks still pass. `MONGO_HOST` and `REDIS_HOST` are not affected.
 - **Image pull secrets.** The images are public. `flowker.imagePullSecrets` can stay `[]`.
 - **Workflow credentials.** Flowker 1.7.0 stores provider-config and node-auth credentials KMS-sealed in MongoDB and needs a key-encryption key (`KMS_VENDOR` and its grants). Chart 4.0.0 has no dedicated `KMS_*` values. Put secret KMS settings (for example a Vault AppRole secret ID) only in the existing Secret (`flowker.useExistingSecret: true`). Never in `flowker.extraEnvVars`: it renders into the ConfigMap. `extraEnvVars` is fine for non-secret settings such as `KMS_VENDOR`. `FLOWKER_SECRETS_BACKEND` has no effect on app 1.7.0. Without `KMS_VENDOR`, the install is healthy but refuses to store any provider secret (409 `FLK-0966`). Confirm the vendor value and the key settings for your KMS with the Flowker team.
 
@@ -194,6 +195,8 @@ Readiness (`/readyz`) and `/metrics` are served on the internal health port `809
 | api log: MongoDB URI empty or missing, with `useExistingSecret: true` | The existing Secret has no `MONGO_URI` key | Add `MONGO_URI` to the Secret (section 3.2) |
 | Worker `CrashLoopBackOff` right after install | No queue Redis while the scheduler is on | See "Redis" in section 4 |
 | api `CrashLoopBackOff`, log "TLS required" (Mongo) | `ALLOW_INSECURE_TLS: "false"` against a non-TLS MongoDB | Keep `"true"` for bundled infra; `"false"` only with real TLS |
+| Workflow step fails with `URL rejected by SSRF policy` or `token endpoint rejected by SSRF policy` | An outbound URL uses an internal hostname or a private IP | Use a public HTTPS host ("Outbound URLs" in section 4) |
+| api and worker exit at boot: `unknown KMS_VENDOR` | `KMS_VENDOR` is not `aws-kms` or `hashicorp-vault` | Fix the value |
 | Saving a provider returns 409 `FLK-0966` | No KMS configured (`KMS_VENDOR` empty) | Configure the KMS key (section 2) |
 | Saving a provider returns 503 `FLK-0969` | KMS key denied or unreachable | Check the key grant for the api and worker service accounts, and network access to the KMS |
 | Workflow step fails with `ErrCredentialSealerNotConfigured` or `has no stored credential` | No KMS key configured, or credentials not re-supplied after moving to app 1.7.0 | See "Workflow credentials" in section 4 |

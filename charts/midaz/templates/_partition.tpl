@@ -29,8 +29,7 @@ true
 {{- add 1 $m -}}
 {{- end -}}
 
-{{/* A CronJob name is capped at 52 characters (the controller appends an 11-character suffix to each Job it spawns).
-     Takes (dict "context" . "product" ... "suffix" "partition"|"partition-build"). */}}
+{{/* A CronJob name is capped at 52 characters (the controller appends an 11-character suffix to each Job it spawns). */}}
 {{- define "midaz.partitionCronJobNameWithSuffix" -}}
 {{- $full := include (printf "midaz-%s.fullname" .product) .context -}}
 {{- $room := sub 51 (len .suffix) | int -}}
@@ -50,7 +49,7 @@ true
 {{- include "midaz.partitionCronJobNameWithSuffix" (dict "context" .context "product" .product "suffix" "partition-build") -}}
 {{- end -}}
 
-{{/* One index build bound as a quoted base-10 string. Takes (dict "value" ... "path" "ledger.partition.maxBuildBytes"). */}}
+{{/* One index build bound as a quoted integer. */}}
 {{- define "midaz.partitionBuildBound" -}}
 {{- $v := .value -}}
 {{- $kind := kindOf $v -}}
@@ -113,7 +112,7 @@ spec:
           {{- include "midaz.partitionPodSpec" (dict "context" $ctx "product" .product "args" (list "ensure" "--reconcile-indexes") "maxBuildBytes" (dig "maxBuildBytes" 12884901888 $partition) "buildWindowSeconds" (dig "buildWindowSeconds" 600 $partition) "boundsPath" (printf "%s.partition" .product)) | nindent 10 }}
 {{- end -}}
 
-{{/* Suspended: an operator starts it with kubectl create job --from=cronjob/<name>, to build without bounds or deadline what the bounded passes deferred. */}}
+{{/* Suspended: an operator starts it with kubectl create job --from=cronjob/<name>. */}}
 {{- define "midaz.partitionBuildCronJob" -}}
 {{- $ctx := .context -}}
 {{- $partition := (index $ctx.Values .product).partition | default dict -}}
@@ -212,8 +211,7 @@ spec:
       {{- include "midaz.partitionPodSpec" (dict "context" $ctx "product" .product "args" (list "reconcile-indexes" "--tolerate-unavailable") "licenseHook" $hookSecret "maxBuildBytes" (dig "maxBuildBytes" 2147483648 $reconcile) "buildWindowSeconds" (dig "buildWindowSeconds" 60 $reconcile) "boundsPath" (printf "%s.partition.reconcile" .product)) | nindent 6 }}
 {{- end -}}
 
-{{/* Every partition workload uses the product's connections and migration credentials. The caller passes
-     the index build bounds ("maxBuildBytes", "buildWindowSeconds", "boundsPath"); explicit env wins over envFrom. */}}
+{{/* Every partition workload uses the product's connections and migration credentials. */}}
 {{- define "midaz.partitionPodSpec" -}}
 {{- $ctx := .context -}}
 {{- if or (not (hasKey . "maxBuildBytes")) (not (hasKey . "buildWindowSeconds")) -}}

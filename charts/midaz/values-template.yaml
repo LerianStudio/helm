@@ -188,20 +188,6 @@ ledger:
   useExistingSecret: false
   existingSecretName: ""
 
-  # -- Partition index build bounds (ledger image 4.7.0 and later; the same keys
-  # exist under `tracer.partition`). The defaults fit a small cloud disk: the
-  # reconcile hook builds tables up to 2 GiB, the daily CronJob up to 12 GiB, and
-  # a larger one waits for the on-demand build (see docs/UPGRADE-11.5.md).
-  # Uncomment only to change them; 0 means no limit.
-  # partition:
-  #   maxBuildBytes: 12884901888
-  #   buildWindowSeconds: 600
-  #   reconcile:
-  #     maxBuildBytes: 2147483648
-  #     buildWindowSeconds: 60
-  #   build:
-  #     enabled: false
-
 valkey:
   enabled: true
 
